@@ -1,6 +1,7 @@
 import {
   formatCurrency,
   formatDateBR,
+  formatDateOnlyBR,
 } from '../utils/date.utils.js'
 
 interface PrestacaoSummary {
@@ -20,6 +21,7 @@ interface EntregaSummary {
 interface PendenciaSummary {
   descricao: string
   valor: number | { toString(): string }
+  referenteAoDia: Date | string
 }
 
 export function generateWhatsAppText(
@@ -58,6 +60,9 @@ export function generateWhatsAppText(
   } else {
     for (const pendencia of pendencias) {
       lines.push(`• ${pendencia.descricao}`)
+      lines.push(
+        `Referente ao dia: ${formatDateOnlyBR(pendencia.referenteAoDia)}`,
+      )
       lines.push(formatCurrency(Number(pendencia.valor)))
       lines.push('')
     }

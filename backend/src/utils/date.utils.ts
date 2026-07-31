@@ -51,6 +51,21 @@ export function formatDateBR(date: Date): string {
   })
 }
 
+export function formatDateOnlyBR(date: Date | string): string {
+  if (typeof date === 'string') {
+    const [year, month, day] = date.slice(0, 10).split('-')
+    if (year && month && day) {
+      return `${day}/${month}/${year}`
+    }
+  }
+
+  const parsed = date instanceof Date ? date : new Date(date)
+  const day = String(parsed.getUTCDate()).padStart(2, '0')
+  const month = String(parsed.getUTCMonth() + 1).padStart(2, '0')
+  const year = parsed.getUTCFullYear()
+  return `${day}/${month}/${year}`
+}
+
 export function formatTimeBR(date: Date): string {
   return date.toLocaleTimeString('pt-BR', {
     hour: '2-digit',

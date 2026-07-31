@@ -61,6 +61,7 @@ describe('generateWhatsAppText', () => {
     expect(text).toContain('Centro - João Silva')
     expect(text).toContain('Jardins - Sem nome')
     expect(text).toContain('Pagamento pendente do dia 12/07')
+    expect(text).toContain('Referente ao dia: 12/07/2026')
     expect(text).toContain('Valor Final:')
     expect(text).toContain('Obrigado!')
   })
