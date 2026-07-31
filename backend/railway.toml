@@ -1,7 +1,7 @@
 [build]
-builder = "nixpacks"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.prod"
 
 [deploy]
-startCommand = "npx prisma migrate deploy && npm start"
 healthcheckPath = "/api/health"
 restartPolicyType = "ON_FAILURE"
