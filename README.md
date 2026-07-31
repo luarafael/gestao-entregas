@@ -142,28 +142,27 @@ npm run db:studio
 
 ## Deploy
 
+Documentação completa: **[DEPLOY.md](./DEPLOY.md)**
+
 | Serviço | Plataforma |
 |---------|------------|
-| Frontend | Vercel |
-| Backend/API | Railway |
-| Banco de Dados | Neon PostgreSQL |
+| Frontend | Vercel ou nginx (Docker prod) |
+| Backend/API | Railway ou Docker prod |
+| Banco de Dados | Neon PostgreSQL ou PostgreSQL (Docker prod) |
 
-### Vercel (Frontend)
+### Docker produção (VPS)
 
-1. Conecte o repositório na Vercel
-2. Defina o root directory como `frontend`
-3. Configure `VITE_API_URL` com a URL da API em produção
+```bash
+cp .env.production.example .env.production
+# Edite senhas e FRONTEND_URL
+npm run docker:prod
+```
 
-### Railway (Backend)
+Acesse `http://SEU_IP` — nginx serve o frontend e faz proxy de `/api` para o backend.
 
-1. Conecte o repositório no Railway
-2. Defina o root directory como `backend`
-3. Configure `DATABASE_URL`, `FRONTEND_URL` e `PORT`
+### Vercel + Railway + Neon
 
-### Neon (PostgreSQL)
-
-1. Crie um banco no Neon
-2. Use a connection string no `DATABASE_URL` do backend
+Veja passo a passo em [DEPLOY.md](./DEPLOY.md#opção-b--vercel--railway--neon).
 
 ## API Endpoints
 

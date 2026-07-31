@@ -20,6 +20,9 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:build": "docker compose build",
+    "docker:prod": "docker compose -f docker-compose.prod.yml --env-file .env.production up --build -d",
+    "docker:prod:down": "docker compose -f docker-compose.prod.yml down",
+    "db:migrate:deploy": "npm run db:migrate:deploy --workspace=backend",
     "db:generate": "npm run db:generate --workspace=backend",
     "db:migrate": "npm run db:migrate --workspace=backend",
     "db:studio": "npm run db:studio --workspace=backend"
