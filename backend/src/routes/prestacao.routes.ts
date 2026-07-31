@@ -9,6 +9,7 @@ import {
 import {
   generatePrestacaoSchema,
   listPrestacoesSchema,
+  updatePrestacaoSchema,
   type ListPrestacoesInput,
 } from '../schemas/prestacao.schema.js'
 import { prestacaoService } from '../services/prestacao.service.js'
@@ -21,6 +22,15 @@ prestacaoRoutes.get(
   asyncHandler(async (req, res) => {
     const result = await prestacaoService.list(getValidatedQuery<ListPrestacoesInput>(req))
     res.json(result)
+  }),
+)
+
+prestacaoRoutes.post(
+  '/generate',
+  validateBody(generatePrestacaoSchema),
+  asyncHandler(async (req, res) => {
+    const result = await prestacaoService.generate(req.body)
+    res.status(201).json(result)
   }),
 )
 
@@ -40,11 +50,19 @@ prestacaoRoutes.get(
   }),
 )
 
-prestacaoRoutes.post(
-  '/generate',
-  validateBody(generatePrestacaoSchema),
+prestacaoRoutes.put(
+  '/:id',
+  validateBody(updatePrestacaoSchema),
   asyncHandler(async (req, res) => {
-    const result = await prestacaoService.generate(req.body)
-    res.status(201).json(result)
+    const prestacao = await prestacaoService.update(getRouteParam(req, 'id'), req.body)
+    res.json(prestacao)
+  }),
+)
+
+prestacaoRoutes.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    await prestacaoService.delete(getRouteParam(req, 'id'))
+    res.status(204).send()
   }),
 )

@@ -1,8 +1,23 @@
 import { z } from 'zod'
+import { toUtcDateOnly } from '../utils/date.utils.js'
 
 export const generatePrestacaoSchema = z.object({
-  data: z.coerce.date().optional(),
+  data: z
+    .union([z.string(), z.coerce.date()])
+    .optional()
+    .transform((value) => {
+      if (value === undefined) return undefined
+      if (typeof value === 'string') {
+        return toUtcDateOnly(value)
+      }
+      return toUtcDateOnly(value)
+    }),
   observacoes: z.string().trim().optional(),
+})
+
+export const updatePrestacaoSchema = z.object({
+  observacoes: z.string().trim().optional().nullable(),
+  recalcular: z.boolean().optional(),
 })
 
 export const listPrestacoesSchema = z.object({
@@ -11,4 +26,5 @@ export const listPrestacoesSchema = z.object({
 })
 
 export type GeneratePrestacaoInput = z.infer<typeof generatePrestacaoSchema>
+export type UpdatePrestacaoInput = z.infer<typeof updatePrestacaoSchema>
 export type ListPrestacoesInput = z.infer<typeof listPrestacoesSchema>

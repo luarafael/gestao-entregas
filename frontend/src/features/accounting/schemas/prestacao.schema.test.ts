@@ -12,7 +12,7 @@ describe('toGeneratePayload', () => {
     })
 
     expect(payload.observacoes).toBe('Observação teste')
-    expect(payload.data).toContain('2026-07-31')
+    expect(payload.data).toBe('2026-07-31')
   })
 
   it('omite observações vazias', () => {

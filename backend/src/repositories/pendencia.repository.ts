@@ -1,6 +1,6 @@
 import type { Prisma, StatusPendencia } from '../../generated/prisma/client.js'
 import { prisma } from '../lib/prisma.js'
-import { startOfDay, endOfDay } from '../utils/date.utils.js'
+import { toUtcDateOnlyFromLocal } from '../utils/date.utils.js'
 import type {
   CreatePendenciaInput,
   UpdatePendenciaInput,
@@ -15,7 +15,12 @@ export interface ListPendenciasFilters {
 
 export class PendenciaRepository {
   async create(data: CreatePendenciaInput) {
-    return prisma.pendencia.create({ data })
+    return prisma.pendencia.create({
+      data: {
+        ...data,
+        referenteAoDia: toUtcDateOnlyFromLocal(data.referenteAoDia),
+      },
+    })
   }
 
   async findById(id: string) {
@@ -49,12 +54,11 @@ export class PendenciaRepository {
   }
 
   async findPendingByDate(date: Date) {
-    const start = startOfDay(date)
-    const end = endOfDay(date)
+    const day = toUtcDateOnlyFromLocal(date)
 
     return prisma.pendencia.findMany({
       where: {
-        referenteAoDia: { gte: start, lte: end },
+        referenteAoDia: day,
         status: 'PENDENTE',
       },
       orderBy: { criadoEm: 'asc' },
@@ -75,7 +79,15 @@ export class PendenciaRepository {
   }
 
   async update(id: string, data: UpdatePendenciaInput) {
-    return prisma.pendencia.update({ where: { id }, data })
+    return prisma.pendencia.update({
+      where: { id },
+      data: {
+        ...data,
+        ...(data.referenteAoDia
+          ? { referenteAoDia: toUtcDateOnlyFromLocal(data.referenteAoDia) }
+          : {}),
+      },
+    })
   }
 
   async delete(id: string) {

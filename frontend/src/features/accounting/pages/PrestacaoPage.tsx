@@ -9,6 +9,7 @@ import {
   CardTitle,
   EmptyState,
   Input,
+  Modal,
   StatCardSkeleton,
   Textarea,
 } from '@/shared/components/ui'
@@ -17,19 +18,23 @@ import { formatCurrency } from '@/shared/utils/cn'
 import { useDashboardStats } from '@/features/dashboard/hooks/useDashboard'
 import {
   useCopyWhatsAppText,
+  useDeletePrestacao,
   useGeneratePrestacao,
   usePrestacaoHistory,
+  useUpdatePrestacao,
 } from '../hooks/usePrestacao'
 import { prestacaoService } from '../services/prestacao.service'
 import { PrestacaoResultCard } from '../components/PrestacaoResultCard'
 import { WhatsAppPreview } from '../components/WhatsAppPreview'
 import { PrestacaoHistory } from '../components/PrestacaoHistory'
+import { PrestacaoEditModal } from '../components/PrestacaoEditModal'
 import {
   defaultGenerateFormValues,
+  formatPrestacaoDate,
   generatePrestacaoFormSchema,
   type GeneratePrestacaoFormData,
 } from '../schemas/prestacao.schema'
-import type { GeneratePrestacaoResponse } from '../types'
+import type { GeneratePrestacaoResponse, PrestacaoContas } from '../types'
 import { toast } from '@/shared/stores/toast.store'
 
 export function PrestacaoPage() {
@@ -37,11 +42,20 @@ export function PrestacaoPage() {
     useState<GeneratePrestacaoResponse | null>(null)
   const [historyPage, setHistoryPage] = useState(1)
   const [copyingId, setCopyingId] = useState<string | null>(null)
+  const [editingPrestacao, setEditingPrestacao] = useState<PrestacaoContas | null>(
+    null,
+  )
+  const [editObservacoes, setEditObservacoes] = useState('')
+  const [editRecalcular, setEditRecalcular] = useState(false)
+  const [deletingPrestacao, setDeletingPrestacao] =
+    useState<PrestacaoContas | null>(null)
 
   const statsQuery = useDashboardStats()
   const historyQuery = usePrestacaoHistory({ page: historyPage, limit: 10 })
   const generateMutation = useGeneratePrestacao()
   const copyMutation = useCopyWhatsAppText()
+  const updateMutation = useUpdatePrestacao()
+  const deleteMutation = useDeletePrestacao()
 
   const {
     register,
@@ -76,6 +90,33 @@ export function PrestacaoPage() {
     } finally {
       setCopyingId(null)
     }
+  }
+
+  const handleOpenEdit = (item: PrestacaoContas) => {
+    setEditingPrestacao(item)
+    setEditObservacoes(item.observacoes ?? '')
+    setEditRecalcular(false)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingPrestacao) return
+
+    await updateMutation.mutateAsync({
+      id: editingPrestacao.id,
+      data: {
+        observacoes: editObservacoes.trim() || null,
+        recalcular: editRecalcular,
+      },
+    })
+
+    setEditingPrestacao(null)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deletingPrestacao) return
+
+    await deleteMutation.mutateAsync(deletingPrestacao.id)
+    setDeletingPrestacao(null)
   }
 
   return (
@@ -188,10 +229,40 @@ export function PrestacaoPage() {
             totalPages={historyMeta?.totalPages ?? 1}
             onPageChange={setHistoryPage}
             onCopy={handleCopyFromHistory}
+            onEdit={handleOpenEdit}
+            onDelete={setDeletingPrestacao}
             copyingId={copyingId}
+            deletingId={deleteMutation.isPending ? deletingPrestacao?.id : null}
           />
         )}
       </section>
+
+      <PrestacaoEditModal
+        prestacao={editingPrestacao}
+        isOpen={Boolean(editingPrestacao)}
+        isSaving={updateMutation.isPending}
+        observacoes={editObservacoes}
+        recalcular={editRecalcular}
+        onObservacoesChange={setEditObservacoes}
+        onRecalcularChange={setEditRecalcular}
+        onClose={() => setEditingPrestacao(null)}
+        onSave={handleSaveEdit}
+      />
+
+      <Modal
+        open={Boolean(deletingPrestacao)}
+        onClose={() => setDeletingPrestacao(null)}
+        title="Excluir prestação"
+        description={
+          deletingPrestacao
+            ? `Deseja excluir a prestação de ${formatPrestacaoDate(deletingPrestacao.data)}?`
+            : undefined
+        }
+        confirmLabel="Excluir"
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }

@@ -5,45 +5,68 @@ import { prestacaoRepository } from '../repositories/prestacao.repository.js'
 import type {
   GeneratePrestacaoInput,
   ListPrestacoesInput,
+  UpdatePrestacaoInput,
 } from '../schemas/prestacao.schema.js'
-import { startOfDay } from '../utils/date.utils.js'
+import { toUtcDateOnly, toUtcDateOnlyFromLocal } from '../utils/date.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { generateWhatsAppText } from './whatsapp.service.js'
 
 export class PrestacaoService {
+  private normalizeDate(input?: Date) {
+    if (!input) {
+      return toUtcDateOnlyFromLocal(new Date())
+    }
+
+    return toUtcDateOnly(input)
+  }
+
+  private async calculateTotals(date: Date) {
+    const [entregaStats, pendencias] = await Promise.all([
+      entregaRepository.getStatsByDate(date),
+      pendenciaRepository.findPendingByDate(date),
+    ])
+
+    const valorPendencias = pendencias.reduce(
+      (sum, pendencia) => sum + Number(pendencia.valor),
+      0,
+    )
+
+    return {
+      totalEntregas: entregaStats.totalEntregas,
+      valorTotal: entregaStats.valorTotal,
+      valorPendencias,
+      valorFinal: entregaStats.valorTotal + valorPendencias,
+      pendencias,
+    }
+  }
+
   async generate(input: GeneratePrestacaoInput) {
-    const date = startOfDay(input.data ?? new Date())
+    const date = this.normalizeDate(input.data)
 
     const existing = await prestacaoRepository.findByDate(date)
     if (existing) {
       throw new ConflictError('Já existe uma prestação de contas para esta data')
     }
 
-    const [entregas, pendencias, entregaStats] = await Promise.all([
-      entregaRepository.findByDate(date),
-      pendenciaRepository.findPendingByDate(date),
-      entregaRepository.getStatsByDate(date),
-    ])
-
-    const valorPendencias = pendencias.reduce(
-      (sum, p) => sum + Number(p.valor),
-      0,
-    )
-
-    const valorFinal = entregaStats.valorTotal + valorPendencias
+    const totals = await this.calculateTotals(date)
+    const entregas = await entregaRepository.findByDate(date)
 
     const prestacao = await prestacaoRepository.create({
       data: date,
-      totalEntregas: entregaStats.totalEntregas,
-      valorTotal: entregaStats.valorTotal,
-      valorPendencias,
-      valorFinal,
+      totalEntregas: totals.totalEntregas,
+      valorTotal: totals.valorTotal,
+      valorPendencias: totals.valorPendencias,
+      valorFinal: totals.valorFinal,
       observacoes: input.observacoes,
     })
 
-    const whatsappText = generateWhatsAppText(prestacao, entregas, pendencias)
+    const whatsappText = generateWhatsAppText(
+      prestacao,
+      entregas,
+      totals.pendencias,
+    )
 
-    return { prestacao, entregas, pendencias, whatsappText }
+    return { prestacao, entregas, pendencias: totals.pendencias, whatsappText }
   }
 
   async findById(id: string) {
@@ -52,6 +75,35 @@ export class PrestacaoService {
       throw new NotFoundError('Prestação de contas não encontrada')
     }
     return prestacao
+  }
+
+  async update(id: string, input: UpdatePrestacaoInput) {
+    const prestacao = await this.findById(id)
+
+    if (input.recalcular) {
+      const totals = await this.calculateTotals(prestacao.data)
+
+      return prestacaoRepository.update(id, {
+        totalEntregas: totals.totalEntregas,
+        valorTotal: totals.valorTotal,
+        valorPendencias: totals.valorPendencias,
+        valorFinal: totals.valorFinal,
+        observacoes:
+          input.observacoes === undefined
+            ? prestacao.observacoes
+            : input.observacoes,
+      })
+    }
+
+    return prestacaoRepository.update(id, {
+      observacoes:
+        input.observacoes === undefined ? prestacao.observacoes : input.observacoes,
+    })
+  }
+
+  async delete(id: string) {
+    await this.findById(id)
+    return prestacaoRepository.delete(id)
   }
 
   async getWhatsAppText(id: string) {

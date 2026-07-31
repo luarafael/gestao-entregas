@@ -30,4 +30,18 @@ export const prestacaoService = {
   getWhatsAppText(id: string) {
     return apiFetch<{ text: string }>(`/api/prestacoes/${id}/whatsapp`)
   },
+
+  update(
+    id: string,
+    data: { observacoes?: string | null; recalcular?: boolean },
+  ) {
+    return apiFetch<PrestacaoContas>(`/api/prestacoes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete(id: string) {
+    return apiFetch<void>(`/api/prestacoes/${id}`, { method: 'DELETE' })
+  },
 }

@@ -61,10 +61,67 @@ export function getLastDaysRange(days: number, reference = new Date()): {
   return { start, end }
 }
 
-export function formatDateOnlyISO(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+/** Converte para meia-noite UTC — padrão para campos @db.Date no PostgreSQL */
+export function toUtcDateOnly(date: Date | string): Date {
+  if (typeof date === 'string') {
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (match) {
+      const [, year, month, day] = match
+      return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+    }
+  }
+
+  const parsed = date instanceof Date ? date : new Date(date)
+  return new Date(
+    Date.UTC(
+      parsed.getUTCFullYear(),
+      parsed.getUTCMonth(),
+      parsed.getUTCDate(),
+    ),
+  )
+}
+
+/** Data do calendário local -> UTC date-only */
+export function toUtcDateOnlyFromLocal(date: Date): Date {
+  return new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  )
+}
+
+export function getUtcDateOnlyRange(
+  filter: DateFilter,
+  reference = new Date(),
+): { start: Date; end: Date } {
+  const { start, end } = getDateRange(filter, reference)
+
+  return {
+    start: toUtcDateOnlyFromLocal(start),
+    end: toUtcDateOnlyFromLocal(end),
+  }
+}
+
+export function getLastDaysUtcRange(
+  days: number,
+  reference = new Date(),
+): { start: Date; end: Date } {
+  const end = toUtcDateOnlyFromLocal(reference)
+  const start = new Date(end)
+  start.setUTCDate(start.getUTCDate() - (days - 1))
+  return { start, end }
+}
+
+export function formatDateOnlyISO(date: Date | string): string {
+  if (typeof date === 'string') {
+    const match = date.match(/^(\d{4}-\d{2}-\d{2})/)
+    if (match) {
+      return match[1]
+    }
+  }
+
+  const parsed = date instanceof Date ? date : new Date(date)
+  const year = parsed.getUTCFullYear()
+  const month = String(parsed.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(parsed.getUTCDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 

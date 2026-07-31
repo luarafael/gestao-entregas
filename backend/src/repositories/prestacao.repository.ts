@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js'
-import { startOfDay } from '../utils/date.utils.js'
+import { toUtcDateOnlyFromLocal } from '../utils/date.utils.js'
 
 export interface CreatePrestacaoData {
   data: Date
@@ -10,9 +10,22 @@ export interface CreatePrestacaoData {
   observacoes?: string
 }
 
+export interface UpdatePrestacaoData {
+  totalEntregas?: number
+  valorTotal?: number
+  valorPendencias?: number
+  valorFinal?: number
+  observacoes?: string | null
+}
+
 export class PrestacaoRepository {
   async create(data: CreatePrestacaoData) {
-    return prisma.prestacaoContas.create({ data })
+    return prisma.prestacaoContas.create({
+      data: {
+        ...data,
+        data: toUtcDateOnlyFromLocal(data.data),
+      },
+    })
   }
 
   async findById(id: string) {
@@ -21,7 +34,7 @@ export class PrestacaoRepository {
 
   async findByDate(date: Date) {
     return prisma.prestacaoContas.findUnique({
-      where: { data: startOfDay(date) },
+      where: { data: toUtcDateOnlyFromLocal(date) },
     })
   }
 
@@ -38,6 +51,14 @@ export class PrestacaoRepository {
     ])
 
     return { data, total }
+  }
+
+  async update(id: string, data: UpdatePrestacaoData) {
+    return prisma.prestacaoContas.update({ where: { id }, data })
+  }
+
+  async delete(id: string) {
+    return prisma.prestacaoContas.delete({ where: { id } })
   }
 }
 

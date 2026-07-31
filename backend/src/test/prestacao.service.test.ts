@@ -7,6 +7,8 @@ const prestacaoRepository = vi.hoisted(() => ({
   create: vi.fn(),
   findById: vi.fn(),
   findMany: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
 }))
 
 const entregaRepository = vi.hoisted(() => ({
@@ -110,5 +112,28 @@ describe('PrestacaoService', () => {
     const result = await service.list({ page: 1, limit: 10 })
 
     expect(result.data).toHaveLength(1)
+  })
+
+  it('atualiza observações da prestação', async () => {
+    prestacaoRepository.findById.mockResolvedValue({
+      id: '1',
+      data: new Date('2026-07-31'),
+      observacoes: 'Antiga',
+    })
+    prestacaoRepository.update.mockResolvedValue({
+      id: '1',
+      observacoes: 'Nova',
+    })
+
+    const result = await service.update('1', { observacoes: 'Nova' })
+
+    expect(result.observacoes).toBe('Nova')
+  })
+
+  it('exclui prestação existente', async () => {
+    prestacaoRepository.findById.mockResolvedValue({ id: '1' })
+    prestacaoRepository.delete.mockResolvedValue({ id: '1' })
+
+    await expect(service.delete('1')).resolves.toEqual({ id: '1' })
   })
 })

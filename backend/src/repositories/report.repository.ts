@@ -3,14 +3,13 @@ import { prisma } from '../lib/prisma.js'
 import type { ReportPeriod } from '../schemas/report.schema.js'
 import {
   formatDateOnlyISO,
-  getDateRange,
-  getLastDaysRange,
-  startOfDay,
+  getLastDaysUtcRange,
+  getUtcDateOnlyRange,
 } from '../utils/date.utils.js'
 
 export class ReportRepository {
   async getDailyTrend(days: number, reference = new Date()) {
-    const { start, end } = getLastDaysRange(days, reference)
+    const { start, end } = getLastDaysUtcRange(days, reference)
 
     const entregas = await prisma.entrega.findMany({
       where: {
@@ -26,7 +25,7 @@ export class ReportRepository {
     const totalsByDay = new Map<string, { entregas: number; valor: number }>()
 
     for (const entrega of entregas) {
-      const key = formatDateOnlyISO(startOfDay(entrega.data))
+      const key = formatDateOnlyISO(entrega.data)
       const current = totalsByDay.get(key) ?? { entregas: 0, valor: 0 }
       current.entregas += 1
       current.valor += Number(entrega.valorEntrega)
@@ -34,7 +33,7 @@ export class ReportRepository {
     }
 
     const result = []
-    const cursor = startOfDay(start)
+    const cursor = new Date(start)
 
     for (let index = 0; index < days; index += 1) {
       const date = formatDateOnlyISO(cursor)
@@ -46,7 +45,7 @@ export class ReportRepository {
         valor: totals.valor,
       })
 
-      cursor.setDate(cursor.getDate() + 1)
+      cursor.setUTCDate(cursor.getUTCDate() + 1)
     }
 
     return result
@@ -57,7 +56,7 @@ export class ReportRepository {
     limit: number,
     reference = new Date(),
   ) {
-    const { start, end } = getDateRange(period, reference)
+    const { start, end } = getUtcDateOnlyRange(period, reference)
 
     const grouped = await prisma.entrega.groupBy({
       by: ['bairro'],
@@ -81,7 +80,7 @@ export class ReportRepository {
   }
 
   async getPrestacaoTrend(days: number, reference = new Date()) {
-    const { start, end } = getLastDaysRange(days, reference)
+    const { start, end } = getLastDaysUtcRange(days, reference)
 
     const prestacoes = await prisma.prestacaoContas.findMany({
       where: {
@@ -96,14 +95,14 @@ export class ReportRepository {
     })
 
     return prestacoes.map((prestacao) => ({
-      date: formatDateOnlyISO(startOfDay(prestacao.data)),
+      date: formatDateOnlyISO(prestacao.data),
       valorFinal: Number(prestacao.valorFinal),
       totalEntregas: prestacao.totalEntregas,
     }))
   }
 
   async getPeriodSummary(period: ReportPeriod, reference = new Date()) {
-    const { start, end } = getDateRange(period, reference)
+    const { start, end } = getUtcDateOnlyRange(period, reference)
 
     const [entregaStats, prestacaoStats, pendenciaStats] = await Promise.all([
       prisma.entrega.aggregate({
@@ -133,9 +132,8 @@ export class ReportRepository {
     const daysInPeriod =
       Math.max(
         1,
-        Math.ceil(
-          (startOfDay(end).getTime() - startOfDay(start).getTime()) /
-            (1000 * 60 * 60 * 24),
+        Math.round(
+          (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
         ) + 1,
       )
 

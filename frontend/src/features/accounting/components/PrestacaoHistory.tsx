@@ -16,7 +16,10 @@ interface PrestacaoHistoryProps {
   totalPages: number
   onPageChange: (page: number) => void
   onCopy: (id: string) => void
+  onEdit: (item: PrestacaoContas) => void
+  onDelete: (item: PrestacaoContas) => void
   copyingId?: string | null
+  deletingId?: string | null
 }
 
 export function PrestacaoHistory({
@@ -26,7 +29,10 @@ export function PrestacaoHistory({
   totalPages,
   onPageChange,
   onCopy,
+  onEdit,
+  onDelete,
   copyingId,
+  deletingId,
 }: PrestacaoHistoryProps) {
   if (isLoading) {
     return <TableSkeleton rows={4} />
@@ -45,7 +51,7 @@ export function PrestacaoHistory({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[860px] text-left text-sm">
           <thead>
             <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-3 py-3 font-medium">Data</th>
@@ -75,15 +81,32 @@ export function PrestacaoHistory({
                 <td className="px-3 py-3 text-right font-medium">
                   {formatCurrency(Number(item.valorFinal))}
                 </td>
-                <td className="px-3 py-3 text-right">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onCopy(item.id)}
-                    isLoading={copyingId === item.id}
-                  >
-                    Copiar WhatsApp
-                  </Button>
+                <td className="px-3 py-3">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(item)}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onCopy(item.id)}
+                      isLoading={copyingId === item.id}
+                    >
+                      Copiar
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => onDelete(item)}
+                      isLoading={deletingId === item.id}
+                    >
+                      Excluir
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

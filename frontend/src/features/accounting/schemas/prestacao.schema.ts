@@ -27,12 +27,17 @@ export const defaultGenerateFormValues: GeneratePrestacaoFormData = {
 
 export function toGeneratePayload(data: GeneratePrestacaoFormData) {
   return {
-    data: data.data ? new Date(`${data.data}T12:00:00`).toISOString() : undefined,
+    data: data.data || undefined,
     observacoes: data.observacoes?.trim() || undefined,
   }
 }
 
 export function formatPrestacaoDate(date: string) {
+  const [year, month, day] = date.slice(0, 10).split('-')
+  if (year && month && day) {
+    return `${day}/${month}/${year}`
+  }
+
   return new Date(date).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',

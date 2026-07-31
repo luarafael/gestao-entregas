@@ -47,3 +47,46 @@ export function useCopyWhatsAppText() {
     },
   })
 }
+
+export function useUpdatePrestacao() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: { observacoes?: string | null; recalcular?: boolean }
+    }) => prestacaoService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PRESTACAO_QUERY_KEY] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      toast('Prestação atualizada com sucesso!', 'success')
+    },
+    onError: (error) => {
+      if (error instanceof ApiError) {
+        toast(error.message, 'error')
+        return
+      }
+
+      toast('Erro ao atualizar prestação', 'error')
+    },
+  })
+}
+
+export function useDeletePrestacao() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => prestacaoService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PRESTACAO_QUERY_KEY] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      toast('Prestação excluída com sucesso!', 'success')
+    },
+    onError: () => {
+      toast('Erro ao excluir prestação', 'error')
+    },
+  })
+}
