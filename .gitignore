@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Prisma generated
+backend/generated/
+
+# Docker
+postgres_data/
+
+# Misc
+*.tsbuildinfo
+promtp.txt.bak
+
+# Prisma CLI skills (auto-generated)
+backend/.agents/
+backend/.claude/
+backend/.windsurf/
+backend/skills-lock.json
