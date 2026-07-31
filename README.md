@@ -165,10 +165,42 @@ npm run db:studio
 1. Crie um banco no Neon
 2. Use a connection string no `DATABASE_URL` do backend
 
+## API Endpoints
+
+### Entregas
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/api/entregas/stats` | Estatísticas do dashboard |
+| GET | `/api/entregas` | Listar entregas (paginação, filtros, busca) |
+| GET | `/api/entregas/:id` | Buscar entrega por ID |
+| POST | `/api/entregas` | Criar entrega |
+| PUT | `/api/entregas/:id` | Atualizar entrega |
+| DELETE | `/api/entregas/:id` | Excluir entrega |
+
+### Pendências
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/api/pendencias` | Listar pendências |
+| GET | `/api/pendencias/:id` | Buscar pendência por ID |
+| POST | `/api/pendencias` | Criar pendência |
+| PUT | `/api/pendencias/:id` | Atualizar pendência |
+| DELETE | `/api/pendencias/:id` | Excluir pendência |
+
+### Prestação de Contas
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/api/prestacoes` | Listar prestações |
+| GET | `/api/prestacoes/:id` | Buscar prestação por ID |
+| GET | `/api/prestacoes/:id/whatsapp` | Texto formatado para WhatsApp |
+| POST | `/api/prestacoes/generate` | Gerar prestação do dia |
+
 ## Etapas de Desenvolvimento
 
 - [x] **Etapa 1** — Estrutura inicial, dependências e configurações
-- [ ] **Etapa 2** — Banco de dados, models, migrations, repositories, services, API
+- [x] **Etapa 2** — Banco de dados, models, migrations, repositories, services, API
 - [ ] **Etapa 3** — Layout, sidebar, navbar, dashboard, dark mode
 - [ ] **Etapa 4** — CRUD de Entregas
 - [ ] **Etapa 5** — CRUD de Pendências

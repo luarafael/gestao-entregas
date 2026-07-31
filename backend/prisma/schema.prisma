@@ -7,4 +7,56 @@ datasource db {
   provider = "postgresql"
 }
 
-// Models serão definidos na Etapa 2
+enum StatusEntrega {
+  ENTREGUE
+  CANCELADA
+}
+
+enum StatusPendencia {
+  PENDENTE
+  RECEBIDO
+}
+
+model Entrega {
+  id           String        @id @default(cuid())
+  data         DateTime      @db.Date
+  horario      DateTime
+  nomeCliente  String?
+  endereco     String
+  bairro       String
+  cidade       String?
+  observacao   String?
+  valorEntrega Decimal       @db.Decimal(10, 2)
+  status       StatusEntrega @default(ENTREGUE)
+  criadoEm     DateTime      @default(now())
+
+  @@index([data])
+  @@index([bairro])
+  @@map("entregas")
+}
+
+model Pendencia {
+  id             String          @id @default(cuid())
+  descricao      String
+  valor          Decimal         @db.Decimal(10, 2)
+  referenteAoDia DateTime        @db.Date
+  status         StatusPendencia @default(PENDENTE)
+  criadoEm       DateTime        @default(now())
+
+  @@index([referenteAoDia])
+  @@index([status])
+  @@map("pendencias")
+}
+
+model PrestacaoContas {
+  id              String   @id @default(cuid())
+  data            DateTime @unique @db.Date
+  totalEntregas   Int
+  valorTotal      Decimal  @db.Decimal(10, 2)
+  valorPendencias Decimal  @db.Decimal(10, 2)
+  valorFinal      Decimal  @db.Decimal(10, 2)
+  observacoes     String?
+  criadoEm        DateTime @default(now())
+
+  @@map("prestacoes_contas")
+}
