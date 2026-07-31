@@ -39,7 +39,7 @@ export function DailyBreakdownTable({ data }: DailyBreakdownTableProps) {
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-left text-sm">
+          <table className="w-full min-w-120 text-left text-sm">
             <thead>
               <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-3 py-3 font-medium">Data</th>

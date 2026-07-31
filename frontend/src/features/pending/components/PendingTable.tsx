@@ -33,7 +33,7 @@ export function PendingTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[680px] text-left text-sm">
+      <table className="w-full min-w-170 text-left text-sm">
         <thead>
           <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
             <th className="px-3 py-3 font-medium">Descrição</th>

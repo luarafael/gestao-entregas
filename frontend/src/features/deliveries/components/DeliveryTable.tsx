@@ -39,7 +39,7 @@ export function DeliveryTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] text-left text-sm">
+      <table className="w-full min-w-190 text-left text-sm">
         <thead>
           <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
             <th className="px-3 py-3 font-medium">Horário</th>

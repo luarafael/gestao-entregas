@@ -55,7 +55,7 @@ export function PrestacaoHistory({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] text-left text-sm">
+        <table className="w-full min-w-245 text-left text-sm">
           <thead>
             <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-3 py-3 font-medium">Data</th>
