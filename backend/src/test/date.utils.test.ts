@@ -3,6 +3,7 @@ import {
   formatCurrency,
   formatDateBR,
   formatDateOnlyBR,
+  formatTimeBR,
   getDateRange,
   startOfDay,
 } from '../utils/date.utils.js'
@@ -31,6 +32,28 @@ describe('date.utils', () => {
     const { start } = getDateRange('yesterday', reference)
 
     expect(start.getDate()).toBe(30)
+  })
+
+  it('should get week date range starting on monday', () => {
+    const reference = new Date('2026-07-31T12:00:00')
+    const { start, end } = getDateRange('week', reference)
+
+    expect(start.getDay()).toBe(1)
+    expect(end.getDate()).toBe(31)
+  })
+
+  it('should get month date range', () => {
+    const reference = new Date('2026-07-31T12:00:00')
+    const { start, end } = getDateRange('month', reference)
+
+    expect(start.getDate()).toBe(1)
+    expect(start.getMonth()).toBe(6)
+    expect(end.getDate()).toBe(31)
+  })
+
+  it('should format time in pt-BR', () => {
+    const formatted = formatTimeBR(new Date('2026-07-31T14:30:00'))
+    expect(formatted).toMatch(/14:30/)
   })
 
   it('should format date in pt-BR', () => {
