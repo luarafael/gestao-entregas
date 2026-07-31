@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { ReportPeriod } from '@/shared/types/api.types'
 import {
-  useDailyTrend,
   useNeighborhoodReport,
+  usePeriodDailyBreakdown,
   usePrestacaoTrend,
   useReportSummary,
 } from '../hooks/useReports'
@@ -16,15 +16,14 @@ import { getPeriodLabel } from '../utils/chart.utils'
 
 export function ReportsPage() {
   const [period, setPeriod] = useState<ReportPeriod>('week')
-  const trendDays = period === 'week' ? 7 : 30
 
   const summaryQuery = useReportSummary(period)
-  const dailyTrendQuery = useDailyTrend(trendDays)
+  const dailyBreakdownQuery = usePeriodDailyBreakdown(period)
   const neighborhoodQuery = useNeighborhoodReport(period, 8)
-  const prestacaoTrendQuery = usePrestacaoTrend(trendDays)
+  const prestacaoTrendQuery = usePrestacaoTrend(period)
 
   const periodLabel = getPeriodLabel(period)
-  const dailyTrend = dailyTrendQuery.data ?? []
+  const dailyBreakdown = dailyBreakdownQuery.data ?? []
 
   return (
     <div className="space-y-6">
@@ -32,7 +31,8 @@ export function ReportsPage() {
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Relatórios</h2>
           <p className="text-sm text-muted-foreground">
-            Indicadores, gráficos e detalhamento das entregas e prestações.
+            Indicadores, gráficos e detalhamento das prestações fechadas no
+            período.
           </p>
         </div>
         <PeriodFilter value={period} onChange={setPeriod} />
@@ -45,8 +45,9 @@ export function ReportsPage() {
 
       <section className="grid gap-4 xl:grid-cols-2">
         <DailyTrendChart
-          data={dailyTrend}
-          isLoading={dailyTrendQuery.isLoading}
+          data={dailyBreakdown}
+          isLoading={dailyBreakdownQuery.isLoading}
+          periodLabel={periodLabel}
         />
         <NeighborhoodChart
           data={neighborhoodQuery.data}
@@ -60,7 +61,7 @@ export function ReportsPage() {
           data={prestacaoTrendQuery.data}
           isLoading={prestacaoTrendQuery.isLoading}
         />
-        <DailyBreakdownTable data={dailyTrend} />
+        <DailyBreakdownTable data={dailyBreakdown} />
       </section>
     </div>
   )

@@ -18,6 +18,15 @@ export interface GeneratePrestacaoResponse {
   whatsappText: string
 }
 
+export interface PrestacaoPreview {
+  data: string
+  totalEntregas: number
+  valorTotal: number
+  valorPendencias: number
+  valorFinal: number
+  totalPendencias: number
+}
+
 export type { GeneratePrestacaoFormData, PrestacaoFilters } from '../schemas/prestacao.schema'
 export {
   generatePrestacaoFormSchema,

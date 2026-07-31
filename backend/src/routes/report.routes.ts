@@ -5,10 +5,10 @@ import {
   validateQuery,
 } from '../middleware/index.js'
 import {
-  reportDaysQuerySchema,
+  reportDailyBreakdownQuerySchema,
   reportNeighborhoodQuerySchema,
   reportSummaryQuerySchema,
-  type ReportDaysQuery,
+  type ReportDailyBreakdownQuery,
   type ReportNeighborhoodQuery,
   type ReportSummaryQuery,
 } from '../schemas/report.schema.js'
@@ -28,13 +28,13 @@ reportRoutes.get(
 )
 
 reportRoutes.get(
-  '/daily-trend',
-  validateQuery(reportDaysQuerySchema),
+  '/daily-breakdown',
+  validateQuery(reportDailyBreakdownQuerySchema),
   asyncHandler(async (req, res) => {
-    const trend = await reportService.getDailyTrend(
-      getValidatedQuery<ReportDaysQuery>(req),
+    const breakdown = await reportService.getPeriodDailyBreakdown(
+      getValidatedQuery<ReportDailyBreakdownQuery>(req),
     )
-    res.json(trend)
+    res.json(breakdown)
   }),
 )
 
@@ -51,10 +51,10 @@ reportRoutes.get(
 
 reportRoutes.get(
   '/prestacao-trend',
-  validateQuery(reportDaysQuerySchema),
+  validateQuery(reportSummaryQuerySchema),
   asyncHandler(async (req, res) => {
     const trend = await reportService.getPrestacaoTrend(
-      getValidatedQuery<ReportDaysQuery>(req),
+      getValidatedQuery<ReportSummaryQuery>(req).period,
     )
     res.json(trend)
   }),

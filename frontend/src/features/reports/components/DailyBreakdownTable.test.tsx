@@ -7,8 +7,8 @@ describe('DailyBreakdownTable', () => {
     render(
       <DailyBreakdownTable
         data={[
-          { date: '2026-07-31', entregas: 2, valor: 50 },
-          { date: '2026-07-30', entregas: 1, valor: 25 },
+          { date: '2026-07-31', entregas: 2, valor: 50, temPrestacao: true },
+          { date: '2026-07-30', entregas: 1, valor: 25, temPrestacao: true },
         ]}
       />,
     )

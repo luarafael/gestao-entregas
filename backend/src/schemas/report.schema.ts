@@ -19,3 +19,11 @@ export type ReportPeriod = z.infer<typeof reportPeriodSchema>
 export type ReportSummaryQuery = z.infer<typeof reportSummaryQuerySchema>
 export type ReportDaysQuery = z.infer<typeof reportDaysQuerySchema>
 export type ReportNeighborhoodQuery = z.infer<typeof reportNeighborhoodQuerySchema>
+
+export const reportDailyBreakdownQuerySchema = z.object({
+  period: reportPeriodSchema.default('week'),
+})
+
+export type ReportDailyBreakdownQuery = z.infer<
+  typeof reportDailyBreakdownQuerySchema
+>

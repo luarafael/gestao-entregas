@@ -56,14 +56,19 @@ describe('generateWhatsAppText', () => {
   it('should generate formatted WhatsApp text', () => {
     const text = generateWhatsAppText(prestacao, entregas, pendencias)
 
+    expect(text).toContain('📋')
     expect(text).toContain('Prestação de Contas')
-    expect(text).toContain('Quantidade de entregas: 2')
-    expect(text).toContain('Centro - João Silva')
-    expect(text).toContain('Jardins - Sem nome')
+    expect(text).toContain('📦')
+    expect(text).toContain('Centro')
+    expect(text).toContain('João Silva')
+    expect(text).toContain('Jardins')
+    expect(text).toContain('Sem nome')
+    expect(text).toContain('💰')
     expect(text).toContain('Pagamento pendente do dia 12/07')
-    expect(text).toContain('Referente ao dia: 12/07/2026')
-    expect(text).toContain('Valor Final:')
-    expect(text).toContain('Obrigado!')
+    expect(text).toContain('🕐')
+    expect(text).toContain('12/07/2026')
+    expect(text).toContain('Valor final')
+    expect(text).toContain('🙏')
   })
 
   it('should handle empty deliveries and pendencies', () => {

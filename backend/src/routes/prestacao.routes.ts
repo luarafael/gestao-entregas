@@ -9,8 +9,10 @@ import {
 import {
   generatePrestacaoSchema,
   listPrestacoesSchema,
+  previewPrestacaoQuerySchema,
   updatePrestacaoSchema,
   type ListPrestacoesInput,
+  type PreviewPrestacaoQuery,
 } from '../schemas/prestacao.schema.js'
 import { prestacaoService } from '../services/prestacao.service.js'
 
@@ -22,6 +24,18 @@ prestacaoRoutes.get(
   asyncHandler(async (req, res) => {
     const result = await prestacaoService.list(getValidatedQuery<ListPrestacoesInput>(req))
     res.json(result)
+  }),
+)
+
+prestacaoRoutes.get(
+  '/preview',
+  validateQuery(previewPrestacaoQuerySchema),
+  asyncHandler(async (req, res) => {
+    const query = getValidatedQuery<PreviewPrestacaoQuery>(req)
+    const preview = await prestacaoService.preview(
+      query.data ? { data: query.data } : undefined,
+    )
+    res.json(preview)
   }),
 )
 

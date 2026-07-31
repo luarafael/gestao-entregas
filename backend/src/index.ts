@@ -14,6 +14,15 @@ app.use(
 )
 app.use(express.json())
 
+app.use((_req, res, next) => {
+  const json = res.json.bind(res)
+  res.json = (body: unknown) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8')
+    return json(body)
+  }
+  next()
+})
+
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',

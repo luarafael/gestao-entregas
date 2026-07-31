@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js'
-import { toUtcDateOnlyFromLocal } from '../utils/date.utils.js'
+import { toUtcDateOnly } from '../utils/date.utils.js'
 
 export interface CreatePrestacaoData {
   data: Date
@@ -23,7 +23,7 @@ export class PrestacaoRepository {
     return prisma.prestacaoContas.create({
       data: {
         ...data,
-        data: toUtcDateOnlyFromLocal(data.data),
+        data: toUtcDateOnly(data.data),
       },
     })
   }
@@ -34,7 +34,7 @@ export class PrestacaoRepository {
 
   async findByDate(date: Date) {
     return prisma.prestacaoContas.findUnique({
-      where: { data: toUtcDateOnlyFromLocal(date) },
+      where: { data: toUtcDateOnly(date) },
     })
   }
 

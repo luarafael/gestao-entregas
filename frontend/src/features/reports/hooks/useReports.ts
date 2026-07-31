@@ -16,11 +16,13 @@ export function useReportSummary(period: ReportPeriod) {
   })
 }
 
-export function useDailyTrend(days = 7) {
+export function usePeriodDailyBreakdown(period: ReportPeriod) {
   return useQuery({
-    queryKey: ['reports', 'daily-trend', days],
+    queryKey: ['reports', 'daily-breakdown', period],
     queryFn: () =>
-      apiFetch<DailyTrendPoint[]>(`/api/reports/daily-trend?days=${days}`),
+      apiFetch<DailyTrendPoint[]>(
+        `/api/reports/daily-breakdown?period=${period}`,
+      ),
   })
 }
 
@@ -34,12 +36,12 @@ export function useNeighborhoodReport(period: ReportPeriod, limit = 5) {
   })
 }
 
-export function usePrestacaoTrend(days = 30) {
+export function usePrestacaoTrend(period: ReportPeriod) {
   return useQuery({
-    queryKey: ['reports', 'prestacao-trend', days],
+    queryKey: ['reports', 'prestacao-trend', period],
     queryFn: () =>
       apiFetch<PrestacaoTrendPoint[]>(
-        `/api/reports/prestacao-trend?days=${days}`,
+        `/api/reports/prestacao-trend?period=${period}`,
       ),
   })
 }

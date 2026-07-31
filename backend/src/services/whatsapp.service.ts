@@ -1,8 +1,8 @@
 import {
   formatCurrency,
-  formatDateBR,
   formatDateOnlyBR,
 } from '../utils/date.utils.js'
+import { WA } from '../utils/whatsappEmoji.js'
 
 interface PrestacaoSummary {
   data: Date
@@ -32,13 +32,13 @@ export function generateWhatsAppText(
   const lines: string[] = [
     '---',
     '',
-    'Prestação de Contas',
+    `${WA.report} *Prestação de Contas*`,
     '',
-    `Data: ${formatDateBR(prestacao.data)}`,
+    `${WA.clock} *Data:* ${formatDateOnlyBR(prestacao.data)}`,
     '',
-    `Quantidade de entregas: ${prestacao.totalEntregas}`,
+    `${WA.package} *Entregas:* ${prestacao.totalEntregas}`,
     '',
-    'Entregas realizadas:',
+    `${WA.truck} *Entregas realizadas:*`,
     '',
   ]
 
@@ -48,40 +48,40 @@ export function generateWhatsAppText(
     for (const entrega of entregas) {
       const cliente = entrega.nomeCliente ?? 'Sem nome'
       lines.push(
-        `• ${entrega.bairro} - ${cliente} - ${formatCurrency(Number(entrega.valorEntrega))}`,
+        `• ${WA.pin} ${entrega.bairro} - ${WA.user} ${cliente} - ${WA.money} ${formatCurrency(Number(entrega.valorEntrega))}`,
       )
     }
   }
 
-  lines.push('', 'Pendências', '')
+  lines.push('', `${WA.hourglass} *Pendências*`, '')
 
   if (pendencias.length === 0) {
     lines.push('• Nenhuma pendência')
   } else {
     for (const pendencia of pendencias) {
-      lines.push(`• ${pendencia.descricao}`)
+      lines.push(`• ${WA.memo} ${pendencia.descricao}`)
       lines.push(
-        `Referente ao dia: ${formatDateOnlyBR(pendencia.referenteAoDia)}`,
+        `  ${WA.clock} Referente ao dia: ${formatDateOnlyBR(pendencia.referenteAoDia)}`,
       )
-      lines.push(formatCurrency(Number(pendencia.valor)))
+      lines.push(`  ${WA.money} ${formatCurrency(Number(pendencia.valor))}`)
       lines.push('')
     }
   }
 
   lines.push(
-    `Total das entregas:`,
+    `${WA.bills} *Total das entregas:*`,
     '',
     formatCurrency(Number(prestacao.valorTotal)),
     '',
-    'Pendências:',
+    `${WA.warning} *Pendências:*`,
     '',
     formatCurrency(Number(prestacao.valorPendencias)),
     '',
-    'Valor Final:',
+    `${WA.check} *Valor final:*`,
     '',
     formatCurrency(Number(prestacao.valorFinal)),
     '',
-    'Obrigado!',
+    `${WA.thanks} Obrigado!`,
     '',
     '---',
   )

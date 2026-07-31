@@ -3,7 +3,8 @@ export { DailyTrendChart } from './components/DailyTrendChart'
 export { NeighborhoodChart } from './components/NeighborhoodChart'
 export { ReportSummaryCards } from './components/ReportSummaryCards'
 export {
-  useDailyTrend,
   useNeighborhoodReport,
+  usePeriodDailyBreakdown,
+  usePrestacaoTrend,
   useReportSummary,
 } from './hooks/useReports'

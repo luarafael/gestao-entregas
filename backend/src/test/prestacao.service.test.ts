@@ -100,7 +100,7 @@ describe('PrestacaoService', () => {
 
     const text = await service.getWhatsAppText('1')
 
-    expect(text).toContain('Valor Final:')
+    expect(text).toContain('Valor final')
   })
 
   it('lista prestações paginadas', async () => {
@@ -128,6 +128,54 @@ describe('PrestacaoService', () => {
     const result = await service.update('1', { observacoes: 'Nova' })
 
     expect(result.observacoes).toBe('Nova')
+  })
+
+  it('retorna prévia da prestação para a data informada', async () => {
+    entregaRepository.getStatsByDate.mockResolvedValue({
+      totalEntregas: 2,
+      valorTotal: 124.98,
+    })
+    pendenciaRepository.findPendingByDate.mockResolvedValue([
+      { valor: 25 },
+    ])
+
+    const preview = await service.preview({
+      data: new Date('2026-07-31T00:00:00.000Z'),
+    })
+
+    expect(preview.totalEntregas).toBe(2)
+    expect(preview.valorFinal).toBeCloseTo(149.98)
+    expect(preview.data).toBe('2026-07-31')
+  })
+
+  it('recalcula totais a partir das entregas e pendências do dia', async () => {
+    prestacaoRepository.findById.mockResolvedValue({
+      id: '1',
+      data: new Date('2026-08-01T00:00:00.000Z'),
+      observacoes: 'Antiga',
+    })
+    entregaRepository.getStatsByDate.mockResolvedValue({
+      totalEntregas: 2,
+      valorTotal: 185,
+    })
+    pendenciaRepository.findPendingByDate.mockResolvedValue([
+      { valor: 15 },
+    ])
+    prestacaoRepository.update.mockResolvedValue({
+      id: '1',
+      totalEntregas: 2,
+      valorTotal: 185,
+      valorPendencias: 15,
+      valorFinal: 200,
+    })
+
+    const result = await service.update('1', {
+      recalcular: true,
+      observacoes: 'Atualizada',
+    })
+
+    expect(entregaRepository.getStatsByDate).toHaveBeenCalled()
+    expect(result.valorFinal).toBe(200)
   })
 
   it('exclui prestação existente', async () => {

@@ -7,7 +7,11 @@ import type {
   ListPrestacoesInput,
   UpdatePrestacaoInput,
 } from '../schemas/prestacao.schema.js'
-import { toUtcDateOnly, toUtcDateOnlyFromLocal } from '../utils/date.utils.js'
+import {
+  formatDateOnlyISO,
+  toUtcDateOnly,
+  toUtcDateOnlyFromLocal,
+} from '../utils/date.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { generateWhatsAppText } from './whatsapp.service.js'
 
@@ -20,10 +24,17 @@ export class PrestacaoService {
     return toUtcDateOnly(input)
   }
 
+  /** Garante a mesma data gravada no banco (@db.Date), sem deslocamento de fuso */
+  private resolveStoredDate(date: Date) {
+    return toUtcDateOnly(formatDateOnlyISO(date))
+  }
+
   private async calculateTotals(date: Date) {
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
+
     const [entregaStats, pendencias] = await Promise.all([
-      entregaRepository.getStatsByDate(date),
-      pendenciaRepository.findPendingByDate(date),
+      entregaRepository.getStatsByDate(day),
+      pendenciaRepository.findPendingByDate(day),
     ])
 
     const valorPendencias = pendencias.reduce(
@@ -69,6 +80,20 @@ export class PrestacaoService {
     return { prestacao, entregas, pendencias: totals.pendencias, whatsappText }
   }
 
+  async preview(input?: GeneratePrestacaoInput) {
+    const date = this.normalizeDate(input?.data)
+    const totals = await this.calculateTotals(date)
+
+    return {
+      data: formatDateOnlyISO(date),
+      totalEntregas: totals.totalEntregas,
+      valorTotal: totals.valorTotal,
+      valorPendencias: totals.valorPendencias,
+      valorFinal: totals.valorFinal,
+      totalPendencias: totals.pendencias.length,
+    }
+  }
+
   async findById(id: string) {
     const prestacao = await prestacaoRepository.findById(id)
     if (!prestacao) {
@@ -81,7 +106,7 @@ export class PrestacaoService {
     const prestacao = await this.findById(id)
 
     if (input.recalcular) {
-      const totals = await this.calculateTotals(prestacao.data)
+      const totals = await this.calculateTotals(this.resolveStoredDate(prestacao.data))
 
       return prestacaoRepository.update(id, {
         totalEntregas: totals.totalEntregas,
@@ -109,9 +134,11 @@ export class PrestacaoService {
   async getWhatsAppText(id: string) {
     const prestacao = await this.findById(id)
 
+    const date = this.resolveStoredDate(prestacao.data)
+
     const [entregas, pendencias] = await Promise.all([
-      entregaRepository.findByDate(prestacao.data),
-      pendenciaRepository.findPendingByDate(prestacao.data),
+      entregaRepository.findByDate(date),
+      pendenciaRepository.findPendingByDate(date),
     ])
 
     return generateWhatsAppText(prestacao, entregas, pendencias)

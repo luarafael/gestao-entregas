@@ -1,6 +1,6 @@
 import { reportRepository } from '../repositories/report.repository.js'
 import type {
-  ReportDaysQuery,
+  ReportDailyBreakdownQuery,
   ReportNeighborhoodQuery,
   ReportPeriod,
   ReportSummaryQuery,
@@ -11,16 +11,16 @@ export class ReportService {
     return reportRepository.getPeriodSummary(query.period)
   }
 
-  getDailyTrend(query: ReportDaysQuery) {
-    return reportRepository.getDailyTrend(query.days)
+  getPeriodDailyBreakdown(query: ReportDailyBreakdownQuery) {
+    return reportRepository.getPeriodDailyBreakdown(query.period)
   }
 
   getByNeighborhood(query: ReportNeighborhoodQuery) {
     return reportRepository.getByNeighborhood(query.period, query.limit)
   }
 
-  getPrestacaoTrend(query: ReportDaysQuery) {
-    return reportRepository.getPrestacaoTrend(query.days)
+  getPrestacaoTrend(period: ReportPeriod) {
+    return reportRepository.getPrestacaoTrend(period)
   }
 
   getDashboardIndicators(period: ReportPeriod = 'week') {

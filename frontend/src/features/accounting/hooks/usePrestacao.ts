@@ -14,6 +14,14 @@ export function usePrestacaoHistory(filters: PrestacaoFilters) {
   })
 }
 
+export function usePrestacaoPreview(date?: string) {
+  return useQuery({
+    queryKey: [PRESTACAO_QUERY_KEY, 'preview', date],
+    queryFn: () => prestacaoService.preview(date),
+    enabled: Boolean(date?.match(/^\d{4}-\d{2}-\d{2}$/)),
+  })
+}
+
 export function useGeneratePrestacao() {
   const queryClient = useQueryClient()
 

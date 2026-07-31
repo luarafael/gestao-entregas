@@ -56,6 +56,9 @@ export interface DailyTrendPoint {
   date: string
   entregas: number
   valor: number
+  valorEntregas?: number
+  valorPendencias?: number
+  temPrestacao?: boolean
 }
 
 export interface NeighborhoodReportPoint {

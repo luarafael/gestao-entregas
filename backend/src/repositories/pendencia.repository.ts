@@ -1,6 +1,6 @@
 import type { Prisma, StatusPendencia } from '../../generated/prisma/client.js'
 import { prisma } from '../lib/prisma.js'
-import { toUtcDateOnlyFromLocal } from '../utils/date.utils.js'
+import { formatDateOnlyISO, toUtcDateOnly } from '../utils/date.utils.js'
 import type {
   CreatePendenciaInput,
   UpdatePendenciaInput,
@@ -18,7 +18,7 @@ export class PendenciaRepository {
     return prisma.pendencia.create({
       data: {
         ...data,
-        referenteAoDia: toUtcDateOnlyFromLocal(data.referenteAoDia),
+        referenteAoDia: toUtcDateOnly(data.referenteAoDia),
       },
     })
   }
@@ -54,7 +54,7 @@ export class PendenciaRepository {
   }
 
   async findPendingByDate(date: Date) {
-    const day = toUtcDateOnlyFromLocal(date)
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
 
     return prisma.pendencia.findMany({
       where: {
@@ -84,7 +84,7 @@ export class PendenciaRepository {
       data: {
         ...data,
         ...(data.referenteAoDia
-          ? { referenteAoDia: toUtcDateOnlyFromLocal(data.referenteAoDia) }
+          ? { referenteAoDia: toUtcDateOnly(data.referenteAoDia) }
           : {}),
       },
     })

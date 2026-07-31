@@ -17,9 +17,14 @@ import { ChartSkeleton } from './ChartSkeleton'
 interface DailyTrendChartProps {
   data?: DailyTrendPoint[]
   isLoading?: boolean
+  periodLabel?: string
 }
 
-export function DailyTrendChart({ data = [], isLoading }: DailyTrendChartProps) {
+export function DailyTrendChart({
+  data = [],
+  isLoading,
+  periodLabel,
+}: DailyTrendChartProps) {
   const theme = useChartTheme()
 
   const chartData = data.map((point) => ({
@@ -30,8 +35,12 @@ export function DailyTrendChart({ data = [], isLoading }: DailyTrendChartProps) 
   if (isLoading) {
     return (
       <ChartCard
-        title="Entregas por dia"
-        description="Volume e valores dos últimos dias"
+        title="Prestações por dia"
+        description={
+          periodLabel
+            ? `Valores fechados em ${periodLabel.toLowerCase()}`
+            : 'Valores fechados por prestação'
+        }
       >
         <ChartSkeleton />
       </ChartCard>
@@ -40,8 +49,12 @@ export function DailyTrendChart({ data = [], isLoading }: DailyTrendChartProps) 
 
   return (
     <ChartCard
-      title="Entregas por dia"
-      description="Volume e valores dos últimos dias"
+      title="Prestações por dia"
+      description={
+        periodLabel
+          ? `Valores fechados em ${periodLabel.toLowerCase()}`
+          : 'Valores fechados por prestação'
+      }
     >
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -77,7 +90,7 @@ export function DailyTrendChart({ data = [], isLoading }: DailyTrendChartProps) 
               labelStyle={{ color: theme.text }}
               formatter={(value, name) => {
                 if (name === 'valor') {
-                  return [formatCurrency(Number(value)), 'Valor']
+                  return [formatCurrency(Number(value)), 'Valor final']
                 }
 
                 return [value, 'Entregas']

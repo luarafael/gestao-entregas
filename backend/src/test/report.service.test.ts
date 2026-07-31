@@ -3,7 +3,7 @@ import { ReportService } from '../services/report.service.js'
 
 const reportRepository = vi.hoisted(() => ({
   getPeriodSummary: vi.fn(),
-  getDailyTrend: vi.fn(),
+  getPeriodDailyBreakdown: vi.fn(),
   getByNeighborhood: vi.fn(),
   getPrestacaoTrend: vi.fn(),
 }))
@@ -27,10 +27,12 @@ describe('ReportService', () => {
     expect(result.totalEntregas).toBe(5)
   })
 
-  it('delega tendência diária', async () => {
-    reportRepository.getDailyTrend.mockResolvedValue([{ date: '2026-07-31' }])
+  it('delega detalhamento diário do período', async () => {
+    reportRepository.getPeriodDailyBreakdown.mockResolvedValue([
+      { date: '2026-07-31', temPrestacao: true },
+    ])
 
-    const result = await service.getDailyTrend({ days: 7 })
+    const result = await service.getPeriodDailyBreakdown({ period: 'week' })
 
     expect(result).toHaveLength(1)
   })
@@ -49,7 +51,7 @@ describe('ReportService', () => {
   it('delega tendência de prestações', async () => {
     reportRepository.getPrestacaoTrend.mockResolvedValue([{ valorFinal: 80 }])
 
-    const result = await service.getPrestacaoTrend({ days: 30 })
+    const result = await service.getPrestacaoTrend('month')
 
     expect(result[0]?.valorFinal).toBe(80)
   })

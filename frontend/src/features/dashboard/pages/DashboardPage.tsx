@@ -19,8 +19,8 @@ import {
 import {
   DailyTrendChart,
   NeighborhoodChart,
-  useDailyTrend,
   useNeighborhoodReport,
+  usePeriodDailyBreakdown,
   useReportSummary,
 } from '@/features/reports'
 import { getPeriodLabel } from '@/features/reports/utils/chart.utils'
@@ -87,7 +87,7 @@ export function DashboardPage() {
   const statsQuery = useDashboardStats()
   const deliveriesQuery = useTodayDeliveries()
   const weekSummaryQuery = useReportSummary('week')
-  const dailyTrendQuery = useDailyTrend(7)
+  const dailyBreakdownQuery = usePeriodDailyBreakdown('week')
   const neighborhoodQuery = useNeighborhoodReport('week', 5)
 
   const stats = statsQuery.data
@@ -200,8 +200,9 @@ export function DashboardPage() {
 
       <section className="grid gap-4 xl:grid-cols-2">
         <DailyTrendChart
-          data={dailyTrendQuery.data}
-          isLoading={dailyTrendQuery.isLoading}
+          data={dailyBreakdownQuery.data}
+          isLoading={dailyBreakdownQuery.isLoading}
+          periodLabel={getPeriodLabel('week')}
         />
         <NeighborhoodChart
           data={neighborhoodQuery.data}

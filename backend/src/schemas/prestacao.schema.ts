@@ -25,6 +25,15 @@ export const listPrestacoesSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
 })
 
+export const previewPrestacaoQuerySchema = z.object({
+  data: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida')
+    .optional()
+    .transform((value) => (value ? toUtcDateOnly(value) : undefined)),
+})
+
 export type GeneratePrestacaoInput = z.infer<typeof generatePrestacaoSchema>
 export type UpdatePrestacaoInput = z.infer<typeof updatePrestacaoSchema>
 export type ListPrestacoesInput = z.infer<typeof listPrestacoesSchema>
+export type PreviewPrestacaoQuery = z.infer<typeof previewPrestacaoQuerySchema>

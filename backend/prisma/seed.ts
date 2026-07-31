@@ -1,12 +1,11 @@
 import 'dotenv/config'
 import { prisma } from '../src/lib/prisma.js'
+import { toUtcDateOnlyFromLocal } from '../src/utils/date.utils.js'
 
 async function main() {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
+  const today = toUtcDateOnlyFromLocal(new Date())
   const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
 
   await prisma.entrega.createMany({
     data: [

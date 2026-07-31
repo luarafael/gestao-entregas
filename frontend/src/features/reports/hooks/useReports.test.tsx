@@ -3,8 +3,8 @@ import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import {
-  useDailyTrend,
   useNeighborhoodReport,
+  usePeriodDailyBreakdown,
   usePrestacaoTrend,
   useReportSummary,
 } from './useReports'
@@ -40,10 +40,10 @@ describe('useReports', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
   })
 
-  it('busca tendência diária', async () => {
+  it('busca detalhamento diário do período', async () => {
     vi.mocked(apiFetch).mockResolvedValue([])
 
-    const { result } = renderHook(() => useDailyTrend(7), {
+    const { result } = renderHook(() => usePeriodDailyBreakdown('week'), {
       wrapper: createWrapper(),
     })
 
@@ -63,7 +63,7 @@ describe('useReports', () => {
   it('busca tendência de prestações', async () => {
     vi.mocked(apiFetch).mockResolvedValue([])
 
-    const { result } = renderHook(() => usePrestacaoTrend(30), {
+    const { result } = renderHook(() => usePrestacaoTrend('month'), {
       wrapper: createWrapper(),
     })
 

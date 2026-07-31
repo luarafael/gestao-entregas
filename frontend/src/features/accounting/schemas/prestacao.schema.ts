@@ -20,6 +20,8 @@ function getTodayInputDate() {
   return `${year}-${month}-${day}`
 }
 
+export { getTodayInputDate }
+
 export const defaultGenerateFormValues: GeneratePrestacaoFormData = {
   data: getTodayInputDate(),
   observacoes: '',

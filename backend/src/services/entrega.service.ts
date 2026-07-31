@@ -7,7 +7,7 @@ import type {
 } from '../schemas/entrega.schema.js'
 import { pendenciaRepository } from '../repositories/pendencia.repository.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
-import { startOfDay } from '../utils/date.utils.js'
+import { toUtcDateOnlyFromLocal } from '../utils/date.utils.js'
 
 export class EntregaService {
   async create(input: CreateEntregaInput) {
@@ -38,8 +38,10 @@ export class EntregaService {
   }
 
   async getDashboardStats(date = new Date()) {
+    const day = toUtcDateOnlyFromLocal(date)
+
     const [entregaStats, pendenciaStats] = await Promise.all([
-      entregaRepository.getStatsByDate(date),
+      entregaRepository.getStatsByDate(day),
       pendenciaRepository.getPendingTotal(),
     ])
 
@@ -52,7 +54,7 @@ export class EntregaService {
   }
 
   async getTodayDeliveries(date = new Date()) {
-    return entregaRepository.findByDate(startOfDay(date))
+    return entregaRepository.findByDate(toUtcDateOnlyFromLocal(date))
   }
 }
 

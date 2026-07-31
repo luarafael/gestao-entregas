@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  reportDailyBreakdownQuerySchema,
   reportDaysQuerySchema,
   reportNeighborhoodQuerySchema,
   reportSummaryQuerySchema,
@@ -8,6 +9,12 @@ import {
 describe('report schemas', () => {
   it('should parse summary query with default period', () => {
     const parsed = reportSummaryQuerySchema.parse({})
+
+    expect(parsed.period).toBe('week')
+  })
+
+  it('should parse daily breakdown query with default period', () => {
+    const parsed = reportDailyBreakdownQuerySchema.parse({})
 
     expect(parsed.period).toBe('week')
   })

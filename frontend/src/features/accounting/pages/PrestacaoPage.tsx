@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Button,
@@ -15,12 +15,12 @@ import {
 } from '@/shared/components/ui'
 import { IconReceipt, IconTrending } from '@/shared/components/icons'
 import { formatCurrency } from '@/shared/utils/cn'
-import { useDashboardStats } from '@/features/dashboard/hooks/useDashboard'
 import {
   useCopyWhatsAppText,
   useDeletePrestacao,
   useGeneratePrestacao,
   usePrestacaoHistory,
+  usePrestacaoPreview,
   useUpdatePrestacao,
 } from '../hooks/usePrestacao'
 import { prestacaoService } from '../services/prestacao.service'
@@ -29,9 +29,13 @@ import { WhatsAppPreview } from '../components/WhatsAppPreview'
 import { PrestacaoHistory } from '../components/PrestacaoHistory'
 import { PrestacaoEditModal } from '../components/PrestacaoEditModal'
 import {
-  defaultGenerateFormValues,
+  WhatsAppSendModal,
+  type WhatsAppSendPayload,
+} from '../components/WhatsAppSendModal'
+import {
   formatPrestacaoDate,
   generatePrestacaoFormSchema,
+  getTodayInputDate,
   type GeneratePrestacaoFormData,
 } from '../schemas/prestacao.schema'
 import type { GeneratePrestacaoResponse, PrestacaoContas } from '../types'
@@ -42,6 +46,9 @@ export function PrestacaoPage() {
     useState<GeneratePrestacaoResponse | null>(null)
   const [historyPage, setHistoryPage] = useState(1)
   const [copyingId, setCopyingId] = useState<string | null>(null)
+  const [sendingId, setSendingId] = useState<string | null>(null)
+  const [sendModalOpen, setSendModalOpen] = useState(false)
+  const [sendPayload, setSendPayload] = useState<WhatsAppSendPayload | null>(null)
   const [editingPrestacao, setEditingPrestacao] = useState<PrestacaoContas | null>(
     null,
   )
@@ -50,7 +57,6 @@ export function PrestacaoPage() {
   const [deletingPrestacao, setDeletingPrestacao] =
     useState<PrestacaoContas | null>(null)
 
-  const statsQuery = useDashboardStats()
   const historyQuery = usePrestacaoHistory({ page: historyPage, limit: 10 })
   const generateMutation = useGeneratePrestacao()
   const copyMutation = useCopyWhatsAppText()
@@ -60,15 +66,31 @@ export function PrestacaoPage() {
   const {
     register,
     handleSubmit,
+    control,
+    reset,
     formState: { errors },
   } = useForm<GeneratePrestacaoFormData>({
     resolver: zodResolver(generatePrestacaoFormSchema),
-    defaultValues: defaultGenerateFormValues,
+    defaultValues: {
+      data: getTodayInputDate(),
+      observacoes: '',
+    },
   })
 
-  const stats = statsQuery.data
+  const selectedDate = useWatch({ control, name: 'data' }) || getTodayInputDate()
+  const previewQuery = usePrestacaoPreview(selectedDate)
+  const preview = previewQuery.data
+
+  useEffect(() => {
+    reset({
+      data: getTodayInputDate(),
+      observacoes: '',
+    })
+  }, [reset])
+
   const historyItems = historyQuery.data?.data ?? []
   const historyMeta = historyQuery.data?.meta
+  const hasNoDeliveries = preview && preview.totalEntregas === 0
 
   const handleGenerate = handleSubmit(async (data) => {
     const result = await generateMutation.mutateAsync(data)
@@ -78,6 +100,53 @@ export function PrestacaoPage() {
   const handleCopyCurrent = () => {
     if (!generatedResult?.whatsappText) return
     copyMutation.mutate(generatedResult.whatsappText)
+  }
+
+  const buildDailyReportFromPreview = () => {
+    if (!preview) return undefined
+
+    return {
+      date: preview.data,
+      totalEntregas: preview.totalEntregas,
+      valorTotal: preview.valorTotal,
+      valorPendencias: preview.valorPendencias,
+      valorFinal: preview.valorFinal,
+      totalPendencias: preview.totalPendencias,
+    }
+  }
+
+  const buildDailyReportFromPrestacao = (item: PrestacaoContas) => ({
+    date: item.data.slice(0, 10),
+    totalEntregas: item.totalEntregas,
+    valorTotal: Number(item.valorTotal),
+    valorPendencias: Number(item.valorPendencias),
+    valorFinal: Number(item.valorFinal),
+  })
+
+  const handleSendCurrent = () => {
+    if (!generatedResult?.whatsappText) return
+
+    setSendPayload({
+      baseText: generatedResult.whatsappText,
+      dailyReport: buildDailyReportFromPreview(),
+    })
+    setSendModalOpen(true)
+  }
+
+  const handleSendFromHistory = async (item: PrestacaoContas) => {
+    try {
+      setSendingId(item.id)
+      const { text } = await prestacaoService.getWhatsAppText(item.id)
+      setSendPayload({
+        baseText: text,
+        dailyReport: buildDailyReportFromPrestacao(item),
+      })
+      setSendModalOpen(true)
+    } catch {
+      toast('Erro ao buscar texto da prestação', 'error')
+    } finally {
+      setSendingId(null)
+    }
   }
 
   const handleCopyFromHistory = async (id: string) => {
@@ -115,7 +184,17 @@ export function PrestacaoPage() {
   const handleConfirmDelete = async () => {
     if (!deletingPrestacao) return
 
+    const deletedDate = deletingPrestacao.data.slice(0, 10)
+
     await deleteMutation.mutateAsync(deletingPrestacao.id)
+
+    if (
+      generatedResult?.prestacao.id === deletingPrestacao.id ||
+      generatedResult?.prestacao.data.slice(0, 10) === deletedDate
+    ) {
+      setGeneratedResult(null)
+    }
+
     setDeletingPrestacao(null)
   }
 
@@ -130,41 +209,6 @@ export function PrestacaoPage() {
         </p>
       </div>
 
-      {statsQuery.isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <StatCardSkeleton key={index} />
-          ))}
-        </div>
-      ) : statsQuery.isError ? (
-        <EmptyState
-          icon={<IconTrending className="size-6" />}
-          title="Não foi possível carregar o resumo do dia"
-          description="Verifique se a API está rodando para visualizar os totais."
-        />
-      ) : (
-        <Card glass>
-          <CardHeader>
-            <CardTitle>Prévia do dia</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <PreviewItem label="Entregas hoje" value={String(stats?.entregasHoje ?? 0)} />
-              <PreviewItem
-                label="Valor das entregas"
-                value={formatCurrency(stats?.valorRecebidoHoje ?? 0)}
-              />
-              <PreviewItem label="Pendências" value={String(stats?.totalPendencias ?? 0)} />
-              <PreviewItem
-                label="Valor total estimado"
-                value={formatCurrency(stats?.valorTotalDia ?? 0)}
-                highlight
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card glass>
         <CardHeader>
           <CardTitle>Gerar prestação do dia</CardTitle>
@@ -177,6 +221,53 @@ export function PrestacaoPage() {
               error={errors.data?.message}
               {...register('data')}
             />
+
+            {previewQuery.isLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <StatCardSkeleton key={index} />
+                ))}
+              </div>
+            ) : previewQuery.isError ? (
+              <EmptyState
+                icon={<IconTrending className="size-6" />}
+                title="Não foi possível carregar a prévia"
+                description="Verifique se a API está rodando para visualizar os totais."
+              />
+            ) : (
+              <div className="space-y-3 rounded-xl border border-border/60 bg-surface/20 p-4">
+                <p className="text-sm font-medium">
+                  Prévia de {formatPrestacaoDate(selectedDate)}
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <PreviewItem
+                    label="Entregas"
+                    value={String(preview?.totalEntregas ?? 0)}
+                  />
+                  <PreviewItem
+                    label="Valor das entregas"
+                    value={formatCurrency(preview?.valorTotal ?? 0)}
+                  />
+                  <PreviewItem
+                    label="Pendências do dia"
+                    value={String(preview?.totalPendencias ?? 0)}
+                  />
+                  <PreviewItem
+                    label="Valor final estimado"
+                    value={formatCurrency(preview?.valorFinal ?? 0)}
+                    highlight
+                  />
+                </div>
+                {hasNoDeliveries ? (
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    Nenhuma entrega registrada para{' '}
+                    {formatPrestacaoDate(selectedDate)}. Verifique se a data
+                    corresponde ao dia em que as entregas foram cadastradas.
+                  </p>
+                ) : null}
+              </div>
+            )}
+
             <Textarea
               label="Observações (opcional)"
               placeholder="Informações adicionais para o relatório..."
@@ -202,6 +293,7 @@ export function PrestacaoPage() {
           <WhatsAppPreview
             text={generatedResult.whatsappText}
             onCopy={handleCopyCurrent}
+            onSend={handleSendCurrent}
             isCopying={copyMutation.isPending}
           />
         </div>
@@ -229,9 +321,11 @@ export function PrestacaoPage() {
             totalPages={historyMeta?.totalPages ?? 1}
             onPageChange={setHistoryPage}
             onCopy={handleCopyFromHistory}
+            onSend={handleSendFromHistory}
             onEdit={handleOpenEdit}
             onDelete={setDeletingPrestacao}
             copyingId={copyingId}
+            sendingId={sendingId}
             deletingId={deleteMutation.isPending ? deletingPrestacao?.id : null}
           />
         )}
@@ -247,6 +341,12 @@ export function PrestacaoPage() {
         onRecalcularChange={setEditRecalcular}
         onClose={() => setEditingPrestacao(null)}
         onSave={handleSaveEdit}
+      />
+
+      <WhatsAppSendModal
+        open={sendModalOpen}
+        onClose={() => setSendModalOpen(false)}
+        payload={sendPayload}
       />
 
       <Modal

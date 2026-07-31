@@ -16,9 +16,11 @@ interface PrestacaoHistoryProps {
   totalPages: number
   onPageChange: (page: number) => void
   onCopy: (id: string) => void
+  onSend: (item: PrestacaoContas) => void
   onEdit: (item: PrestacaoContas) => void
   onDelete: (item: PrestacaoContas) => void
   copyingId?: string | null
+  sendingId?: string | null
   deletingId?: string | null
 }
 
@@ -29,9 +31,11 @@ export function PrestacaoHistory({
   totalPages,
   onPageChange,
   onCopy,
+  onSend,
   onEdit,
   onDelete,
   copyingId,
+  sendingId,
   deletingId,
 }: PrestacaoHistoryProps) {
   if (isLoading) {
@@ -51,7 +55,7 @@ export function PrestacaoHistory({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] text-left text-sm">
+        <table className="w-full min-w-[980px] text-left text-sm">
           <thead>
             <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-3 py-3 font-medium">Data</th>
@@ -97,6 +101,14 @@ export function PrestacaoHistory({
                       isLoading={copyingId === item.id}
                     >
                       Copiar
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => onSend(item)}
+                      isLoading={sendingId === item.id}
+                    >
+                      WhatsApp
                     </Button>
                     <Button
                       variant="danger"

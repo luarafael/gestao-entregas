@@ -1,7 +1,7 @@
 import type { Prisma, StatusEntrega } from '../../generated/prisma/client.js'
 import { prisma } from '../lib/prisma.js'
 import type { DateFilter } from '../utils/date.utils.js'
-import { getUtcDateOnlyRange, toUtcDateOnlyFromLocal } from '../utils/date.utils.js'
+import { getUtcDateOnlyRange, toUtcDateOnly, toUtcDateOnlyFromLocal, formatDateOnlyISO } from '../utils/date.utils.js'
 import type { CreateEntregaInput, UpdateEntregaInput } from '../schemas/entrega.schema.js'
 
 export interface ListEntregasFilters {
@@ -61,7 +61,7 @@ export class EntregaRepository {
   }
 
   async findByDate(date: Date) {
-    const day = toUtcDateOnlyFromLocal(date)
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
 
     return prisma.entrega.findMany({
       where: {
@@ -81,7 +81,7 @@ export class EntregaRepository {
   }
 
   async getStatsByDate(date: Date) {
-    const day = toUtcDateOnlyFromLocal(date)
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
 
     const result = await prisma.entrega.aggregate({
       where: {

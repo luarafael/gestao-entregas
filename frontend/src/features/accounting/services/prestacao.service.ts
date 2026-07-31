@@ -4,6 +4,7 @@ import type {
   GeneratePrestacaoResponse,
   PrestacaoContas,
   PrestacaoFilters,
+  PrestacaoPreview,
 } from '../types'
 import type { GeneratePrestacaoFormData } from '../schemas/prestacao.schema'
 import { toGeneratePayload } from '../schemas/prestacao.schema'
@@ -25,6 +26,11 @@ export const prestacaoService = {
       method: 'POST',
       body: JSON.stringify(toGeneratePayload(data)),
     })
+  },
+
+  preview(date?: string) {
+    const params = date ? `?data=${encodeURIComponent(date)}` : ''
+    return apiFetch<PrestacaoPreview>(`/api/prestacoes/preview${params}`)
   },
 
   getWhatsAppText(id: string) {
