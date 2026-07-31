@@ -164,6 +164,18 @@ Acesse `http://SEU_IP` — nginx serve o frontend e faz proxy de `/api` para o b
 
 Veja passo a passo em [DEPLOY.md](./DEPLOY.md#opção-b--vercel--railway--neon).
 
+### Produção (ativo)
+
+| Ambiente | URL |
+|----------|-----|
+| Frontend | https://gestao-entregas-frontend.vercel.app |
+| API | https://backend-production-795e.up.railway.app |
+| Banco | Neon PostgreSQL (sa-east-1) |
+
+Health check: `GET /api/health` na URL da API.
+
+Para voltar a este ponto no git: `git checkout pre-etapa-9`
+
 ## API Endpoints
 
 ### Entregas
@@ -206,6 +218,7 @@ Veja passo a passo em [DEPLOY.md](./DEPLOY.md#opção-b--vercel--railway--neon).
 - [x] **Etapa 6** — Prestação de Contas e WhatsApp
 - [x] **Etapa 7** — Gráficos e relatórios
 - [x] **Etapa 8** — Testes automatizados (90% cobertura)
+- [x] **Deploy produção** — Vercel + Railway + Neon
 - [ ] **Etapa 9** — Refatoração, performance e clean code
 
 ## Licença
