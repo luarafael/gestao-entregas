@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Modal, Pagination } from '@/shared/components/ui'
+import { Modal, Pagination, EmptyState } from '@/shared/components/ui'
+import { IconClock } from '@/shared/components/icons'
 import { useDebounce } from '@/shared/hooks'
 import {
   useCreatePending,
@@ -31,7 +32,7 @@ export function PendingPage() {
     search: debouncedSearch,
   }
 
-  const { data, isLoading, isFetching } = usePendingList(queryFilters)
+  const { data, isLoading, isFetching, isError } = usePendingList(queryFilters)
   const createMutation = useCreatePending()
   const updateMutation = useUpdatePending()
   const deleteMutation = useDeletePending()
@@ -93,12 +94,20 @@ export function PendingPage() {
             onStatusChange={(status) => updateFilters({ status, page: 1 })}
           />
 
-          <PendingTable
-            items={items}
-            isLoading={isLoading || isFetching}
-            onEdit={setEditingPending}
-            onDelete={setDeletingPending}
-          />
+          {isError ? (
+            <EmptyState
+              icon={<IconClock className="size-6" />}
+              title="Erro ao carregar pendências"
+              description="Não foi possível buscar a listagem. Verifique se a API está rodando."
+            />
+          ) : (
+            <PendingTable
+              items={items}
+              isLoading={isLoading || isFetching}
+              onEdit={setEditingPending}
+              onDelete={setDeletingPending}
+            />
+          )}
 
           {meta ? (
             <Pagination

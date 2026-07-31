@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   asyncHandler,
   getRouteParam,
+  getValidatedQuery,
   validateBody,
   validateQuery,
 } from '../middleware/index.js'
@@ -19,7 +20,7 @@ pendenciaRoutes.get(
   '/',
   validateQuery(listPendenciasSchema),
   asyncHandler(async (req, res) => {
-    const result = await pendenciaService.list(req.query as unknown as ListPendenciasInput)
+    const result = await pendenciaService.list(getValidatedQuery<ListPendenciasInput>(req))
     res.json(result)
   }),
 )

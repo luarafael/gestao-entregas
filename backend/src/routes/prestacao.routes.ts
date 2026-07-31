@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   asyncHandler,
   getRouteParam,
+  getValidatedQuery,
   validateBody,
   validateQuery,
 } from '../middleware/index.js'
@@ -18,7 +19,7 @@ prestacaoRoutes.get(
   '/',
   validateQuery(listPrestacoesSchema),
   asyncHandler(async (req, res) => {
-    const result = await prestacaoService.list(req.query as unknown as ListPrestacoesInput)
+    const result = await prestacaoService.list(getValidatedQuery<ListPrestacoesInput>(req))
     res.json(result)
   }),
 )

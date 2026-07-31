@@ -24,13 +24,20 @@ export function validateBody<T>(schema: ZodType<T>) {
 export function validateQuery<T extends Record<string, unknown>>(schema: ZodType<T>) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
-      const parsed = schema.parse(req.query)
-      Object.assign(req.query, parsed)
+      req.validatedQuery = schema.parse(req.query)
       next()
     } catch (error) {
       next(error)
     }
   }
+}
+
+export function getValidatedQuery<T>(req: Request): T {
+  if (req.validatedQuery === undefined) {
+    throw new AppError(500, 'Parâmetros de consulta não validados')
+  }
+
+  return req.validatedQuery as T
 }
 
 export function errorHandler(

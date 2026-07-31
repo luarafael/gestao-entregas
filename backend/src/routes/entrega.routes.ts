@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   asyncHandler,
   getRouteParam,
+  getValidatedQuery,
   validateBody,
   validateQuery,
 } from '../middleware/index.js'
@@ -27,7 +28,7 @@ entregaRoutes.get(
   '/',
   validateQuery(listEntregasSchema),
   asyncHandler(async (req, res) => {
-    const result = await entregaService.list(req.query as unknown as ListEntregasInput)
+    const result = await entregaService.list(getValidatedQuery<ListEntregasInput>(req))
     res.json(result)
   }),
 )

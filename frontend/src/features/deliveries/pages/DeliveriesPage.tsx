@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Modal, Pagination } from '@/shared/components/ui'
+import { Modal, Pagination, EmptyState } from '@/shared/components/ui'
+import { IconPackage } from '@/shared/components/icons'
 import { useDebounce } from '@/shared/hooks'
 import {
   useCreateDelivery,
@@ -34,7 +35,7 @@ export function DeliveriesPage() {
     search: debouncedSearch,
   }
 
-  const { data, isLoading, isFetching } = useDeliveries(queryFilters)
+  const { data, isLoading, isFetching, isError } = useDeliveries(queryFilters)
   const createMutation = useCreateDelivery()
   const updateMutation = useUpdateDelivery()
   const deleteMutation = useDeleteDelivery()
@@ -94,12 +95,20 @@ export function DeliveriesPage() {
             onSortOrderChange={(sortOrder) => updateFilters({ sortOrder, page: 1 })}
           />
 
-          <DeliveryTable
-            deliveries={deliveries}
-            isLoading={isLoading || isFetching}
-            onEdit={setEditingDelivery}
-            onDelete={setDeletingDelivery}
-          />
+          {isError ? (
+            <EmptyState
+              icon={<IconPackage className="size-6" />}
+              title="Erro ao carregar entregas"
+              description="Não foi possível buscar a listagem. Verifique se a API está rodando."
+            />
+          ) : (
+            <DeliveryTable
+              deliveries={deliveries}
+              isLoading={isLoading || isFetching}
+              onEdit={setEditingDelivery}
+              onDelete={setDeletingDelivery}
+            />
+          )}
 
           {meta ? (
             <Pagination
