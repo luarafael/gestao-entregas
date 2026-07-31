@@ -205,7 +205,7 @@ npm run db:studio
 - [x] **Etapa 4** — CRUD de Entregas
 - [x] **Etapa 5** — CRUD de Pendências
 - [x] **Etapa 6** — Prestação de Contas e WhatsApp
-- [ ] **Etapa 7** — Gráficos e relatórios
+- [x] **Etapa 7** — Gráficos e relatórios
 - [ ] **Etapa 8** — Testes automatizados (90% cobertura)
 - [ ] **Etapa 9** — Refatoração, performance e clean code
 

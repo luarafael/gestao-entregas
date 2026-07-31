@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   formatCurrency,
   formatDateBR,
+  formatDateOnlyBR,
   getDateRange,
   startOfDay,
 } from '../utils/date.utils.js'
@@ -41,5 +42,10 @@ describe('date.utils', () => {
     const formatted = formatCurrency(1234.56)
     expect(formatted).toContain('1.234,56')
     expect(formatted).toContain('R$')
+  })
+
+  it('should format date-only values without timezone shift', () => {
+    expect(formatDateOnlyBR('2026-07-12')).toBe('12/07/2026')
+    expect(formatDateOnlyBR(new Date('2026-07-12'))).toBe('12/07/2026')
   })
 })

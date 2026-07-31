@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   IconAlert,
   IconPackage,
@@ -15,6 +16,14 @@ import {
   useDashboardStats,
   useTodayDeliveries,
 } from '@/features/dashboard/hooks/useDashboard'
+import {
+  DailyTrendChart,
+  NeighborhoodChart,
+  useDailyTrend,
+  useNeighborhoodReport,
+  useReportSummary,
+} from '@/features/reports'
+import { getPeriodLabel } from '@/features/reports/utils/chart.utils'
 import { StatCard } from '../components/StatCard'
 
 function formatTime(iso: string) {
@@ -77,8 +86,12 @@ function DeliveriesTable({ deliveries }: { deliveries: Entrega[] }) {
 export function DashboardPage() {
   const statsQuery = useDashboardStats()
   const deliveriesQuery = useTodayDeliveries()
+  const weekSummaryQuery = useReportSummary('week')
+  const dailyTrendQuery = useDailyTrend(7)
+  const neighborhoodQuery = useNeighborhoodReport('week', 5)
 
   const stats = statsQuery.data
+  const weekSummary = weekSummaryQuery.data
   const deliveries = deliveriesQuery.data?.data ?? []
   const isLoading = statsQuery.isLoading || deliveriesQuery.isLoading
   const hasError = statsQuery.isError && deliveriesQuery.isError
@@ -137,6 +150,64 @@ export function DashboardPage() {
             />
           </div>
         )}
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight">
+              Indicadores da semana
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {getPeriodLabel('week')}
+            </p>
+          </div>
+          <Link
+            to="/relatorios"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Ver relatórios
+          </Link>
+        </div>
+
+        {weekSummaryQuery.isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <StatCardSkeleton key={index} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StatCard
+              title="Entregas na semana"
+              value={String(weekSummary?.totalEntregas ?? 0)}
+              description={formatCurrency(weekSummary?.valorEntregas ?? 0)}
+              icon={<IconPackage className="size-5" />}
+              accent="primary"
+              delay={0}
+            />
+            <StatCard
+              title="Média diária"
+              value={String(weekSummary?.mediaEntregasPorDia ?? 0)}
+              description={`${formatCurrency(weekSummary?.mediaValorPorDia ?? 0)} por dia`}
+              icon={<IconTrending className="size-5" />}
+              accent="neutral"
+              delay={0.05}
+            />
+          </div>
+        )}
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <DailyTrendChart
+          data={dailyTrendQuery.data}
+          isLoading={dailyTrendQuery.isLoading}
+        />
+        <NeighborhoodChart
+          data={neighborhoodQuery.data}
+          isLoading={neighborhoodQuery.isLoading}
+          periodLabel={getPeriodLabel('week')}
+        />
       </section>
 
       <section className="rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">

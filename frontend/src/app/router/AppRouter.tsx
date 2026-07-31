@@ -4,6 +4,7 @@ import { DashboardPage } from '@/features/dashboard'
 import { DeliveriesPage } from '@/features/deliveries'
 import { PendingPage } from '@/features/pending'
 import { PrestacaoPage } from '@/features/accounting'
+import { ReportsPage } from '@/features/reports'
 
 const routes = [
   {
@@ -14,6 +15,7 @@ const routes = [
       { path: 'entregas', element: <DeliveriesPage /> },
       { path: 'pendencias', element: <PendingPage /> },
       { path: 'prestacao', element: <PrestacaoPage /> },
+      { path: 'relatorios', element: <ReportsPage /> },
     ],
   },
 ]

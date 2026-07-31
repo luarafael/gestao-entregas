@@ -5,6 +5,7 @@ import {
   IconPackage,
   IconClock,
   IconReceipt,
+  IconChart,
 } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
 
@@ -13,6 +14,7 @@ const navItems = [
   { to: '/entregas', label: 'Entregas', icon: IconPackage },
   { to: '/pendencias', label: 'Pendências', icon: IconClock },
   { to: '/prestacao', label: 'Prestação', icon: IconReceipt },
+  { to: '/relatorios', label: 'Relatórios', icon: IconChart },
 ]
 
 interface SidebarProps {

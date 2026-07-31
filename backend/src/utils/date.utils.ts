@@ -51,6 +51,23 @@ export function formatDateBR(date: Date): string {
   })
 }
 
+export function getLastDaysRange(days: number, reference = new Date()): {
+  start: Date
+  end: Date
+} {
+  const end = endOfDay(reference)
+  const start = startOfDay(reference)
+  start.setDate(start.getDate() - (days - 1))
+  return { start, end }
+}
+
+export function formatDateOnlyISO(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function formatDateOnlyBR(date: Date | string): string {
   if (typeof date === 'string') {
     const [year, month, day] = date.slice(0, 10).split('-')

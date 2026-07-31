@@ -37,3 +37,35 @@ export interface Pendencia {
   status: 'PENDENTE' | 'RECEBIDO'
   criadoEm: string
 }
+
+export type ReportPeriod = 'week' | 'month'
+
+export interface ReportSummary {
+  period: ReportPeriod
+  totalEntregas: number
+  valorEntregas: number
+  mediaEntregasPorDia: number
+  mediaValorPorDia: number
+  totalPrestacoes: number
+  valorFinalPrestacoes: number
+  pendenciasAbertas: number
+  valorPendenciasAbertas: number
+}
+
+export interface DailyTrendPoint {
+  date: string
+  entregas: number
+  valor: number
+}
+
+export interface NeighborhoodReportPoint {
+  bairro: string
+  entregas: number
+  valor: number
+}
+
+export interface PrestacaoTrendPoint {
+  date: string
+  valorFinal: number
+  totalEntregas: number
+}
