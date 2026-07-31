@@ -2,24 +2,89 @@
 
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --color-muted: #27272a;
-  --color-muted-foreground: #a1a1aa;
-  --color-border: #27272a;
-  --color-primary: #6366f1;
-  --color-primary-foreground: #ffffff;
-  --color-card: #18181b;
-  --color-card-foreground: #fafafa;
   --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  --color-background: var(--theme-background);
+  --color-foreground: var(--theme-foreground);
+  --color-muted: var(--theme-muted);
+  --color-muted-foreground: var(--theme-muted-foreground);
+  --color-border: var(--theme-border);
+  --color-primary: var(--theme-primary);
+  --color-primary-foreground: var(--theme-primary-foreground);
+  --color-card: var(--theme-card);
+  --color-card-foreground: var(--theme-card-foreground);
+  --color-surface: var(--theme-surface);
+  --color-surface-hover: var(--theme-surface-hover);
+  --color-success: var(--theme-success);
+  --color-warning: var(--theme-warning);
+  --color-danger: var(--theme-danger);
 }
 
 @layer base {
+  :root,
+  [data-theme='light'] {
+    --theme-background: #f8fafc;
+    --theme-foreground: #0f172a;
+    --theme-muted: #e2e8f0;
+    --theme-muted-foreground: #64748b;
+    --theme-border: #cbd5e1;
+    --theme-primary: #6366f1;
+    --theme-primary-foreground: #ffffff;
+    --theme-card: #ffffff;
+    --theme-card-foreground: #0f172a;
+    --theme-surface: #f1f5f9;
+    --theme-surface-hover: #e2e8f0;
+    --theme-success: #16a34a;
+    --theme-warning: #d97706;
+    --theme-danger: #dc2626;
+  }
+
+  [data-theme='dark'] {
+    --theme-background: #09090b;
+    --theme-foreground: #fafafa;
+    --theme-muted: #27272a;
+    --theme-muted-foreground: #a1a1aa;
+    --theme-border: #27272a;
+    --theme-primary: #818cf8;
+    --theme-primary-foreground: #ffffff;
+    --theme-card: #18181b;
+    --theme-card-foreground: #fafafa;
+    --theme-surface: #27272a;
+    --theme-surface-hover: #3f3f46;
+    --theme-success: #4ade80;
+    --theme-warning: #fbbf24;
+    --theme-danger: #f87171;
+  }
+
   * {
     @apply border-border;
   }
 
+  html {
+    color-scheme: light dark;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    background-image:
+      radial-gradient(
+        circle at top left,
+        color-mix(in oklab, var(--theme-primary) 12%, transparent),
+        transparent 40%
+      ),
+      radial-gradient(
+        circle at bottom right,
+        color-mix(in oklab, var(--theme-primary) 8%, transparent),
+        transparent 35%
+      );
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply border border-border/60 bg-card/70 backdrop-blur-xl;
   }
 }

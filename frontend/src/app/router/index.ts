@@ -1,1 +1,1 @@
-// Rotas serão configuradas na Etapa 3
+export { AppRouter } from './AppRouter'

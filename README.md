@@ -201,7 +201,7 @@ npm run db:studio
 
 - [x] **Etapa 1** — Estrutura inicial, dependências e configurações
 - [x] **Etapa 2** — Banco de dados, models, migrations, repositories, services, API
-- [ ] **Etapa 3** — Layout, sidebar, navbar, dashboard, dark mode
+- [x] **Etapa 3** — Layout, sidebar, navbar, dashboard, dark mode
 - [ ] **Etapa 4** — CRUD de Entregas
 - [ ] **Etapa 5** — CRUD de Pendências
 - [ ] **Etapa 6** — Prestação de Contas e WhatsApp
