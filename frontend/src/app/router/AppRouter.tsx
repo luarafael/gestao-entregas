@@ -2,11 +2,9 @@ import { useRoutes } from 'react-router-dom'
 import { AppLayout } from '@/layouts'
 import { DashboardPage } from '@/features/dashboard'
 import { DeliveriesPage } from '@/features/deliveries'
+import { PendingPage } from '@/features/pending'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
-import {
-  IconClock,
-  IconReceipt,
-} from '@/shared/components/icons'
+import { IconReceipt } from '@/shared/components/icons'
 
 const routes = [
   {
@@ -15,16 +13,7 @@ const routes = [
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'entregas', element: <DeliveriesPage /> },
-      {
-        path: 'pendencias',
-        element: (
-          <PlaceholderPage
-            title="Pendências"
-            description="Gestão de pendências será implementada na Etapa 5."
-            icon={<IconClock className="size-7" />}
-          />
-        ),
-      },
+      { path: 'pendencias', element: <PendingPage /> },
       {
         path: 'prestacao',
         element: (

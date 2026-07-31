@@ -203,7 +203,7 @@ npm run db:studio
 - [x] **Etapa 2** — Banco de dados, models, migrations, repositories, services, API
 - [x] **Etapa 3** — Layout, sidebar, navbar, dashboard, dark mode
 - [x] **Etapa 4** — CRUD de Entregas
-- [ ] **Etapa 5** — CRUD de Pendências
+- [x] **Etapa 5** — CRUD de Pendências
 - [ ] **Etapa 6** — Prestação de Contas e WhatsApp
 - [ ] **Etapa 7** — Gráficos e relatórios
 - [ ] **Etapa 8** — Testes automatizados (90% cobertura)

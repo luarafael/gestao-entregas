@@ -1,0 +1,130 @@
+import { useState } from 'react'
+import { Modal, Pagination } from '@/shared/components/ui'
+import { useDebounce } from '@/shared/hooks'
+import {
+  useCreatePending,
+  useDeletePending,
+  usePendingList,
+  useUpdatePending,
+} from '../hooks/usePending'
+import { PendingForm } from '../components/PendingForm'
+import { PendingFiltersBar } from '../components/PendingFiltersBar'
+import { PendingTable } from '../components/PendingTable'
+import type { PendingFilters, PendingFormData } from '../schemas/pending.schema'
+import type { Pendencia } from '@/shared/types/api.types'
+
+const initialFilters: PendingFilters = {
+  page: 1,
+  limit: 10,
+  search: '',
+}
+
+export function PendingPage() {
+  const [filters, setFilters] = useState<PendingFilters>(initialFilters)
+  const [editingPending, setEditingPending] = useState<Pendencia | null>(null)
+  const [deletingPending, setDeletingPending] = useState<Pendencia | null>(null)
+
+  const debouncedSearch = useDebounce(filters.search)
+
+  const queryFilters: PendingFilters = {
+    ...filters,
+    search: debouncedSearch,
+  }
+
+  const { data, isLoading, isFetching } = usePendingList(queryFilters)
+  const createMutation = useCreatePending()
+  const updateMutation = useUpdatePending()
+  const deleteMutation = useDeletePending()
+
+  const items = data?.data ?? []
+  const meta = data?.meta
+
+  const updateFilters = (partial: Partial<PendingFilters>) => {
+    setFilters((current) => ({
+      ...current,
+      ...partial,
+      page:
+        partial.page ??
+        (partial.search !== undefined || partial.status !== undefined
+          ? 1
+          : current.page),
+    }))
+  }
+
+  const handleSubmit = async (formData: PendingFormData) => {
+    if (editingPending) {
+      await updateMutation.mutateAsync({ id: editingPending.id, data: formData })
+      setEditingPending(null)
+    } else {
+      await createMutation.mutateAsync(formData)
+    }
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deletingPending) return
+    await deleteMutation.mutateAsync(deletingPending.id)
+    setDeletingPending(null)
+    if (editingPending?.id === deletingPending.id) {
+      setEditingPending(null)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight">Pendências</h2>
+        <p className="text-sm text-muted-foreground">
+          Controle valores pendentes e recebidos por dia de referência.
+        </p>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
+        <PendingForm
+          editingPending={editingPending}
+          onSubmit={handleSubmit}
+          onCancelEdit={() => setEditingPending(null)}
+          isSubmitting={createMutation.isPending || updateMutation.isPending}
+        />
+
+        <div className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
+          <PendingFiltersBar
+            filters={filters}
+            onSearchChange={(search) => updateFilters({ search, page: 1 })}
+            onStatusChange={(status) => updateFilters({ status, page: 1 })}
+          />
+
+          <PendingTable
+            items={items}
+            isLoading={isLoading || isFetching}
+            onEdit={setEditingPending}
+            onDelete={setDeletingPending}
+          />
+
+          {meta ? (
+            <Pagination
+              page={meta.page}
+              totalPages={meta.totalPages}
+              onPageChange={(page) => updateFilters({ page })}
+            />
+          ) : null}
+        </div>
+      </div>
+
+      <Modal
+        open={Boolean(deletingPending)}
+        onClose={() => setDeletingPending(null)}
+        title="Excluir pendência"
+        description={
+          deletingPending
+            ? `Tem certeza que deseja excluir "${deletingPending.descricao}"?`
+            : undefined
+        }
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
+      />
+    </div>
+  )
+}

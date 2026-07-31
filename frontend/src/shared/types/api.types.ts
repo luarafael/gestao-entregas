@@ -28,3 +28,12 @@ export interface PaginatedResponse<T> {
     totalPages: number
   }
 }
+
+export interface Pendencia {
+  id: string
+  descricao: string
+  valor: string
+  referenteAoDia: string
+  status: 'PENDENTE' | 'RECEBIDO'
+  criadoEm: string
+}

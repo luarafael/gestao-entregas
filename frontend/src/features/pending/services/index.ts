@@ -1,1 +1,1 @@
-// Services de pendências - Etapa 5
+export { pendingService } from './pending.service'

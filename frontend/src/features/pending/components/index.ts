@@ -1,1 +1,3 @@
-// Componentes de pendências - Etapa 5
+export { PendingForm } from './PendingForm'
+export { PendingFiltersBar } from './PendingFiltersBar'
+export { PendingTable } from './PendingTable'
