@@ -1,1 +1,1 @@
-// Services de prestação de contas - Etapa 6
+export { prestacaoService } from './prestacao.service'

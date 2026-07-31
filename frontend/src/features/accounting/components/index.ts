@@ -1,1 +1,3 @@
-// Componentes de prestação de contas - Etapa 6
+export { PrestacaoResultCard } from './PrestacaoResultCard'
+export { WhatsAppPreview } from './WhatsAppPreview'
+export { PrestacaoHistory } from './PrestacaoHistory'
