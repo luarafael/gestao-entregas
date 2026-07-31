@@ -1,1 +1,1 @@
-// Services de entregas - Etapa 4
+export { deliveryService } from './delivery.service'

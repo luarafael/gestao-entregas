@@ -1,1 +1,1 @@
-// Custom hooks compartilhados
+export { useDebounce } from './useDebounce'

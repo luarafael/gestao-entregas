@@ -1,1 +1,2 @@
-// Utilitários de entregas - Etapa 4
+// Utilitários de entregas
+export { formatCurrency } from '@/shared/utils/cn'

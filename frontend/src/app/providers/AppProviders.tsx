@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { useEffect, type ReactNode } from 'react'
 import { queryClient } from '@/shared/lib/query-client'
 import { useThemeStore } from '@/shared/stores/theme.store'
+import { ToastContainer } from '@/shared/components/ui'
 
 interface AppProvidersProps {
   children: ReactNode
@@ -24,6 +25,7 @@ export function AppProviders({ children }: AppProvidersProps) {
       <BrowserRouter>
         <ThemeInitializer />
         {children}
+        <ToastContainer />
       </BrowserRouter>
     </QueryClientProvider>
   )

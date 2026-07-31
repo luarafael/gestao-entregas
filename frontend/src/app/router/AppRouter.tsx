@@ -1,10 +1,10 @@
 import { useRoutes } from 'react-router-dom'
 import { AppLayout } from '@/layouts'
 import { DashboardPage } from '@/features/dashboard'
+import { DeliveriesPage } from '@/features/deliveries'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import {
   IconClock,
-  IconPackage,
   IconReceipt,
 } from '@/shared/components/icons'
 
@@ -14,16 +14,7 @@ const routes = [
     element: <AppLayout />,
     children: [
       { index: true, element: <DashboardPage /> },
-      {
-        path: 'entregas',
-        element: (
-          <PlaceholderPage
-            title="Entregas"
-            description="CRUD completo de entregas será implementado na Etapa 4."
-            icon={<IconPackage className="size-7" />}
-          />
-        ),
-      },
+      { path: 'entregas', element: <DeliveriesPage /> },
       {
         path: 'pendencias',
         element: (
