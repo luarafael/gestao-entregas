@@ -18,6 +18,7 @@ function resolveBusinessDayIso(reference: Date | string): string {
     if (match) {
       return match[1]
     }
+    return reference
   }
 
   return formatBusinessDateOnlyISO(reference)
