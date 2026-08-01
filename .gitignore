@@ -33,8 +33,6 @@ postgres_data/
 # Misc
 *.tsbuildinfo
 promtp.txt.bak
-
-# Prisma CLI skills (auto-generated)
 backend/.agents/
 backend/.claude/
 backend/.windsurf/

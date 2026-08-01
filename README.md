@@ -1,228 +1,171 @@
-# Sistema de Gestão de Entregas e Prestação de Contas
+# Gestão de Entregas
 
-Aplicação web profissional para controle de entregas diárias e prestação de contas, com geração automática de relatório para WhatsApp.
+Aplicação web para controle de entregas do dia a dia, pendências financeiras e fechamento da prestação de contas — com relatório pronto para enviar no WhatsApp.
+
+**Demo:** [gestao-entregas-frontend.vercel.app](https://gestao-entregas-frontend.vercel.app)
+
+---
+
+## O que o sistema faz
+
+O fluxo é simples: o entregador registra as entregas ao longo do dia, anota pendências quando o cliente não paga na hora e, no fim do expediente, gera a prestação com totais, descontos e texto formatado para repassar ao responsável.
+
+Na prática, substitui planilha + anotações soltas por um painel único com histórico, filtros e gráficos.
+
+### Funcionalidades
+
+- **Dashboard** — resumo do dia, entregas recentes e visão da semana
+- **Entregas** — CRUD com busca, filtros por data/bairro e paginação
+- **Pendências** — controle de valores em aberto vinculados às entregas
+- **Prestação de contas** — geração diária, histórico, cópia e envio via WhatsApp
+- **Relatórios** — gráficos por período, bairro e evolução de valores
+- **Tema claro/escuro** — interface responsiva para desktop e mobile
+
+---
 
 ## Stack
 
 | Camada | Tecnologias |
 |--------|-------------|
-| Frontend | React 19, Vite, TypeScript, TailwindCSS, React Router, React Hook Form, Zod, TanStack Query, Zustand, Framer Motion |
-| Backend | Node.js, Express, TypeScript, Prisma ORM |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, Zustand, React Hook Form, Zod, Recharts |
+| Backend | Node.js, Express, TypeScript, Prisma |
 | Banco | PostgreSQL |
 | Testes | Vitest, React Testing Library |
-| DevOps | Docker, Docker Compose, ESLint, Prettier, Husky |
+| Infra | Docker, Vercel, Railway, Neon |
 
-## Arquitetura
+---
 
-Monorepo com arquitetura **Feature Based**:
+## Decisões técnicas
+
+- **Monorepo** com workspaces npm — frontend e backend no mesmo repositório, deploy independente
+- **Arquitetura por features** no frontend (`deliveries`, `pending`, `accounting`, `reports`) e camadas no backend (routes → services → repositories)
+- **Validação compartilhada** com Zod nos formulários e schemas da API
+- **Fuso horário de negócio** (`America/Sao_Paulo`) para entregas e dashboard baterem com o dia real, mesmo com o servidor em UTC
+- **Code splitting** com lazy loading das páginas e chunks separados para Recharts e libs pesadas
+- **173 testes automatizados** cobrindo services, hooks, componentes e utilitários
+
+---
+
+## Estrutura do projeto
 
 ```
-sistema-rotas/
-├── frontend/                 # Aplicação React
+gestao-entregas/
+├── frontend/          # SPA React
 │   └── src/
-│       ├── app/              # Configuração da aplicação (providers, router)
-│       ├── features/         # Módulos por domínio
-│       │   ├── deliveries/   # Entregas
-│       │   ├── pending/      # Pendências
-│       │   └── accounting/   # Prestação de contas
-│       ├── shared/           # Componentes, hooks, utils reutilizáveis
-│       ├── layouts/          # Layouts da aplicação
-│       └── routes/           # Definição de rotas
-├── backend/                  # API REST
-│   ├── prisma/               # Schema e migrations
+│       ├── app/       # providers, router
+│       ├── features/  # módulos de negócio
+│       ├── shared/    # UI, hooks, services
+│       └── layouts/
+├── backend/           # API REST
+│   ├── prisma/        # schema e migrations
 │   └── src/
-│       ├── repositories/     # Repository Pattern
-│       ├── services/         # Regras de negócio
-│       ├── routes/           # Endpoints da API
-│       └── middleware/       # Middlewares Express
-└── docker-compose.yml
+│       ├── routes/
+│       ├── services/
+│       └── repositories/
+├── docker-compose.yml
+└── Dockerfile         # build do backend (Railway)
 ```
 
-## Pré-requisitos
+---
 
-- Node.js >= 20
-- npm >= 10
-- Docker e Docker Compose (opcional, para PostgreSQL)
+## Rodando localmente
 
-## Instalação
+**Requisitos:** Node.js 20+, npm 10+, Docker (opcional, para o PostgreSQL)
 
 ```bash
-# Clonar o repositório
-git clone <url-do-repositorio>
-cd sistema-rotas
+git clone https://github.com/luarafael/gestao-entregas.git
+cd gestao-entregas
 
-# Instalar dependências (monorepo)
 npm install
 
-# Configurar variáveis de ambiente
 cp .env.example .env
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
-## Variáveis de Ambiente
-
-### Backend (`backend/.env`)
-
-| Variável | Descrição | Padrão |
-|----------|-----------|--------|
-| `DATABASE_URL` | URL de conexão PostgreSQL | `postgresql://postgres:postgres@localhost:5432/sistema_rotas` |
-| `PORT` | Porta da API | `3001` |
-| `NODE_ENV` | Ambiente | `development` |
-| `FRONTEND_URL` | URL do frontend (CORS) | `http://localhost:5173` |
-
-### Frontend (`frontend/.env`)
-
-| Variável | Descrição | Padrão |
-|----------|-----------|--------|
-| `VITE_API_URL` | URL da API | `http://localhost:3001` |
-
-## Execução
-
-### Desenvolvimento local
+Suba o banco e as migrations:
 
 ```bash
-# Subir PostgreSQL via Docker
 npm run docker:up
-
-# Terminal 1 - Backend
-npm run dev:backend
-
-# Terminal 2 - Frontend
-npm run dev:frontend
-```
-
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3001
-- Health check: http://localhost:3001/api/health
-
-### Docker (stack completa)
-
-```bash
-docker compose up --build
-```
-
-## Testes
-
-```bash
-# Executar todos os testes
-npm test
-
-# Com cobertura
-npm run test:coverage
-
-# Apenas frontend
-npm run test --workspace=frontend
-
-# Apenas backend
-npm run test --workspace=backend
-```
-
-## Lint e Formatação
-
-```bash
-npm run lint
-npm run format
-```
-
-Git hooks (Husky) executam lint-staged automaticamente no pre-commit.
-
-## Banco de Dados (Prisma)
-
-```bash
-# Gerar Prisma Client
-npm run db:generate
-
-# Executar migrations (Etapa 2)
 npm run db:migrate
-
-# Abrir Prisma Studio
-npm run db:studio
 ```
+
+Em dois terminais (ou use `npm run dev` na raiz):
+
+```bash
+npm run dev:backend   # http://localhost:3001
+npm run dev:frontend  # http://localhost:5173
+```
+
+Health check da API: `GET http://localhost:3001/api/health`
+
+### Variáveis de ambiente
+
+**Backend** (`backend/.env`)
+
+| Variável | Descrição |
+|----------|-----------|
+| `DATABASE_URL` | Conexão PostgreSQL |
+| `PORT` | Porta da API (padrão `3001`) |
+| `FRONTEND_URL` | Origem permitida no CORS |
+| `NODE_ENV` | `development` ou `production` |
+
+**Frontend** (`frontend/.env`)
+
+| Variável | Descrição |
+|----------|-----------|
+| `VITE_API_URL` | URL da API (ex: `http://localhost:3001`) |
+
+---
+
+## Testes e qualidade
+
+```bash
+npm test              # frontend + backend
+npm run test:coverage # com relatório de cobertura
+npm run lint          # ESLint no frontend
+npm run build         # build de produção
+```
+
+Hooks de pre-commit (Husky) rodam lint e testes antes de cada commit.
+
+---
 
 ## Deploy
 
-Documentação completa: **[DEPLOY.md](./DEPLOY.md)**
+O projeto está em produção com:
 
 | Serviço | Plataforma |
 |---------|------------|
-| Frontend | Vercel ou nginx (Docker prod) |
-| Backend/API | Railway ou Docker prod |
-| Banco de Dados | Neon PostgreSQL ou PostgreSQL (Docker prod) |
+| Frontend | [Vercel](https://vercel.com) |
+| API | [Railway](https://railway.app) |
+| Banco | [Neon](https://neon.tech) (PostgreSQL, sa-east-1) |
 
-### Docker produção (VPS)
+Para subir em VPS com Docker (stack completa com nginx):
 
 ```bash
 cp .env.production.example .env.production
-# Edite senhas e FRONTEND_URL
+# ajuste senhas e FRONTEND_URL
 npm run docker:prod
 ```
 
-Acesse `http://SEU_IP` — nginx serve o frontend e faz proxy de `/api` para o backend.
+No Railway, o `Dockerfile` na raiz do repo faz o build do backend. Na Vercel, configure `Root Directory` como `frontend` e `VITE_API_URL` apontando para a API.
 
-### Vercel + Railway + Neon
+---
 
-Veja passo a passo em [DEPLOY.md](./DEPLOY.md#opção-b--vercel--railway--neon).
+## API (resumo)
 
-### Produção (ativo)
+| Recurso | Endpoints principais |
+|---------|---------------------|
+| Entregas | `GET/POST /api/entregas`, `GET /api/entregas/stats` |
+| Pendências | `GET/POST /api/pendencias` |
+| Prestações | `POST /api/prestacoes/generate`, `GET /api/prestacoes/:id/whatsapp` |
+| Relatórios | `GET /api/reports/summary`, `GET /api/reports/daily` |
 
-| Ambiente | URL |
-|----------|-----|
-| Frontend | https://gestao-entregas-frontend.vercel.app |
-| API | https://backend-production-795e.up.railway.app |
-| Banco | Neon PostgreSQL (sa-east-1) |
+---
 
-Health check: `GET /api/health` na URL da API.
+## Autor
 
-**Checkpoint git:** tag `pre-etapa-9` — produção validada, fix de fuso horário (America/Sao_Paulo) e deploy Railway OK.
+**Luã Rafael** — [github.com/luarafael](https://github.com/luarafael)
 
-Para voltar a este ponto: `git fetch origin && git checkout pre-etapa-9`
-
-## API Endpoints
-
-### Entregas
-
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/entregas/stats` | Estatísticas do dashboard |
-| GET | `/api/entregas` | Listar entregas (paginação, filtros, busca) |
-| GET | `/api/entregas/:id` | Buscar entrega por ID |
-| POST | `/api/entregas` | Criar entrega |
-| PUT | `/api/entregas/:id` | Atualizar entrega |
-| DELETE | `/api/entregas/:id` | Excluir entrega |
-
-### Pendências
-
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/pendencias` | Listar pendências |
-| GET | `/api/pendencias/:id` | Buscar pendência por ID |
-| POST | `/api/pendencias` | Criar pendência |
-| PUT | `/api/pendencias/:id` | Atualizar pendência |
-| DELETE | `/api/pendencias/:id` | Excluir pendência |
-
-### Prestação de Contas
-
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/prestacoes` | Listar prestações |
-| GET | `/api/prestacoes/:id` | Buscar prestação por ID |
-| GET | `/api/prestacoes/:id/whatsapp` | Texto formatado para WhatsApp |
-| POST | `/api/prestacoes/generate` | Gerar prestação do dia |
-
-## Etapas de Desenvolvimento
-
-- [x] **Etapa 1** — Estrutura inicial, dependências e configurações
-- [x] **Etapa 2** — Banco de dados, models, migrations, repositories, services, API
-- [x] **Etapa 3** — Layout, sidebar, navbar, dashboard, dark mode
-- [x] **Etapa 4** — CRUD de Entregas
-- [x] **Etapa 5** — CRUD de Pendências
-- [x] **Etapa 6** — Prestação de Contas e WhatsApp
-- [x] **Etapa 7** — Gráficos e relatórios
-- [x] **Etapa 8** — Testes automatizados (90% cobertura)
-- [x] **Deploy produção** — Vercel + Railway + Neon
-- [x] **Etapa 9** — Refatoração, performance e clean code
-
-## Licença
-
-ISC
+Projeto desenvolvido como portfólio full stack: do modelagem do banco ao deploy em produção.
