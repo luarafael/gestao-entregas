@@ -221,7 +221,7 @@ Para voltar a este ponto: `git fetch origin && git checkout pre-etapa-9`
 - [x] **Etapa 7** — Gráficos e relatórios
 - [x] **Etapa 8** — Testes automatizados (90% cobertura)
 - [x] **Deploy produção** — Vercel + Railway + Neon
-- [ ] **Etapa 9** — Refatoração, performance e clean code
+- [x] **Etapa 9** — Refatoração, performance e clean code
 
 ## Licença
 

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import {
   IconAlert,
@@ -7,30 +8,38 @@ import {
 } from '@/shared/components/icons'
 import {
   EmptyState,
+  StatCard,
   StatCardSkeleton,
   TableSkeleton,
 } from '@/shared/components/ui'
 import { formatCurrency } from '@/shared/utils/cn'
+import { formatTimeBR } from '@/shared/utils/format'
 import type { Entrega } from '@/shared/types/api.types'
 import {
   useDashboardStats,
   useTodayDeliveries,
 } from '@/features/dashboard/hooks/useDashboard'
 import {
-  DailyTrendChart,
-  NeighborhoodChart,
   useNeighborhoodReport,
   usePeriodDailyBreakdown,
   useReportSummary,
-} from '@/features/reports'
+} from '@/features/reports/hooks/useReports'
 import { getPeriodLabel } from '@/features/reports/utils/chart.utils'
-import { StatCard } from '../components/StatCard'
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+const DailyTrendChart = lazy(() =>
+  import('@/features/reports/components/DailyTrendChart').then((module) => ({
+    default: module.DailyTrendChart,
+  })),
+)
+
+const NeighborhoodChart = lazy(() =>
+  import('@/features/reports/components/NeighborhoodChart').then((module) => ({
+    default: module.NeighborhoodChart,
+  })),
+)
+
+function ChartFallback() {
+  return <div className="h-72 animate-pulse rounded-2xl bg-surface/60" />
 }
 
 function DeliveriesTable({ deliveries }: { deliveries: Entrega[] }) {
@@ -40,6 +49,14 @@ function DeliveriesTable({ deliveries }: { deliveries: Entrega[] }) {
         icon={<IconPackage className="size-6" />}
         title="Nenhuma entrega hoje"
         description="As entregas cadastradas durante o dia aparecerão aqui."
+        action={
+          <Link
+            to="/entregas"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Cadastrar entrega
+          </Link>
+        }
       />
     )
   }
@@ -63,7 +80,7 @@ function DeliveriesTable({ deliveries }: { deliveries: Entrega[] }) {
               className="border-b border-border/40 transition-colors hover:bg-surface/40"
             >
               <td className="px-3 py-3 text-muted-foreground">
-                {formatTime(delivery.horario)}
+                {formatTimeBR(delivery.horario)}
               </td>
               <td className="px-3 py-3 font-medium">
                 {delivery.nomeCliente ?? '—'}
@@ -94,7 +111,7 @@ export function DashboardPage() {
   const weekSummary = weekSummaryQuery.data
   const deliveries = deliveriesQuery.data?.data ?? []
   const isLoading = statsQuery.isLoading || deliveriesQuery.isLoading
-  const hasError = statsQuery.isError && deliveriesQuery.isError
+  const hasError = statsQuery.isError || deliveriesQuery.isError
 
   return (
     <div className="space-y-6">
@@ -199,16 +216,20 @@ export function DashboardPage() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <DailyTrendChart
-          data={dailyBreakdownQuery.data}
-          isLoading={dailyBreakdownQuery.isLoading}
-          periodLabel={getPeriodLabel('week')}
-        />
-        <NeighborhoodChart
-          data={neighborhoodQuery.data}
-          isLoading={neighborhoodQuery.isLoading}
-          periodLabel={getPeriodLabel('week')}
-        />
+        <Suspense fallback={<ChartFallback />}>
+          <DailyTrendChart
+            data={dailyBreakdownQuery.data}
+            isLoading={dailyBreakdownQuery.isLoading}
+            periodLabel={getPeriodLabel('week')}
+          />
+        </Suspense>
+        <Suspense fallback={<ChartFallback />}>
+          <NeighborhoodChart
+            data={neighborhoodQuery.data}
+            isLoading={neighborhoodQuery.isLoading}
+            periodLabel={getPeriodLabel('week')}
+          />
+        </Suspense>
       </section>
 
       <section className="rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
@@ -230,6 +251,18 @@ export function DashboardPage() {
             icon={<IconPackage className="size-6" />}
             title="API indisponível"
             description="Inicie o backend e o banco de dados para carregar os dados do dashboard."
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  statsQuery.refetch()
+                  deliveriesQuery.refetch()
+                }}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Tentar novamente
+              </button>
+            }
           />
         ) : (
           <DeliveriesTable deliveries={deliveries} />

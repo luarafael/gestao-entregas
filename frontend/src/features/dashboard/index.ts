@@ -1,2 +1,2 @@
 export { DashboardPage } from './pages/DashboardPage'
-export { StatCard } from './components/StatCard'
+export { StatCard } from '@/shared/components/ui/StatCard'

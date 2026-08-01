@@ -1,7 +1,22 @@
-/** Data local do navegador como YYYY-MM-DD (mesmo critério da prestação). */
-export function getTodayInputDate(date = new Date()) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+/** Alinhado ao backend — fuso do negócio (Brasil). */
+export const BUSINESS_TIMEZONE = 'America/Sao_Paulo'
+
+/** Data civil no fuso do negócio como YYYY-MM-DD. */
+export function getTodayInputDate(date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: BUSINESS_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
+/** Extrai YYYY-MM-DD de ISO/string sem deslocamento de fuso. */
+export function formatDateOnlyFromIso(value: string): string {
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})/)
+  if (match) {
+    return match[1]
+  }
+
+  return getTodayInputDate(new Date(value))
 }

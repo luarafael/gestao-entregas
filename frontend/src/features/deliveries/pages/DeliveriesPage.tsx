@@ -35,7 +35,7 @@ export function DeliveriesPage() {
     search: debouncedSearch,
   }
 
-  const { data, isLoading, isFetching, isError } = useDeliveries(queryFilters)
+  const { data, isLoading, isFetching, isError, refetch } = useDeliveries(queryFilters)
   const createMutation = useCreateDelivery()
   const updateMutation = useUpdateDelivery()
   const deleteMutation = useDeleteDelivery()
@@ -100,11 +100,21 @@ export function DeliveriesPage() {
               icon={<IconPackage className="size-6" />}
               title="Erro ao carregar entregas"
               description="Não foi possível buscar a listagem. Verifique se a API está rodando."
+              action={
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Tentar novamente
+                </button>
+              }
             />
           ) : (
             <DeliveryTable
               deliveries={deliveries}
-              isLoading={isLoading || isFetching}
+              isLoading={isLoading}
+              isFetching={isFetching}
               onEdit={setEditingDelivery}
               onDelete={setDeletingDelivery}
             />

@@ -32,7 +32,7 @@ export function PendingPage() {
     search: debouncedSearch,
   }
 
-  const { data, isLoading, isFetching, isError } = usePendingList(queryFilters)
+  const { data, isLoading, isFetching, isError, refetch } = usePendingList(queryFilters)
   const createMutation = useCreatePending()
   const updateMutation = useUpdatePending()
   const deleteMutation = useDeletePending()
@@ -99,11 +99,21 @@ export function PendingPage() {
               icon={<IconClock className="size-6" />}
               title="Erro ao carregar pendências"
               description="Não foi possível buscar a listagem. Verifique se a API está rodando."
+              action={
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Tentar novamente
+                </button>
+              }
             />
           ) : (
             <PendingTable
               items={items}
-              isLoading={isLoading || isFetching}
+              isLoading={isLoading}
+              isFetching={isFetching}
               onEdit={setEditingPending}
               onDelete={setDeletingPending}
             />

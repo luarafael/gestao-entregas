@@ -3,13 +3,14 @@ import { render, screen } from '@testing-library/react'
 import App from './App'
 
 describe('App', () => {
-  it('renderiza o dashboard na rota inicial', () => {
+  it('renderiza o dashboard na rota inicial', async () => {
     render(<App />)
-    expect(screen.getByText('Resumo do dia')).toBeInTheDocument()
+    expect(await screen.findByText('Resumo do dia')).toBeInTheDocument()
   })
 
-  it('renderiza a navegação principal', () => {
+  it('renderiza a navegação principal', async () => {
     render(<App />)
+    expect(await screen.findByText('Resumo do dia')).toBeInTheDocument()
     expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Entregas').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Pendências').length).toBeGreaterThan(0)

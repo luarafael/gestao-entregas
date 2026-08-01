@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { invalidatePrestacaoRelated } from '@/shared/lib/invalidate-related'
 import { prestacaoService } from '../services/prestacao.service'
 import type { PrestacaoFilters } from '../types'
 import type { GeneratePrestacaoFormData } from '../schemas/prestacao.schema'
@@ -19,6 +20,7 @@ export function usePrestacaoPreview(date?: string) {
     queryKey: [PRESTACAO_QUERY_KEY, 'preview', date],
     queryFn: () => prestacaoService.preview(date),
     enabled: Boolean(date?.match(/^\d{4}-\d{2}-\d{2}$/)),
+    staleTime: 10_000,
   })
 }
 
@@ -28,7 +30,7 @@ export function useGeneratePrestacao() {
   return useMutation({
     mutationFn: (data: GeneratePrestacaoFormData) => prestacaoService.generate(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PRESTACAO_QUERY_KEY] })
+      invalidatePrestacaoRelated(queryClient)
       toast('Prestação de contas gerada com sucesso!', 'success')
     },
     onError: (error) => {
@@ -68,8 +70,7 @@ export function useUpdatePrestacao() {
       data: { observacoes?: string | null; recalcular?: boolean }
     }) => prestacaoService.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PRESTACAO_QUERY_KEY] })
-      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      invalidatePrestacaoRelated(queryClient)
       toast('Prestação atualizada com sucesso!', 'success')
     },
     onError: (error) => {
@@ -89,8 +90,7 @@ export function useDeletePrestacao() {
   return useMutation({
     mutationFn: (id: string) => prestacaoService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PRESTACAO_QUERY_KEY] })
-      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      invalidatePrestacaoRelated(queryClient)
       toast('Prestação excluída com sucesso!', 'success')
     },
     onError: () => {

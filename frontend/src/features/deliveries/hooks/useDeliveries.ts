@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { invalidateDeliveryRelated } from '@/shared/lib/invalidate-related'
 import { deliveryService } from '../services/delivery.service'
 import type { DeliveryFilters, DeliveryFormData } from '../schemas/delivery.schema'
 import { toast } from '@/shared/stores/toast.store'
@@ -9,6 +10,7 @@ export function useDeliveries(filters: DeliveryFilters) {
   return useQuery({
     queryKey: [DELIVERIES_QUERY_KEY, filters],
     queryFn: () => deliveryService.list(filters),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -18,9 +20,7 @@ export function useCreateDelivery() {
   return useMutation({
     mutationFn: (data: DeliveryFormData) => deliveryService.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [DELIVERIES_QUERY_KEY] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
-      queryClient.invalidateQueries({ queryKey: ['deliveries', 'today'] })
+      invalidateDeliveryRelated(queryClient)
       toast('Entrega salva com sucesso!', 'success')
     },
     onError: () => {
@@ -36,9 +36,7 @@ export function useUpdateDelivery() {
     mutationFn: ({ id, data }: { id: string; data: DeliveryFormData }) =>
       deliveryService.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [DELIVERIES_QUERY_KEY] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
-      queryClient.invalidateQueries({ queryKey: ['deliveries', 'today'] })
+      invalidateDeliveryRelated(queryClient)
       toast('Entrega atualizada com sucesso!', 'success')
     },
     onError: () => {
@@ -53,9 +51,7 @@ export function useDeleteDelivery() {
   return useMutation({
     mutationFn: (id: string) => deliveryService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [DELIVERIES_QUERY_KEY] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
-      queryClient.invalidateQueries({ queryKey: ['deliveries', 'today'] })
+      invalidateDeliveryRelated(queryClient)
       toast('Entrega excluída com sucesso!', 'success')
     },
     onError: () => {

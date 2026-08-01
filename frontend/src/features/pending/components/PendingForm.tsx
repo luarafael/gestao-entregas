@@ -14,6 +14,7 @@ import {
   toInputDate,
   type PendingFormData,
 } from '../schemas/pending.schema'
+import { getTodayInputDate } from '@/shared/utils/date'
 import type { Pendencia } from '@/shared/types/api.types'
 
 interface PendingFormProps {
@@ -21,10 +22,6 @@ interface PendingFormProps {
   onSubmit: (data: PendingFormData) => Promise<void>
   onCancelEdit: () => void
   isSubmitting: boolean
-}
-
-function getTodayInputDate() {
-  return toInputDate(new Date().toISOString())
 }
 
 const defaultValues: PendingFormData = {

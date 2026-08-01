@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui'
+import { Card, CardContent, CardHeader, CardTitle } from './Card'
 import { cn } from '@/shared/utils/cn'
 
 interface StatCardProps {
@@ -33,7 +33,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay, ease: 'easeOut' }}
     >
-      <Card hover className="h-full">
+      <Card hover animated className="h-full">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           <div

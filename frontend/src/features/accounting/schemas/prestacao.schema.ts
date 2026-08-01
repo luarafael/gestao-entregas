@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { getTodayInputDate } from '@/shared/utils/date'
+import { formatDateBR } from '@/shared/utils/format'
 
 export const generatePrestacaoFormSchema = z.object({
   data: z.string().optional(),
@@ -10,14 +12,6 @@ export type GeneratePrestacaoFormData = z.infer<typeof generatePrestacaoFormSche
 export interface PrestacaoFilters {
   page: number
   limit: number
-}
-
-function getTodayInputDate() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 export { getTodayInputDate }
@@ -35,14 +29,5 @@ export function toGeneratePayload(data: GeneratePrestacaoFormData) {
 }
 
 export function formatPrestacaoDate(date: string) {
-  const [year, month, day] = date.slice(0, 10).split('-')
-  if (year && month && day) {
-    return `${day}/${month}/${year}`
-  }
-
-  return new Date(date).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+  return formatDateBR(date)
 }

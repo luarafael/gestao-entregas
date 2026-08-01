@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { StatCard } from '@/features/dashboard/components/StatCard'
+import { StatCard } from '@/shared/components/ui/StatCard'
 import { IconPackage } from '@/shared/components/icons'
 
 describe('StatCard', () => {

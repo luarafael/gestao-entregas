@@ -21,6 +21,10 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
     title: 'Prestação de Contas',
     subtitle: 'Fechamento do dia',
   },
+  '/relatorios': {
+    title: 'Relatórios',
+    subtitle: 'Indicadores e gráficos',
+  },
 }
 
 export function AppLayout() {

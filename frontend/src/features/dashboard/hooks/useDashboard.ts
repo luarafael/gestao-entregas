@@ -14,6 +14,7 @@ export function useDashboardStats() {
     queryKey: ['dashboard-stats', today],
     queryFn: () =>
       apiFetch<DashboardStats>(`/api/entregas/stats?data=${today}`),
+    staleTime: 30_000,
   })
 }
 
@@ -26,5 +27,6 @@ export function useTodayDeliveries() {
       apiFetch<PaginatedResponse<Entrega>>(
         `/api/entregas?filter=today&referenceDate=${today}&limit=10&sortBy=horario&sortOrder=desc`,
       ),
+    staleTime: 30_000,
   })
 }

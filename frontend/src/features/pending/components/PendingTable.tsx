@@ -1,4 +1,4 @@
-import { Badge, Button, EmptyState, TableSkeleton } from '@/shared/components/ui'
+import { Badge, Button, DataTable } from '@/shared/components/ui'
 import { IconClock } from '@/shared/components/icons'
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatReferenteAoDia } from '../schemas/pending.schema'
@@ -7,6 +7,7 @@ import type { Pendencia } from '@/shared/types/api.types'
 interface PendingTableProps {
   items: Pendencia[]
   isLoading: boolean
+  isFetching?: boolean
   onEdit: (item: Pendencia) => void
   onDelete: (item: Pendencia) => void
 }
@@ -14,67 +15,67 @@ interface PendingTableProps {
 export function PendingTable({
   items,
   isLoading,
+  isFetching = false,
   onEdit,
   onDelete,
 }: PendingTableProps) {
-  if (isLoading) {
-    return <TableSkeleton rows={6} />
-  }
-
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<IconClock className="size-6" />}
-        title="Nenhuma pendência encontrada"
-        description="Cadastre uma nova pendência ou ajuste os filtros."
-      />
-    )
-  }
-
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-170 text-left text-sm">
-        <thead>
-          <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
-            <th className="px-3 py-3 font-medium">Descrição</th>
-            <th className="px-3 py-3 font-medium">Referente ao dia</th>
-            <th className="px-3 py-3 font-medium">Status</th>
-            <th className="px-3 py-3 font-medium text-right">Valor</th>
-            <th className="px-3 py-3 font-medium text-right">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr
-              key={item.id}
-              className="border-b border-border/40 transition-colors hover:bg-surface/40"
-            >
-              <td className="px-3 py-3 font-medium">{item.descricao}</td>
-              <td className="px-3 py-3 text-muted-foreground">
-                {formatReferenteAoDia(item.referenteAoDia)}
-              </td>
-              <td className="px-3 py-3">
-                <Badge variant={item.status === 'RECEBIDO' ? 'success' : 'warning'}>
-                  {item.status === 'RECEBIDO' ? 'Recebido' : 'Pendente'}
-                </Badge>
-              </td>
-              <td className="px-3 py-3 text-right font-medium">
-                {formatCurrency(Number(item.valor))}
-              </td>
-              <td className="px-3 py-3">
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
-                    Editar
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={() => onDelete(item)}>
-                    Excluir
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      data={items}
+      rowKey={(item) => item.id}
+      minWidthClass="min-w-170"
+      isLoading={isLoading}
+      isFetching={isFetching}
+      emptyState={{
+        icon: <IconClock className="size-6" />,
+        title: 'Nenhuma pendência encontrada',
+        description: 'Cadastre uma nova pendência ou ajuste os filtros.',
+      }}
+      columns={[
+        {
+          key: 'descricao',
+          header: 'Descrição',
+          cellClassName: 'font-medium',
+          render: (item) => item.descricao,
+        },
+        {
+          key: 'referente',
+          header: 'Referente ao dia',
+          cellClassName: 'text-muted-foreground',
+          render: (item) => formatReferenteAoDia(item.referenteAoDia),
+        },
+        {
+          key: 'status',
+          header: 'Status',
+          render: (item) => (
+            <Badge variant={item.status === 'RECEBIDO' ? 'success' : 'warning'}>
+              {item.status === 'RECEBIDO' ? 'Recebido' : 'Pendente'}
+            </Badge>
+          ),
+        },
+        {
+          key: 'valor',
+          header: 'Valor',
+          headerClassName: 'text-right',
+          cellClassName: 'text-right font-medium',
+          render: (item) => formatCurrency(Number(item.valor)),
+        },
+        {
+          key: 'acoes',
+          header: 'Ações',
+          headerClassName: 'text-right',
+          render: (item) => (
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
+                Editar
+              </Button>
+              <Button variant="danger" size="sm" onClick={() => onDelete(item)}>
+                Excluir
+              </Button>
+            </div>
+          ),
+        },
+      ]}
+    />
   )
 }

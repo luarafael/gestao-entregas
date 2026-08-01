@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { invalidatePendingRelated } from '@/shared/lib/invalidate-related'
 import { pendingService } from '../services/pending.service'
 import type { PendingFilters, PendingFormData } from '../schemas/pending.schema'
 import { toast } from '@/shared/stores/toast.store'
@@ -9,6 +10,7 @@ export function usePendingList(filters: PendingFilters) {
   return useQuery({
     queryKey: [PENDING_QUERY_KEY, filters],
     queryFn: () => pendingService.list(filters),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -18,8 +20,7 @@ export function useCreatePending() {
   return useMutation({
     mutationFn: (data: PendingFormData) => pendingService.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PENDING_QUERY_KEY] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      invalidatePendingRelated(queryClient)
       toast('Pendência salva com sucesso!', 'success')
     },
     onError: () => {
@@ -35,8 +36,7 @@ export function useUpdatePending() {
     mutationFn: ({ id, data }: { id: string; data: PendingFormData }) =>
       pendingService.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PENDING_QUERY_KEY] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      invalidatePendingRelated(queryClient)
       toast('Pendência atualizada com sucesso!', 'success')
     },
     onError: () => {
@@ -51,8 +51,7 @@ export function useDeletePending() {
   return useMutation({
     mutationFn: (id: string) => pendingService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PENDING_QUERY_KEY] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      invalidatePendingRelated(queryClient)
       toast('Pendência excluída com sucesso!', 'success')
     },
     onError: () => {

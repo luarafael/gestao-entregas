@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { formatDateBR } from '@/shared/utils/format'
+import { formatDateOnlyFromIso } from '@/shared/utils/date'
 
 export const pendingFormSchema = z.object({
   descricao: z.string().trim().min(1, 'Descrição é obrigatória'),
@@ -36,17 +38,9 @@ export function toApiPayload(data: PendingFormData) {
 }
 
 export function formatReferenteAoDia(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+  return formatDateBR(date)
 }
 
 export function toInputDate(date: string) {
-  const parsed = new Date(date)
-  const year = parsed.getFullYear()
-  const month = String(parsed.getMonth() + 1).padStart(2, '0')
-  const day = String(parsed.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  return formatDateOnlyFromIso(date)
 }

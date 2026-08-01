@@ -8,7 +8,7 @@ import {
 import { StatCardSkeleton } from '@/shared/components/ui'
 import { formatCurrency } from '@/shared/utils/cn'
 import type { ReportSummary } from '@/shared/types/api.types'
-import { StatCard } from '@/features/dashboard/components/StatCard'
+import { StatCard } from '@/shared/components/ui/StatCard'
 import { getPeriodLabel } from '../utils/chart.utils'
 
 interface ReportSummaryCardsProps {

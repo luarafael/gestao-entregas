@@ -1,10 +1,37 @@
+import { lazy, Suspense } from 'react'
 import { useRoutes } from 'react-router-dom'
 import { AppLayout } from '@/layouts'
-import { DashboardPage } from '@/features/dashboard'
-import { DeliveriesPage } from '@/features/deliveries'
-import { PendingPage } from '@/features/pending'
-import { PrestacaoPage } from '@/features/accounting'
-import { ReportsPage } from '@/features/reports'
+import { PageLoader } from '@/shared/components/ui'
+
+const DashboardPage = lazy(() =>
+  import('@/features/dashboard/pages/DashboardPage').then((module) => ({
+    default: module.DashboardPage,
+  })),
+)
+
+const DeliveriesPage = lazy(() =>
+  import('@/features/deliveries/pages/DeliveriesPage').then((module) => ({
+    default: module.DeliveriesPage,
+  })),
+)
+
+const PendingPage = lazy(() =>
+  import('@/features/pending/pages/PendingPage').then((module) => ({
+    default: module.PendingPage,
+  })),
+)
+
+const PrestacaoPage = lazy(() =>
+  import('@/features/accounting/pages/PrestacaoPage').then((module) => ({
+    default: module.PrestacaoPage,
+  })),
+)
+
+const ReportsPage = lazy(() =>
+  import('@/features/reports/pages/ReportsPage').then((module) => ({
+    default: module.ReportsPage,
+  })),
+)
 
 const routes = [
   {
@@ -20,6 +47,14 @@ const routes = [
   },
 ]
 
-export function AppRouter() {
+function AppRoutes() {
   return useRoutes(routes)
+}
+
+export function AppRouter() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <AppRoutes />
+    </Suspense>
+  )
 }

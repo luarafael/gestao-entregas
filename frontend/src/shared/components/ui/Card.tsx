@@ -7,6 +7,7 @@ interface CardProps {
   className?: string
   hover?: boolean
   glass?: boolean
+  animated?: boolean
 }
 
 export function Card({
@@ -14,20 +15,27 @@ export function Card({
   className,
   hover = false,
   glass = true,
+  animated = false,
 }: CardProps) {
+  const classes = cn(
+    'rounded-2xl border p-5',
+    glass
+      ? 'border-border/60 bg-card/70 backdrop-blur-xl'
+      : 'border-border bg-card',
+    hover && 'transition-colors hover:border-primary/30 hover:bg-card/90',
+    className,
+  )
+
+  if (!animated) {
+    return <div className={classes}>{children}</div>
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={cn(
-        'rounded-2xl border p-5',
-        glass
-          ? 'border-border/60 bg-card/70 backdrop-blur-xl'
-          : 'border-border bg-card',
-        hover && 'transition-colors hover:border-primary/30 hover:bg-card/90',
-        className,
-      )}
+      className={classes}
     >
       {children}
     </motion.div>

@@ -13,6 +13,7 @@ export function useReportSummary(period: ReportPeriod) {
     queryKey: ['reports', 'summary', period],
     queryFn: () =>
       apiFetch<ReportSummary>(`/api/reports/summary?period=${period}`),
+    staleTime: 5 * 60_000,
   })
 }
 
@@ -23,6 +24,7 @@ export function usePeriodDailyBreakdown(period: ReportPeriod) {
       apiFetch<DailyTrendPoint[]>(
         `/api/reports/daily-breakdown?period=${period}`,
       ),
+    staleTime: 5 * 60_000,
   })
 }
 
@@ -33,6 +35,7 @@ export function useNeighborhoodReport(period: ReportPeriod, limit = 5) {
       apiFetch<NeighborhoodReportPoint[]>(
         `/api/reports/by-neighborhood?period=${period}&limit=${limit}`,
       ),
+    staleTime: 5 * 60_000,
   })
 }
 
@@ -43,5 +46,6 @@ export function usePrestacaoTrend(period: ReportPeriod) {
       apiFetch<PrestacaoTrendPoint[]>(
         `/api/reports/prestacao-trend?period=${period}`,
       ),
+    staleTime: 5 * 60_000,
   })
 }
