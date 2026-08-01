@@ -8,8 +8,10 @@ import {
 } from '../middleware/index.js'
 import {
   createEntregaSchema,
+  dashboardStatsQuerySchema,
   listEntregasSchema,
   updateEntregaSchema,
+  type DashboardStatsQuery,
   type ListEntregasInput,
 } from '../schemas/entrega.schema.js'
 import { entregaService } from '../services/entrega.service.js'
@@ -18,8 +20,10 @@ export const entregaRoutes = Router()
 
 entregaRoutes.get(
   '/stats',
-  asyncHandler(async (_req, res) => {
-    const stats = await entregaService.getDashboardStats()
+  validateQuery(dashboardStatsQuerySchema),
+  asyncHandler(async (req, res) => {
+    const { data } = getValidatedQuery<DashboardStatsQuery>(req)
+    const stats = await entregaService.getDashboardStats(data)
     res.json(stats)
   }),
 )

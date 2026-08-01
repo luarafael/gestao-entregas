@@ -1,9 +1,9 @@
 import 'dotenv/config'
 import { prisma } from '../src/lib/prisma.js'
-import { toUtcDateOnlyFromLocal } from '../src/utils/date.utils.js'
+import { toUtcDateOnlyFromBusinessTz } from '../src/utils/date.utils.js'
 
 async function main() {
-  const today = toUtcDateOnlyFromLocal(new Date())
+  const today = toUtcDateOnlyFromBusinessTz(new Date())
   const yesterday = new Date(today)
   yesterday.setUTCDate(yesterday.getUTCDate() - 1)
 

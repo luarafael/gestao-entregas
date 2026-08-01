@@ -1,4 +1,5 @@
 import { apiFetch } from '@/shared/services/api'
+import { getTodayInputDate } from '@/shared/utils/date'
 import type { Entrega, PaginatedResponse } from '@/shared/types/api.types'
 import type { DeliveryFilters, DeliveryFormData } from '../schemas/delivery.schema'
 
@@ -10,6 +11,10 @@ function buildQuery(filters: DeliveryFilters): string {
   params.set('filter', filters.filter)
   params.set('sortBy', filters.sortBy)
   params.set('sortOrder', filters.sortOrder)
+
+  if (filters.filter === 'today') {
+    params.set('referenceDate', getTodayInputDate())
+  }
 
   if (filters.search.trim()) {
     params.set('search', filters.search.trim())

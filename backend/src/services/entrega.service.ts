@@ -7,7 +7,7 @@ import type {
 } from '../schemas/entrega.schema.js'
 import { pendenciaRepository } from '../repositories/pendencia.repository.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
-import { toUtcDateOnlyFromLocal } from '../utils/date.utils.js'
+import { formatDateOnlyISO, toUtcDateOnly, toUtcDateOnlyFromBusinessTz } from '../utils/date.utils.js'
 
 export class EntregaService {
   async create(input: CreateEntregaInput) {
@@ -37,8 +37,13 @@ export class EntregaService {
     return entregaRepository.delete(id)
   }
 
-  async getDashboardStats(date = new Date()) {
-    const day = toUtcDateOnlyFromLocal(date)
+  async getDashboardStats(reference?: Date | string) {
+    const day =
+      reference === undefined
+        ? toUtcDateOnlyFromBusinessTz()
+        : typeof reference === 'string'
+          ? toUtcDateOnly(reference)
+          : toUtcDateOnly(formatDateOnlyISO(reference))
 
     const [entregaStats, pendenciaStats] = await Promise.all([
       entregaRepository.getStatsByDate(day),
@@ -53,8 +58,13 @@ export class EntregaService {
     }
   }
 
-  async getTodayDeliveries(date = new Date()) {
-    return entregaRepository.findByDate(toUtcDateOnlyFromLocal(date))
+  async getTodayDeliveries(reference: Date | string = new Date()) {
+    const day =
+      typeof reference === 'string'
+        ? toUtcDateOnly(reference)
+        : toUtcDateOnlyFromBusinessTz(reference)
+
+    return entregaRepository.findByDate(day)
   }
 }
 

@@ -1,4 +1,15 @@
 import { z } from 'zod'
+import { toUtcDateOnly } from '../utils/date.utils.js'
+
+export const dashboardStatsQuerySchema = z.object({
+  data: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida')
+    .optional()
+    .transform((value) => (value ? toUtcDateOnly(value) : undefined)),
+})
+
+export type DashboardStatsQuery = z.infer<typeof dashboardStatsQuerySchema>
 
 export const createEntregaSchema = z.object({
   nomeCliente: z.string().trim().optional(),
@@ -18,6 +29,10 @@ export const listEntregasSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
   filter: z.enum(['today', 'yesterday', 'week', 'month']).default('today'),
+  referenceDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida')
+    .optional(),
   sortBy: z
     .enum(['horario', 'nomeCliente', 'bairro', 'valorEntrega'])
     .default('horario'),

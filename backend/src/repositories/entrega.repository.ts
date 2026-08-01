@@ -1,7 +1,7 @@
 import type { Prisma, StatusEntrega } from '../../generated/prisma/client.js'
 import { prisma } from '../lib/prisma.js'
 import type { DateFilter } from '../utils/date.utils.js'
-import { getUtcDateOnlyRange, toUtcDateOnly, toUtcDateOnlyFromLocal, formatDateOnlyISO } from '../utils/date.utils.js'
+import { getUtcDateOnlyRange, toUtcDateOnly, toUtcDateOnlyFromBusinessTz, formatDateOnlyISO } from '../utils/date.utils.js'
 import type { CreateEntregaInput, UpdateEntregaInput } from '../schemas/entrega.schema.js'
 
 export interface ListEntregasFilters {
@@ -9,6 +9,7 @@ export interface ListEntregasFilters {
   limit: number
   search?: string
   filter: DateFilter
+  referenceDate?: string
   sortBy: 'horario' | 'nomeCliente' | 'bairro' | 'valorEntrega'
   sortOrder: 'asc' | 'desc'
 }
@@ -20,7 +21,7 @@ export class EntregaRepository {
     return prisma.entrega.create({
       data: {
         ...data,
-        data: toUtcDateOnlyFromLocal(now),
+        data: toUtcDateOnlyFromBusinessTz(now),
         horario: now,
       },
     })
@@ -31,7 +32,8 @@ export class EntregaRepository {
   }
 
   async findMany(filters: ListEntregasFilters) {
-    const { start, end } = getUtcDateOnlyRange(filters.filter)
+    const reference = filters.referenceDate ?? new Date()
+    const { start, end } = getUtcDateOnlyRange(filters.filter, reference)
     const skip = (filters.page - 1) * filters.limit
 
     const where: Prisma.EntregaWhereInput = {

@@ -10,7 +10,7 @@ import type {
 import {
   formatDateOnlyISO,
   toUtcDateOnly,
-  toUtcDateOnlyFromLocal,
+  toUtcDateOnlyFromBusinessTz,
 } from '../utils/date.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { generateWhatsAppText } from './whatsapp.service.js'
@@ -18,7 +18,7 @@ import { generateWhatsAppText } from './whatsapp.service.js'
 export class PrestacaoService {
   private normalizeDate(input?: Date) {
     if (!input) {
-      return toUtcDateOnlyFromLocal(new Date())
+      return toUtcDateOnlyFromBusinessTz()
     }
 
     return toUtcDateOnly(input)

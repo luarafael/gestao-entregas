@@ -1,5 +1,90 @@
 export type DateFilter = 'today' | 'yesterday' | 'week' | 'month'
 
+export const BUSINESS_TIMEZONE = 'America/Sao_Paulo'
+
+/** Data civil no fuso do negócio (Brasil) como YYYY-MM-DD */
+export function formatBusinessDateOnlyISO(date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: BUSINESS_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
+function resolveBusinessDayIso(reference: Date | string): string {
+  if (typeof reference === 'string') {
+    const match = reference.match(/^(\d{4}-\d{2}-\d{2})/)
+    if (match) {
+      return match[1]
+    }
+  }
+
+  return formatBusinessDateOnlyISO(reference)
+}
+
+function getBusinessDayOfWeek(reference: Date | string): number {
+  const instant =
+    typeof reference === 'string'
+      ? new Date(`${resolveBusinessDayIso(reference)}T12:00:00.000Z`)
+      : reference
+
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: BUSINESS_TIMEZONE,
+    weekday: 'short',
+  }).format(instant)
+
+  const map: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  }
+
+  return map[weekday] ?? 0
+}
+
+/** Instante atual -> dia civil Brasil -> UTC date-only (@db.Date) */
+export function toUtcDateOnlyFromBusinessTz(date = new Date()): Date {
+  return toUtcDateOnly(formatBusinessDateOnlyISO(date))
+}
+
+export function getBusinessUtcDateOnlyRange(
+  filter: DateFilter,
+  reference: Date | string = new Date(),
+): { start: Date; end: Date } {
+  const refEnd = toUtcDateOnly(resolveBusinessDayIso(reference))
+
+  switch (filter) {
+    case 'today':
+      return { start: refEnd, end: refEnd }
+
+    case 'yesterday': {
+      const start = new Date(refEnd)
+      start.setUTCDate(start.getUTCDate() - 1)
+      return { start, end: start }
+    }
+
+    case 'week': {
+      const dow = getBusinessDayOfWeek(reference)
+      const diff = dow === 0 ? 6 : dow - 1
+      const start = new Date(refEnd)
+      start.setUTCDate(start.getUTCDate() - diff)
+      return { start, end: refEnd }
+    }
+
+    case 'month': {
+      const iso = resolveBusinessDayIso(reference)
+      const [year, month] = iso.split('-')
+      const start = toUtcDateOnly(`${year}-${month}-01`)
+      return { start, end: refEnd }
+    }
+  }
+}
+
 export function startOfDay(date: Date): Date {
   const result = new Date(date)
   result.setHours(0, 0, 0, 0)
@@ -90,21 +175,16 @@ export function toUtcDateOnlyFromLocal(date: Date): Date {
 
 export function getUtcDateOnlyRange(
   filter: DateFilter,
-  reference = new Date(),
+  reference: Date | string = new Date(),
 ): { start: Date; end: Date } {
-  const { start, end } = getDateRange(filter, reference)
-
-  return {
-    start: toUtcDateOnlyFromLocal(start),
-    end: toUtcDateOnlyFromLocal(end),
-  }
+  return getBusinessUtcDateOnlyRange(filter, reference)
 }
 
 export function getLastDaysUtcRange(
   days: number,
-  reference = new Date(),
+  reference: Date | string = new Date(),
 ): { start: Date; end: Date } {
-  const end = toUtcDateOnlyFromLocal(reference)
+  const end = toUtcDateOnly(resolveBusinessDayIso(reference))
   const start = new Date(end)
   start.setUTCDate(start.getUTCDate() - (days - 1))
   return { start, end }
