@@ -44,6 +44,7 @@ describe('useCreateDelivery errors', () => {
         endereco: 'Rua A',
         bairro: 'Centro',
         valorEntrega: 10,
+        pagoPeloCliente: false,
       }),
     ).rejects.toThrow()
 

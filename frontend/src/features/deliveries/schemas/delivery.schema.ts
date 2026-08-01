@@ -1,15 +1,26 @@
 import { z } from 'zod'
 
-export const deliveryFormSchema = z.object({
-  nomeCliente: z.string().trim().optional(),
-  endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
-  bairro: z.string().trim().min(1, 'Bairro é obrigatório'),
-  cidade: z.string().trim().optional(),
-  valorEntrega: z
-    .number({ message: 'Valor é obrigatório' })
-    .positive('Valor deve ser maior que zero'),
-  observacao: z.string().trim().optional(),
-})
+export const deliveryFormSchema = z
+  .object({
+    nomeCliente: z.string().trim().optional(),
+    endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
+    bairro: z.string().trim().min(1, 'Bairro é obrigatório'),
+    cidade: z.string().trim().optional(),
+    valorEntrega: z
+      .number({ message: 'Valor é obrigatório' })
+      .positive('Valor deve ser maior que zero'),
+    observacao: z.string().trim().optional(),
+    pagoPeloCliente: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.pagoPeloCliente && !data.nomeCliente?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Informe o nome do cliente quando a corrida foi paga por ele',
+        path: ['nomeCliente'],
+      })
+    }
+  })
 
 export type DeliveryFormData = z.infer<typeof deliveryFormSchema>
 

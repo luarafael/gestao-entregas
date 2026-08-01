@@ -90,7 +90,14 @@ function DeliveriesTable({ deliveries }: { deliveries: Entrega[] }) {
               </td>
               <td className="px-3 py-3">{delivery.bairro}</td>
               <td className="px-3 py-3 text-right font-medium">
-                {formatCurrency(Number(delivery.valorEntrega))}
+                <div className="flex flex-col items-end gap-1">
+                  <span>{formatCurrency(Number(delivery.valorEntrega))}</span>
+                  {delivery.pagoPeloCliente ? (
+                    <span className="text-xs font-normal text-amber-600 dark:text-amber-400">
+                      Pago pelo cliente
+                    </span>
+                  ) : null}
+                </div>
               </td>
             </tr>
           ))}

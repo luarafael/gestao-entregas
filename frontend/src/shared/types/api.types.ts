@@ -15,6 +15,7 @@ export interface Entrega {
   cidade: string | null
   observacao: string | null
   valorEntrega: string
+  pagoPeloCliente: boolean
   status: 'ENTREGUE' | 'CANCELADA'
   criadoEm: string
 }

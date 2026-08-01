@@ -22,6 +22,8 @@ export interface PrestacaoPreview {
   data: string
   totalEntregas: number
   valorTotal: number
+  entregasPagasPeloCliente: number
+  valorPagasPeloCliente: number
   valorPendencias: number
   valorFinal: number
   totalPendencias: number

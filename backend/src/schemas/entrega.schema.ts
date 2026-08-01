@@ -11,17 +11,36 @@ export const dashboardStatsQuerySchema = z.object({
 
 export type DashboardStatsQuery = z.infer<typeof dashboardStatsQuerySchema>
 
-export const createEntregaSchema = z.object({
+const entregaBaseSchema = z.object({
   nomeCliente: z.string().trim().optional(),
   endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
   bairro: z.string().trim().min(1, 'Bairro é obrigatório'),
   cidade: z.string().trim().optional(),
   valorEntrega: z.coerce.number().positive('Valor deve ser maior que zero'),
   observacao: z.string().trim().optional(),
+  pagoPeloCliente: z.boolean().optional().default(false),
 })
 
-export const updateEntregaSchema = createEntregaSchema.partial().extend({
+export const createEntregaSchema = entregaBaseSchema.superRefine((data, ctx) => {
+  if (data.pagoPeloCliente && !data.nomeCliente?.trim()) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Informe o nome do cliente quando a corrida foi paga por ele',
+      path: ['nomeCliente'],
+    })
+  }
+})
+
+export const updateEntregaSchema = entregaBaseSchema.partial().extend({
   status: z.enum(['ENTREGUE', 'CANCELADA']).optional(),
+}).superRefine((data, ctx) => {
+  if (data.pagoPeloCliente && !data.nomeCliente?.trim()) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Informe o nome do cliente quando a corrida foi paga por ele',
+      path: ['nomeCliente'],
+    })
+  }
 })
 
 export const listEntregasSchema = z.object({

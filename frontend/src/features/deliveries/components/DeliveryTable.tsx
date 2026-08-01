@@ -1,4 +1,4 @@
-import { Button, DataTable } from '@/shared/components/ui'
+import { Button, Badge, DataTable } from '@/shared/components/ui'
 import { IconPackage } from '@/shared/components/icons'
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
@@ -60,7 +60,14 @@ export function DeliveryTable({
           header: 'Valor',
           headerClassName: 'text-right',
           cellClassName: 'text-right font-medium',
-          render: (delivery) => formatCurrency(Number(delivery.valorEntrega)),
+          render: (delivery) => (
+            <div className="flex flex-col items-end gap-1">
+              <span>{formatCurrency(Number(delivery.valorEntrega))}</span>
+              {delivery.pagoPeloCliente ? (
+                <Badge variant="warning">Pago pelo cliente</Badge>
+              ) : null}
+            </div>
+          ),
         },
         {
           key: 'acoes',

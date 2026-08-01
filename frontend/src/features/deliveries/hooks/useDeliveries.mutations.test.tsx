@@ -46,6 +46,7 @@ describe('useDeliveries mutations', () => {
       cidade: null,
       observacao: null,
       valorEntrega: '10',
+      pagoPeloCliente: false,
       status: 'ENTREGUE',
       criadoEm: '',
     })
@@ -56,7 +57,7 @@ describe('useDeliveries mutations', () => {
 
     await result.current.mutateAsync({
       id: '1',
-      data: { endereco: 'Rua A', bairro: 'Centro', valorEntrega: 10 },
+      data: { endereco: 'Rua A', bairro: 'Centro', valorEntrega: 10, pagoPeloCliente: false },
     })
 
     expect(deliveryService.update).toHaveBeenCalled()

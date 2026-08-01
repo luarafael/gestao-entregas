@@ -16,6 +16,7 @@ interface EntregaSummary {
   bairro: string
   nomeCliente: string | null
   valorEntrega: number | { toString(): string }
+  pagoPeloCliente?: boolean
 }
 
 interface PendenciaSummary {
@@ -47,8 +48,26 @@ export function generateWhatsAppText(
   } else {
     for (const entrega of entregas) {
       const cliente = entrega.nomeCliente ?? 'Sem nome'
+      const valor = formatCurrency(Number(entrega.valorEntrega))
+      const pagoPeloCliente = entrega.pagoPeloCliente
+        ? ' — _pago pelo cliente_'
+        : ''
+
       lines.push(
-        `• ${WA.pin} ${entrega.bairro} - ${WA.user} ${cliente} - ${WA.money} ${formatCurrency(Number(entrega.valorEntrega))}`,
+        `• ${WA.pin} ${entrega.bairro} - ${WA.user} ${cliente} - ${WA.money} ${valor}${pagoPeloCliente}`,
+      )
+    }
+
+    const pagasPeloCliente = entregas.filter((entrega) => entrega.pagoPeloCliente)
+    if (pagasPeloCliente.length > 0) {
+      const valorForaDoTotal = pagasPeloCliente.reduce(
+        (sum, entrega) => sum + Number(entrega.valorEntrega),
+        0,
+      )
+
+      lines.push(
+        '',
+        `${WA.check} *Pagas pelo cliente (fora do total):* ${pagasPeloCliente.length} corrida(s) — ${formatCurrency(valorForaDoTotal)}`,
       )
     }
   }

@@ -109,6 +109,8 @@ export function PrestacaoPage() {
       date: preview.data,
       totalEntregas: preview.totalEntregas,
       valorTotal: preview.valorTotal,
+      entregasPagasPeloCliente: preview.entregasPagasPeloCliente,
+      valorPagasPeloCliente: preview.valorPagasPeloCliente,
       valorPendencias: preview.valorPendencias,
       valorFinal: preview.valorFinal,
       totalPendencias: preview.totalPendencias,
@@ -258,6 +260,13 @@ export function PrestacaoPage() {
                     highlight
                   />
                 </div>
+                {preview?.entregasPagasPeloCliente ? (
+                  <p className="text-sm text-muted-foreground">
+                    {preview.entregasPagasPeloCliente} corrida(s) paga(s) pelo
+                    cliente ({formatCurrency(preview.valorPagasPeloCliente)}) —
+                    fora do total da prestação.
+                  </p>
+                ) : null}
                 {hasNoDeliveries ? (
                   <p className="text-sm text-amber-600 dark:text-amber-400">
                     Nenhuma entrega registrada para{' '}

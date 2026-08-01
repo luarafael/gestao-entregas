@@ -95,17 +95,33 @@ export class ReportRepository {
         status: 'ENTREGUE' as StatusEntrega,
       },
       _count: { id: true },
-      _sum: { valorEntrega: true },
       orderBy: {
         _count: { id: 'desc' },
       },
       take: limit,
     })
 
+    const groupedValor = await prisma.entrega.groupBy({
+      by: ['bairro'],
+      where: {
+        data: { gte: start, lte: end },
+        status: 'ENTREGUE' as StatusEntrega,
+        pagoPeloCliente: false,
+      },
+      _sum: { valorEntrega: true },
+    })
+
+    const valorByBairro = new Map(
+      groupedValor.map((item) => [
+        item.bairro,
+        Number(item._sum.valorEntrega ?? 0),
+      ]),
+    )
+
     return grouped.map((item) => ({
       bairro: item.bairro,
       entregas: item._count.id,
-      valor: Number(item._sum.valorEntrega ?? 0),
+      valor: valorByBairro.get(item.bairro) ?? 0,
     }))
   }
 

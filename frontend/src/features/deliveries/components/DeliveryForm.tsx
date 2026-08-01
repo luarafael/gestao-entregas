@@ -22,6 +22,7 @@ const defaultValues: DeliveryFormData = {
   cidade: '',
   valorEntrega: 0,
   observacao: '',
+  pagoPeloCliente: false,
 }
 
 export function DeliveryForm({
@@ -49,6 +50,7 @@ export function DeliveryForm({
         cidade: editingDelivery.cidade ?? '',
         valorEntrega: Number(editingDelivery.valorEntrega),
         observacao: editingDelivery.observacao ?? '',
+        pagoPeloCliente: editingDelivery.pagoPeloCliente,
       })
     } else {
       reset(defaultValues)
@@ -56,7 +58,10 @@ export function DeliveryForm({
   }, [editingDelivery, reset])
 
   const handleFormSubmit = handleSubmit(async (data) => {
-    await onSubmit(data)
+    await onSubmit({
+      ...data,
+      pagoPeloCliente: data.pagoPeloCliente ?? false,
+    })
     reset(defaultValues)
   })
 
@@ -112,6 +117,23 @@ export function DeliveryForm({
             error={errors.observacao?.message}
             {...register('observacao')}
           />
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/60 bg-surface/30 p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 rounded border-border accent-primary"
+              {...register('pagoPeloCliente')}
+            />
+            <span className="text-sm leading-snug">
+              <span className="font-medium text-foreground">
+                Pago pelo cliente
+              </span>
+              <span className="mt-0.5 block text-muted-foreground">
+                A corrida foi paga diretamente pelo cliente cadastrado e não
+                entra no total da prestação.
+              </span>
+            </span>
+          </label>
 
           <div className="flex flex-wrap gap-2 pt-2">
             <Button type="submit" isLoading={isSubmitting} className="flex-1 sm:flex-none">

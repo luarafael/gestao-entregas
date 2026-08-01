@@ -52,6 +52,7 @@ describe('deliveryService', () => {
       endereco: 'Rua A',
       bairro: 'Centro',
       valorEntrega: 10,
+      pagoPeloCliente: false,
     })
 
     expect(apiFetch).toHaveBeenCalledWith('/api/entregas', expect.any(Object))
@@ -64,6 +65,7 @@ describe('deliveryService', () => {
       endereco: 'Rua B',
       bairro: 'Centro',
       valorEntrega: 15,
+      pagoPeloCliente: false,
     })
 
     expect(apiFetch).toHaveBeenCalledWith('/api/entregas/1', expect.any(Object))

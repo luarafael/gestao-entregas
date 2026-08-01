@@ -6,24 +6,37 @@ export interface DailyReportSummary {
   date: string
   totalEntregas: number
   valorTotal: number
+  entregasPagasPeloCliente?: number
+  valorPagasPeloCliente?: number
   valorPendencias: number
   valorFinal: number
   totalPendencias?: number
 }
 
 export function formatDailyReportSummary(report: DailyReportSummary): string {
-  return [
+  const lines = [
     '',
     `${WA.chart} *Relatório diário*`,
     '',
     `${WA.clock} *Data:* ${formatPrestacaoDate(report.date)}`,
     `${WA.package} *Entregas:* ${report.totalEntregas}`,
     `${WA.bills} *Valor das entregas:* ${formatCurrency(report.valorTotal)}`,
+  ]
+
+  if (report.entregasPagasPeloCliente && report.entregasPagasPeloCliente > 0) {
+    lines.push(
+      `${WA.check} *Pagas pelo cliente (fora do total):* ${report.entregasPagasPeloCliente} — ${formatCurrency(report.valorPagasPeloCliente ?? 0)}`,
+    )
+  }
+
+  lines.push(
     `${WA.hourglass} *Pendências do dia:* ${report.totalPendencias ?? 0}`,
     `${WA.warning} *Valor das pendências:* ${formatCurrency(report.valorPendencias)}`,
     `${WA.check} *Valor final:* ${formatCurrency(report.valorFinal)}`,
     '---',
-  ].join('\n')
+  )
+
+  return lines.join('\n')
 }
 
 export function buildWhatsAppMessage(

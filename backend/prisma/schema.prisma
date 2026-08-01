@@ -27,6 +27,7 @@ model Entrega {
   cidade       String?
   observacao   String?
   valorEntrega Decimal       @db.Decimal(10, 2)
+  pagoPeloCliente Boolean    @default(false)
   status       StatusEntrega @default(ENTREGUE)
   criadoEm     DateTime      @default(now())
 

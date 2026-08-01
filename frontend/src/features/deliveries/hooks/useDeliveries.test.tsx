@@ -66,6 +66,7 @@ describe('useDeliveries', () => {
       cidade: null,
       observacao: null,
       valorEntrega: '10',
+      pagoPeloCliente: false,
       status: 'ENTREGUE',
       criadoEm: '',
     })
@@ -78,6 +79,7 @@ describe('useDeliveries', () => {
       endereco: 'Rua A',
       bairro: 'Centro',
       valorEntrega: 10,
+      pagoPeloCliente: false,
     })
 
     expect(deliveryService.create).toHaveBeenCalled()

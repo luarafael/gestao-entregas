@@ -45,6 +45,8 @@ export class PrestacaoService {
     return {
       totalEntregas: entregaStats.totalEntregas,
       valorTotal: entregaStats.valorTotal,
+      entregasPagasPeloCliente: entregaStats.entregasPagasPeloCliente,
+      valorPagasPeloCliente: entregaStats.valorPagasPeloCliente,
       valorPendencias,
       valorFinal: entregaStats.valorTotal + valorPendencias,
       pendencias,
@@ -88,6 +90,8 @@ export class PrestacaoService {
       data: formatDateOnlyISO(date),
       totalEntregas: totals.totalEntregas,
       valorTotal: totals.valorTotal,
+      entregasPagasPeloCliente: totals.entregasPagasPeloCliente,
+      valorPagasPeloCliente: totals.valorPagasPeloCliente,
       valorPendencias: totals.valorPendencias,
       valorFinal: totals.valorFinal,
       totalPendencias: totals.pendencias.length,

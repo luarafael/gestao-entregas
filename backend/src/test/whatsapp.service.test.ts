@@ -77,4 +77,21 @@ describe('generateWhatsAppText', () => {
     expect(text).toContain('Nenhuma entrega registrada')
     expect(text).toContain('Nenhuma pendência')
   })
+
+  it('should mark deliveries paid by client and show summary', () => {
+    const text = generateWhatsAppText(
+      prestacao,
+      [
+        {
+          ...entregas[0],
+          pagoPeloCliente: true,
+        },
+        entregas[1],
+      ],
+      [],
+    )
+
+    expect(text).toContain('pago pelo cliente')
+    expect(text).toContain('Pagas pelo cliente (fora do total)')
+  })
 })

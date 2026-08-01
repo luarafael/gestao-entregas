@@ -58,6 +58,8 @@ describe('PrestacaoService', () => {
     entregaRepository.getStatsByDate.mockResolvedValue({
       totalEntregas: 1,
       valorTotal: 25,
+      entregasPagasPeloCliente: 0,
+      valorPagasPeloCliente: 0,
     })
     prestacaoRepository.create.mockResolvedValue({
       id: '1',
@@ -134,6 +136,8 @@ describe('PrestacaoService', () => {
     entregaRepository.getStatsByDate.mockResolvedValue({
       totalEntregas: 2,
       valorTotal: 124.98,
+      entregasPagasPeloCliente: 0,
+      valorPagasPeloCliente: 0,
     })
     pendenciaRepository.findPendingByDate.mockResolvedValue([
       { valor: 25 },
@@ -157,6 +161,8 @@ describe('PrestacaoService', () => {
     entregaRepository.getStatsByDate.mockResolvedValue({
       totalEntregas: 2,
       valorTotal: 185,
+      entregasPagasPeloCliente: 0,
+      valorPagasPeloCliente: 0,
     })
     pendenciaRepository.findPendingByDate.mockResolvedValue([
       { valor: 15 },

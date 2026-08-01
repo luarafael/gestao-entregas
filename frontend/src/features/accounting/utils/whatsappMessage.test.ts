@@ -21,6 +21,16 @@ describe('whatsappMessage', () => {
     expect(text).toContain('*Entregas:* 2')
   })
 
+  it('formata entregas pagas pelo cliente no resumo diário', () => {
+    const text = formatDailyReportSummary({
+      ...report,
+      entregasPagasPeloCliente: 1,
+      valorPagasPeloCliente: 40,
+    })
+
+    expect(text).toContain('Pagas pelo cliente (fora do total)')
+  })
+
   it('anexa relatório diário ao texto base', () => {
     const message = buildWhatsAppMessage('Prestação', true, report)
 

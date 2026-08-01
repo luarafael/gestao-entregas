@@ -25,6 +25,29 @@ describe('entrega schemas', () => {
     ).toThrow()
   })
 
+  it('rejeita pago pelo cliente sem nome', () => {
+    expect(() =>
+      createEntregaSchema.parse({
+        endereco: 'Rua A, 1',
+        bairro: 'Centro',
+        valorEntrega: 10,
+        pagoPeloCliente: true,
+      }),
+    ).toThrow()
+  })
+
+  it('aceita pago pelo cliente com nome', () => {
+    const parsed = createEntregaSchema.parse({
+      nomeCliente: 'Maria',
+      endereco: 'Rua A, 1',
+      bairro: 'Centro',
+      valorEntrega: 10,
+      pagoPeloCliente: true,
+    })
+
+    expect(parsed.pagoPeloCliente).toBe(true)
+  })
+
   it('aceita atualização parcial', () => {
     const parsed = updateEntregaSchema.parse({
       status: 'CANCELADA',

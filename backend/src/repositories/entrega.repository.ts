@@ -84,19 +84,32 @@ export class EntregaRepository {
 
   async getStatsByDate(date: Date) {
     const day = toUtcDateOnly(formatDateOnlyISO(date))
+    const baseWhere = {
+      data: day,
+      status: 'ENTREGUE' as StatusEntrega,
+    }
 
-    const result = await prisma.entrega.aggregate({
-      where: {
-        data: day,
-        status: 'ENTREGUE' as StatusEntrega,
-      },
-      _count: { id: true },
-      _sum: { valorEntrega: true },
-    })
+    const [total, billable, paidByClient] = await Promise.all([
+      prisma.entrega.aggregate({
+        where: baseWhere,
+        _count: { id: true },
+      }),
+      prisma.entrega.aggregate({
+        where: { ...baseWhere, pagoPeloCliente: false },
+        _sum: { valorEntrega: true },
+      }),
+      prisma.entrega.aggregate({
+        where: { ...baseWhere, pagoPeloCliente: true },
+        _count: { id: true },
+        _sum: { valorEntrega: true },
+      }),
+    ])
 
     return {
-      totalEntregas: result._count.id,
-      valorTotal: Number(result._sum.valorEntrega ?? 0),
+      totalEntregas: total._count.id,
+      valorTotal: Number(billable._sum.valorEntrega ?? 0),
+      entregasPagasPeloCliente: paidByClient._count.id,
+      valorPagasPeloCliente: Number(paidByClient._sum.valorEntrega ?? 0),
     }
   }
 }
