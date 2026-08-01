@@ -104,3 +104,18 @@ export function IconChart(props: IconProps) {
     </svg>
   )
 }
+
+/** Logo do app: pacote + rota (entregas) */
+export function IconAppLogo(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+      <path
+        d="M12 4.5 16.5 7v4.5c0 2.8-2.2 5.2-4.5 6.5C9.7 16.7 7.5 14.3 7.5 11.5V7L12 4.5Z"
+        strokeLinejoin="round"
+      />
+      <path d="M12 4.5v13M7.5 7l4.5 2.5L16.5 7" strokeLinejoin="round" />
+      <circle cx="17.5" cy="17.5" r="1.75" fill="currentColor" stroke="none" />
+      <path d="M14.5 15.5c1.2-.8 2.2-2 3-3.5" strokeLinecap="round" />
+    </svg>
+  )
+}

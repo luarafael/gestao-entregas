@@ -6,6 +6,7 @@ import {
   IconClock,
   IconReceipt,
   IconChart,
+  IconAppLogo,
 } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
 
@@ -26,7 +27,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
     <aside className="flex h-full flex-col border-r border-border/60 bg-card/40 backdrop-blur-xl">
       <div className="flex h-16 items-center gap-3 border-b border-border/60 px-5">
         <div className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
-          <IconPackage className="size-5" />
+          <IconAppLogo className="size-5" />
         </div>
         <div>
           <p className="text-sm font-semibold tracking-tight">Sistema Rotas</p>

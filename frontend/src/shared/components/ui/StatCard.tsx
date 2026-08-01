@@ -33,7 +33,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay, ease: 'easeOut' }}
     >
-      <Card hover animated className="h-full">
+      <Card animated className="h-full">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           <div

@@ -5,7 +5,6 @@ import { cn } from '@/shared/utils/cn'
 interface CardProps {
   children: ReactNode
   className?: string
-  hover?: boolean
   glass?: boolean
   animated?: boolean
 }
@@ -13,16 +12,14 @@ interface CardProps {
 export function Card({
   children,
   className,
-  hover = false,
   glass = true,
   animated = false,
 }: CardProps) {
   const classes = cn(
-    'rounded-2xl border p-5',
+    'rounded-2xl border p-5 outline-none focus:outline-none focus-visible:outline-none',
     glass
       ? 'border-border/60 bg-card/70 backdrop-blur-xl'
       : 'border-border bg-card',
-    hover && 'transition-colors hover:border-primary/30 hover:bg-card/90',
     className,
   )
 
