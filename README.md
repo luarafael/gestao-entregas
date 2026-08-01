@@ -174,7 +174,9 @@ Veja passo a passo em [DEPLOY.md](./DEPLOY.md#opção-b--vercel--railway--neon).
 
 Health check: `GET /api/health` na URL da API.
 
-Para voltar a este ponto no git: `git checkout pre-etapa-9`
+**Checkpoint git:** tag `pre-etapa-9` — produção validada, fix de fuso horário (America/Sao_Paulo) e deploy Railway OK.
+
+Para voltar a este ponto: `git fetch origin && git checkout pre-etapa-9`
 
 ## API Endpoints
 
