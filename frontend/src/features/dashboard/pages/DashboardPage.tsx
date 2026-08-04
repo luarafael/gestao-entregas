@@ -213,7 +213,7 @@ export function DashboardPage() {
             <StatCard
               title="Média diária"
               value={String(weekSummary?.mediaEntregasPorDia ?? 0)}
-              description={`${formatCurrency(weekSummary?.mediaValorPorDia ?? 0)} por dia`}
+              description={`${formatCurrency(weekSummary?.mediaValorPorDia ?? 0)} por dia fechado`}
               icon={<IconTrending className="size-5" />}
               accent="neutral"
               delay={0.05}

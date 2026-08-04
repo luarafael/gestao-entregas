@@ -53,7 +53,7 @@ export function ReportSummaryCards({
       <StatCard
         title="Média diária"
         value={String(summary?.mediaEntregasPorDia ?? 0)}
-        description="Entregas por dia"
+        description="Média por dia com prestação fechada"
         icon={<IconTrending className="size-5" />}
         accent="neutral"
         delay={0.1}
@@ -77,7 +77,7 @@ export function ReportSummaryCards({
       <StatCard
         title="Média de valor/dia"
         value={formatCurrency(summary?.mediaValorPorDia ?? 0)}
-        description="Valor final médio no período"
+        description="Valor das entregas por dia fechado"
         icon={<IconWallet className="size-5" />}
         accent="success"
         delay={0.25}

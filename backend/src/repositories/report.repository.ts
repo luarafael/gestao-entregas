@@ -5,27 +5,10 @@ import {
   formatDateOnlyISO,
   getUtcDateOnlyRange,
 } from '../utils/date.utils.js'
-
-function countDaysInRange(start: Date, end: Date) {
-  return (
-    Math.max(
-      1,
-      Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
-    ) + 1
-  )
-}
-
-function iterateUtcDays(start: Date, end: Date) {
-  const days: string[] = []
-  const cursor = new Date(start)
-
-  while (cursor.getTime() <= end.getTime()) {
-    days.push(formatDateOnlyISO(cursor))
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
-  }
-
-  return days
-}
+import {
+  calculatePeriodAverages,
+  iterateUtcDays,
+} from '../utils/report.utils.js'
 
 export class ReportRepository {
   async getPeriodDailyBreakdown(period: ReportPeriod, reference = new Date()) {
@@ -180,14 +163,17 @@ export class ReportRepository {
       (sum, prestacao) => sum + Number(prestacao.valorFinal),
       0,
     )
-    const daysInPeriod = countDaysInRange(start, end)
+    const averages = calculatePeriodAverages(
+      { totalEntregas, valorEntregas },
+      prestacoes.length,
+    )
 
     return {
       period,
       totalEntregas,
       valorEntregas,
-      mediaEntregasPorDia: Number((totalEntregas / daysInPeriod).toFixed(1)),
-      mediaValorPorDia: Number((valorFinalPrestacoes / daysInPeriod).toFixed(2)),
+      mediaEntregasPorDia: averages.mediaEntregasPorDia,
+      mediaValorPorDia: averages.mediaValorPorDia,
       totalPrestacoes: prestacoes.length,
       valorFinalPrestacoes,
       pendenciasAbertas: pendenciaStats._count.id,
