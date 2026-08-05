@@ -15,4 +15,5 @@ export const env = {
   PORT: Number(getEnv('PORT', '3001')),
   NODE_ENV: getEnv('NODE_ENV', 'development'),
   FRONTEND_URL: getEnv('FRONTEND_URL', 'http://localhost:5173'),
+  GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY ?? '',
 } as const

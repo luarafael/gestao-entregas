@@ -1,0 +1,56 @@
+import { describe, it, expect } from 'vitest'
+import {
+  buildHaversineMatrix,
+  nearestNeighborOrder,
+  optimizeStopOrder,
+  summarizeRoute,
+  twoOptImprove,
+} from '../utils/route-optimizer.js'
+
+describe('route-optimizer', () => {
+  const matrix = {
+    meters: [
+      [0, 1000, 5000, 2000],
+      [1000, 0, 4000, 1500],
+      [5000, 4000, 0, 3000],
+      [2000, 1500, 3000, 0],
+    ],
+    seconds: [
+      [0, 120, 600, 240],
+      [120, 0, 480, 180],
+      [600, 480, 0, 360],
+      [240, 180, 360, 0],
+    ],
+  }
+
+  it('calcula nearest neighbor a partir do depósito', () => {
+    const order = nearestNeighborOrder(matrix)
+    expect(order[0]).toBe(1)
+    expect(order).toHaveLength(3)
+  })
+
+  it('melhora rota com 2-opt', () => {
+    const initial = [2, 1, 3]
+    const improved = twoOptImprove(initial, matrix)
+    const initialCost = summarizeRoute(initial, matrix).tempoTotal
+    const improvedCost = summarizeRoute(improved, matrix).tempoTotal
+    expect(improvedCost).toBeLessThanOrEqual(initialCost)
+  })
+
+  it('otimiza ordem completa', () => {
+    const order = optimizeStopOrder(matrix)
+    expect(order).toHaveLength(3)
+    expect(new Set(order).size).toBe(3)
+  })
+
+  it('monta matriz haversine aproximada', () => {
+    const haversine = buildHaversineMatrix([
+      { lat: -3.73, lng: -38.52 },
+      { lat: -3.74, lng: -38.53 },
+      { lat: -3.75, lng: -38.54 },
+    ])
+
+    expect(haversine.meters[0][1]).toBeGreaterThan(0)
+    expect(haversine.seconds[0][1]).toBeGreaterThan(0)
+  })
+})

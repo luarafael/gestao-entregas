@@ -11,6 +11,7 @@ import {
 import { DeliveryForm } from '../components/DeliveryForm'
 import { DeliveryFiltersBar } from '../components/DeliveryFiltersBar'
 import { DeliveryTable } from '../components/DeliveryTable'
+import { routingService } from '@/features/routing/services/routing.service'
 import type { DeliveryFilters, DeliveryFormData } from '../schemas/delivery.schema'
 import type { Entrega } from '@/shared/types/api.types'
 
@@ -54,6 +55,34 @@ export function DeliveriesPage() {
   const handleSubmit = async (formData: DeliveryFormData) => {
     if (editingDelivery) {
       await updateMutation.mutateAsync({ id: editingDelivery.id, data: formData })
+
+      try {
+        const linked = await routingService.findByEntrega(editingDelivery.id)
+        if (linked.length > 0) {
+          const shouldSync = window.confirm(
+            'Esta entrega faz parte de uma rota planejada. Deseja atualizar também no Planejador?',
+          )
+          if (shouldSync) {
+            await routingService.syncEntrega({
+              entregaId: editingDelivery.id,
+              cliente: formData.nomeCliente || null,
+              endereco: [
+                formData.endereco,
+                formData.bairro,
+                formData.cidade,
+              ]
+                .filter(Boolean)
+                .join(' - '),
+              bairro: formData.bairro,
+              observacao: formData.observacao || null,
+              valorEntrega: formData.valorEntrega,
+            })
+          }
+        }
+      } catch {
+        // Sync is best-effort; delivery update already succeeded.
+      }
+
       setEditingDelivery(null)
     } else {
       await createMutation.mutateAsync(formData)

@@ -33,6 +33,12 @@ const ReportsPage = lazy(() =>
   })),
 )
 
+const PlannerPage = lazy(() =>
+  import('@/features/routing/pages/PlannerPage').then((module) => ({
+    default: module.PlannerPage,
+  })),
+)
+
 const routes = [
   {
     path: '/',
@@ -43,6 +49,7 @@ const routes = [
       { path: 'pendencias', element: <PendingPage /> },
       { path: 'prestacao', element: <PrestacaoPage /> },
       { path: 'relatorios', element: <ReportsPage /> },
+      { path: 'planejador', element: <PlannerPage /> },
     ],
   },
 ]

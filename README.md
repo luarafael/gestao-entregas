@@ -19,6 +19,7 @@ Na prática, substitui planilha + anotações soltas por um painel único com hi
 - **Pendências** — controle de valores em aberto vinculados às entregas
 - **Prestação de contas** — geração diária, histórico, cópia e envio via WhatsApp
 - **Relatórios** — gráficos por período, bairro e evolução de valores
+- **Planejador de Rotas** — importa entregas cadastradas, otimiza a sequência (Google Routes API ou fallback local), mapa Leaflet, histórico e navegação no Google Maps
 - **Tema claro/escuro** — interface responsiva para desktop e mobile
 
 ---
@@ -27,7 +28,7 @@ Na prática, substitui planilha + anotações soltas por um painel único com hi
 
 | Camada | Tecnologias |
 |--------|-------------|
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, Zustand, React Hook Form, Zod, Recharts |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, Zustand, React Hook Form, Zod, Recharts, Leaflet |
 | Backend | Node.js, Express, TypeScript, Prisma |
 | Banco | PostgreSQL |
 | Testes | Vitest, React Testing Library |
@@ -109,6 +110,7 @@ Health check da API: `GET http://localhost:3001/api/health`
 | `PORT` | Porta da API (padrão `3001`) |
 | `FRONTEND_URL` | Origem permitida no CORS |
 | `NODE_ENV` | `development` ou `production` |
+| `GOOGLE_MAPS_API_KEY` | Opcional — Routes/Geocoding API para otimização real |
 
 **Frontend** (`frontend/.env`)
 
@@ -161,6 +163,7 @@ No Railway, o `Dockerfile` na raiz do repo faz o build do backend. Na Vercel, co
 | Pendências | `GET/POST /api/pendencias` |
 | Prestações | `POST /api/prestacoes/generate`, `GET /api/prestacoes/:id/whatsapp` |
 | Relatórios | `GET /api/reports/summary`, `GET /api/reports/daily` |
+| Rotas | `POST /api/rotas/optimize`, `GET/POST /api/rotas`, `POST /api/rotas/sync-entrega` |
 
 ---
 

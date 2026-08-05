@@ -61,3 +61,52 @@ model PrestacaoContas {
 
   @@map("prestacoes_contas")
 }
+
+enum PrioridadeParada {
+  NORMAL
+  URGENTE
+}
+
+model RotaPlanejada {
+  id               String       @id @default(cuid())
+  data             DateTime     @db.Date
+  enderecoInicial  String
+  distanciaTotal   Decimal      @db.Decimal(12, 2)
+  tempoTotal       Int
+  aproximada       Boolean      @default(false)
+  criadoEm         DateTime     @default(now())
+  paradas          RotaParada[]
+
+  @@index([data])
+  @@map("rotas_planejadas")
+}
+
+model RotaParada {
+  id           String           @id @default(cuid())
+  rotaId       String
+  entregaId    String?
+  cliente      String?
+  endereco     String
+  bairro       String?
+  observacao   String?
+  ordem        Int
+  distancia    Decimal?         @db.Decimal(12, 2)
+  tempo        Int?
+  prioridade   PrioridadeParada @default(NORMAL)
+  valorEntrega Decimal?         @db.Decimal(10, 2)
+  latitude     Float?
+  longitude    Float?
+  rota         RotaPlanejada    @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+
+  @@index([rotaId])
+  @@index([entregaId])
+  @@map("rota_paradas")
+}
+
+model ConfiguracaoPlanejador {
+  id                    String   @id @default("default")
+  enderecoPartidaPadrao String
+  atualizadoEm          DateTime @updatedAt
+
+  @@map("configuracao_planejador")
+}

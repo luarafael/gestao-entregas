@@ -14,6 +14,7 @@ interface ModalProps {
   onConfirm?: () => void
   isLoading?: boolean
   variant?: 'default' | 'danger'
+  className?: string
 }
 
 export function Modal({
@@ -27,6 +28,7 @@ export function Modal({
   onConfirm,
   isLoading = false,
   variant = 'default',
+  className,
 }: ModalProps) {
   return (
     <AnimatePresence>
@@ -51,6 +53,7 @@ export function Modal({
             className={cn(
               'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2',
               'rounded-2xl border border-border/60 bg-card p-6 shadow-2xl backdrop-blur-xl',
+              className,
             )}
           >
             <h2 className="text-lg font-semibold tracking-tight">{title}</h2>

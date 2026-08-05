@@ -25,6 +25,10 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
     title: 'Relatórios',
     subtitle: 'Indicadores e gráficos',
   },
+  '/planejador': {
+    title: 'Planejador de Rotas',
+    subtitle: 'Otimize a sequência das entregas',
+  },
 }
 
 export function AppLayout() {
