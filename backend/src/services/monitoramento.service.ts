@@ -50,26 +50,6 @@ export interface MonitoramentoRota {
   paradas: MonitoramentoParada[]
 }
 
-export interface MonitoramentoEntregaAvulsa {
-  id: string
-  nomeCliente: string | null
-  endereco: string
-  bairro: string
-  horario: string
-  valorEntrega: number
-  pagoPeloCliente: boolean
-  motoboyId: string | null
-  motoboyNome: string
-}
-
-export interface MonitoramentoGrupoAvulso {
-  motoboyId: string | null
-  motoboyNome: string
-  entregas: MonitoramentoEntregaAvulsa[]
-  totalEntregas: number
-  valorTotal: number
-}
-
 function isProblemStatus(status: StatusExecucaoParada): boolean {
   return (
     status === 'CLIENTE_AUSENTE' ||
@@ -133,6 +113,86 @@ function toProximaParada(parada: MonitoramentoParada) {
   }
 }
 
+function isStopAtiva(status: StatusExecucaoParada): boolean {
+  return status === 'PENDENTE' || status === 'EM_ROTA'
+}
+
+export function isRotaConcluida(paradas: MonitoramentoParada[]): boolean {
+  if (paradas.length === 0) return false
+  return paradas.every((parada) => !isStopAtiva(parada.status))
+}
+
+export function isRotaEmExecucao(paradas: MonitoramentoParada[]): boolean {
+  if (paradas.length === 0) return false
+  if (isRotaConcluida(paradas)) return false
+  return paradas.some((parada) => parada.status !== 'PENDENTE')
+}
+
+function getConcluidaEm(paradas: MonitoramentoParada[]): string | null {
+  const timestamps = paradas
+    .map((parada) => parada.dataHoraStatus)
+    .filter((value): value is string => value != null)
+
+  if (timestamps.length === 0) return null
+
+  return timestamps.reduce((latest, current) =>
+    current > latest ? current : latest,
+  )
+}
+
+function buildMonitoramentoRota(
+  rota: {
+    id: string
+    enderecoInicial: string
+    distanciaTotal: unknown
+    tempoTotal: number
+  },
+  paradas: MonitoramentoParada[],
+  entregaMap: Map<string, { motoboy?: { id: string; nome: string } | null }>,
+): MonitoramentoRota {
+  const stats = computeStats(paradas)
+  const { distanciaRestante, tempoRestante } = computeRemaining(paradas)
+  const proxima = getProximaParada(paradas)
+
+  let motoboyId: string | null = null
+  let motoboyNome = 'Sem motoboy'
+
+  for (const parada of paradas) {
+    if (!parada.entregaId) continue
+    const entrega = entregaMap.get(parada.entregaId)
+    if (entrega?.motoboy) {
+      motoboyId = entrega.motoboy.id
+      motoboyNome = entrega.motoboy.nome
+      break
+    }
+  }
+
+  return {
+    rotaId: rota.id,
+    enderecoInicial: rota.enderecoInicial,
+    distanciaTotal: Number(rota.distanciaTotal),
+    tempoTotal: rota.tempoTotal,
+    distanciaRestante,
+    tempoRestante,
+    motoboyId,
+    motoboyNome,
+    totalParadas: paradas.length,
+    stats: {
+      pendentes: stats.pendentes,
+      emRota: stats.emRota,
+      entregues: stats.entregues,
+      problemas: stats.problemas,
+      percentual: stats.percentual,
+    },
+    proximaParada: proxima ? toProximaParada(proxima) : null,
+    paradas,
+  }
+}
+
+export interface MonitoramentoRotaHistorico extends MonitoramentoRota {
+  concluidaEm: string | null
+}
+
 export class MonitoramentoService {
   async getMonitoramento(reference?: Date | string) {
     const day =
@@ -148,18 +208,17 @@ export class MonitoramentoService {
     ])
 
     const entregaMap = new Map(entregasDia.map((entrega) => [entrega.id, entrega]))
-    const entregaIdsEmRotas = new Set<string>()
 
-    const rotasMonitoramento: MonitoramentoRota[] = []
+    const rotasAtivas: MonitoramentoRota[] = []
+    const historico: MonitoramentoRotaHistorico[] = []
 
     for (const rota of rotas) {
-      for (const parada of rota.paradas) {
-        if (parada.entregaId) {
-          entregaIdsEmRotas.add(parada.entregaId)
-        }
+      const execucoes = await rotaExecucaoRepository.findByRotaId(rota.id)
+
+      if (execucoes.length === 0) {
+        continue
       }
 
-      const execucoes = (await rotaExecucaoRepository.initForRota(rota.id)) ?? []
       const execucaoByParadaId = new Map(
         execucoes.map((execucao) => [execucao.paradaId, execucao]),
       )
@@ -184,85 +243,28 @@ export class MonitoramentoService {
         }
       })
 
-      const stats = computeStats(paradas)
-      const { distanciaRestante, tempoRestante } = computeRemaining(paradas)
-      const proxima = getProximaParada(paradas)
+      const rotaMonitoramento = buildMonitoramentoRota(rota, paradas, entregaMap)
 
-      let motoboyId: string | null = null
-      let motoboyNome = 'Sem motoboy'
-
-      for (const parada of paradas) {
-        if (!parada.entregaId) continue
-        const entrega = entregaMap.get(parada.entregaId)
-        if (entrega?.motoboy) {
-          motoboyId = entrega.motoboy.id
-          motoboyNome = entrega.motoboy.nome
-          break
-        }
+      if (isRotaEmExecucao(paradas)) {
+        rotasAtivas.push(rotaMonitoramento)
+        continue
       }
 
-      rotasMonitoramento.push({
-        rotaId: rota.id,
-        enderecoInicial: rota.enderecoInicial,
-        distanciaTotal: Number(rota.distanciaTotal),
-        tempoTotal: rota.tempoTotal,
-        distanciaRestante,
-        tempoRestante,
-        motoboyId,
-        motoboyNome,
-        totalParadas: paradas.length,
-        stats: {
-          pendentes: stats.pendentes,
-          emRota: stats.emRota,
-          entregues: stats.entregues,
-          problemas: stats.problemas,
-          percentual: stats.percentual,
-        },
-        proximaParada: proxima ? toProximaParada(proxima) : null,
-        paradas,
-      })
+      if (isRotaConcluida(paradas)) {
+        historico.push({
+          ...rotaMonitoramento,
+          concluidaEm: getConcluidaEm(paradas),
+        })
+      }
     }
 
-    const entregasAvulsas = entregasDia.filter(
-      (entrega) => !entregaIdsEmRotas.has(entrega.id),
-    )
+    historico.sort((a, b) => {
+      const aTime = a.concluidaEm ?? ''
+      const bTime = b.concluidaEm ?? ''
+      return bTime.localeCompare(aTime)
+    })
 
-    const gruposMap = new Map<string, MonitoramentoGrupoAvulso>()
-
-    for (const entrega of entregasAvulsas) {
-      const key = entrega.motoboyId ?? 'sem-motoboy'
-      const existing = gruposMap.get(key) ?? {
-        motoboyId: entrega.motoboyId,
-        motoboyNome: entrega.motoboy?.nome ?? 'Sem motoboy',
-        entregas: [],
-        totalEntregas: 0,
-        valorTotal: 0,
-      }
-
-      existing.entregas.push({
-        id: entrega.id,
-        nomeCliente: entrega.nomeCliente,
-        endereco: entrega.endereco,
-        bairro: entrega.bairro,
-        horario: entrega.horario.toISOString(),
-        valorEntrega: Number(entrega.valorEntrega),
-        pagoPeloCliente: entrega.pagoPeloCliente,
-        motoboyId: entrega.motoboyId,
-        motoboyNome: entrega.motoboy?.nome ?? 'Sem motoboy',
-      })
-      existing.totalEntregas += 1
-      if (!entrega.pagoPeloCliente) {
-        existing.valorTotal += Number(entrega.valorEntrega)
-      }
-
-      gruposMap.set(key, existing)
-    }
-
-    const entregasAvulsasGrupos = Array.from(gruposMap.values()).sort((a, b) =>
-      a.motoboyNome.localeCompare(b.motoboyNome),
-    )
-
-    const resumoParadas = rotasMonitoramento.reduce(
+    const resumo = rotasAtivas.reduce(
       (acc, rota) => {
         acc.totalParadas += rota.totalParadas
         acc.entregues += rota.stats.entregues
@@ -272,22 +274,22 @@ export class MonitoramentoService {
         return acc
       },
       {
-        totalRotas: rotasMonitoramento.length,
+        totalRotas: rotasAtivas.length,
         totalParadas: 0,
         entregues: 0,
         emRota: 0,
         pendentes: 0,
         problemas: 0,
-        entregasAvulsas: entregasAvulsas.length,
+        rotasConcluidas: historico.length,
       },
     )
 
     return {
       data: formatDateOnlyISO(day),
       atualizadoEm: new Date().toISOString(),
-      resumo: resumoParadas,
-      rotas: rotasMonitoramento,
-      entregasAvulsas: entregasAvulsasGrupos,
+      resumo,
+      rotas: rotasAtivas,
+      historico,
     }
   }
 }

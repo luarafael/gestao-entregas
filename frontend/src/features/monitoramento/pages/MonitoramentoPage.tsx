@@ -1,29 +1,25 @@
 import { useState } from 'react'
 import {
   Badge,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   EmptyState,
   Input,
   StatCardSkeleton,
 } from '@/shared/components/ui'
 import { IconEye, IconRoute } from '@/shared/components/icons'
-import { formatCurrency } from '@/shared/utils/cn'
 import { formatDateBR, formatTimeBR } from '@/shared/utils/format'
 import { getTodayInputDate } from '@/features/accounting/schemas/prestacao.schema'
 import { useMonitoramento } from '../hooks/useMonitoramento'
 import { MonitoramentoRotaCard } from '../components/MonitoramentoRotaCard'
+import { MonitoramentoHistoricoSection } from '../components/MonitoramentoHistoricoSection'
 
 export function MonitoramentoPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayInputDate())
   const monitoramentoQuery = useMonitoramento(selectedDate)
   const monitoramento = monitoramentoQuery.data
 
-  const hasRotas = (monitoramento?.rotas.length ?? 0) > 0
-  const hasAvulsas = (monitoramento?.entregasAvulsas.length ?? 0) > 0
-  const isEmpty = monitoramento && !hasRotas && !hasAvulsas
+  const hasRotasAtivas = (monitoramento?.rotas.length ?? 0) > 0
+  const hasHistorico = (monitoramento?.historico.length ?? 0) > 0
+  const isEmpty = monitoramento && !hasRotasAtivas && !hasHistorico
 
   return (
     <div className="space-y-6">
@@ -33,8 +29,8 @@ export function MonitoramentoPage() {
             Monitoramento
           </h2>
           <p className="text-sm text-muted-foreground">
-            Acompanhe em tempo real o status de cada parada conforme o motoboy
-            executa a rota.
+            Acompanhe em tempo real apenas a rota em andamento. Rotas concluídas
+            vão para o histórico do dia.
           </p>
         </div>
 
@@ -64,22 +60,28 @@ export function MonitoramentoPage() {
         <>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="success">
-              {monitoramento?.resumo.totalRotas ?? 0} rota(s)
+              {monitoramento?.resumo.totalRotas ?? 0} em andamento
             </Badge>
-            <Badge variant="default">
-              {monitoramento?.resumo.totalParadas ?? 0} paradas
-            </Badge>
-            <Badge variant="default">
-              {monitoramento?.resumo.entregues ?? 0} entregues
-            </Badge>
-            {(monitoramento?.resumo.emRota ?? 0) > 0 ? (
-              <Badge className="border-blue-500/40 bg-blue-500/15 text-blue-300">
-                {monitoramento?.resumo.emRota} em rota
-              </Badge>
+            {hasRotasAtivas ? (
+              <>
+                <Badge variant="default">
+                  {monitoramento?.resumo.totalParadas ?? 0} paradas
+                </Badge>
+                {(monitoramento?.resumo.emRota ?? 0) > 0 ? (
+                  <Badge className="border-blue-500/40 bg-blue-500/15 text-blue-300">
+                    {monitoramento?.resumo.emRota} em rota
+                  </Badge>
+                ) : null}
+                {(monitoramento?.resumo.problemas ?? 0) > 0 ? (
+                  <Badge className="border-red-500/40 bg-red-500/15 text-red-300">
+                    {monitoramento?.resumo.problemas} problema(s)
+                  </Badge>
+                ) : null}
+              </>
             ) : null}
-            {(monitoramento?.resumo.problemas ?? 0) > 0 ? (
-              <Badge className="border-red-500/40 bg-red-500/15 text-red-300">
-                {monitoramento?.resumo.problemas} problema(s)
+            {hasHistorico ? (
+              <Badge variant="default">
+                {monitoramento?.resumo.rotasConcluidas} concluída(s)
               </Badge>
             ) : null}
             {monitoramento?.atualizadoEm ? (
@@ -100,73 +102,30 @@ export function MonitoramentoPage() {
               title="Nenhuma rota em execução"
               description={
                 monitoramento?.data
-                  ? `Nenhuma rota planejada em ${formatDateBR(monitoramento.data)}.`
-                  : 'Nenhuma rota para a data selecionada.'
+                  ? `Nenhuma corrida ativa em ${formatDateBR(monitoramento.data)}. Quando o motoboy iniciar uma rota, ela aparecerá aqui.`
+                  : 'Nenhuma corrida ativa para a data selecionada.'
               }
             />
           ) : (
             <div className="space-y-6">
-              {hasRotas ? (
+              {hasRotasAtivas ? (
                 <section className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">
-                    Rotas em execução
-                  </h3>
                   {monitoramento?.rotas.map((rota) => (
                     <MonitoramentoRotaCard key={rota.rotaId} rota={rota} />
                   ))}
                 </section>
-              ) : null}
+              ) : (
+                <EmptyState
+                  icon={<IconRoute className="size-6" />}
+                  title="Nenhuma corrida ativa agora"
+                  description="Todas as rotas do dia já foram concluídas. Veja o histórico abaixo."
+                />
+              )}
 
-              {hasAvulsas ? (
-                <section className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">
-                    Entregas fora de rota
-                  </h3>
-                  {monitoramento?.entregasAvulsas.map((grupo) => (
-                    <Card key={grupo.motoboyId ?? 'sem-motoboy'}>
-                      <CardHeader className="flex flex-row items-center justify-between gap-3">
-                        <CardTitle className="text-base">
-                          {grupo.motoboyNome}
-                        </CardTitle>
-                        <div className="text-right text-sm">
-                          <p className="font-medium">
-                            {grupo.totalEntregas} entrega(s)
-                          </p>
-                          <p className="text-muted-foreground">
-                            {formatCurrency(grupo.valorTotal)}
-                          </p>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        {grupo.entregas.map((entrega) => (
-                          <div
-                            key={entrega.id}
-                            className="flex flex-col gap-1 rounded-xl border border-border/60 bg-surface/30 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-                          >
-                            <div>
-                              <p className="font-medium">
-                                {entrega.nomeCliente ?? 'Sem nome'} —{' '}
-                                {entrega.bairro}
-                              </p>
-                              <p className="text-muted-foreground">
-                                {entrega.endereco}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatTimeBR(entrega.horario)}
-                                {entrega.pagoPeloCliente
-                                  ? ' · pago pelo cliente'
-                                  : ''}
-                              </p>
-                            </div>
-                            <p className="font-medium">
-                              {formatCurrency(entrega.valorEntrega)}
-                            </p>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </section>
+              {hasHistorico ? (
+                <MonitoramentoHistoricoSection
+                  rotas={monitoramento?.historico ?? []}
+                />
               ) : null}
             </div>
           )}

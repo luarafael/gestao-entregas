@@ -1,12 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MonitoramentoService } from '../services/monitoramento.service.js'
+import {
+  isRotaConcluida,
+  isRotaEmExecucao,
+  MonitoramentoService,
+  type MonitoramentoParada,
+} from '../services/monitoramento.service.js'
 
 const rotaRepository = vi.hoisted(() => ({
   findByDate: vi.fn(),
 }))
 
 const rotaExecucaoRepository = vi.hoisted(() => ({
-  initForRota: vi.fn(),
+  findByRotaId: vi.fn(),
 }))
 
 const entregaRepository = vi.hoisted(() => ({
@@ -25,6 +30,27 @@ vi.mock('../repositories/entrega.repository.js', () => ({
   entregaRepository,
 }))
 
+function parada(
+  id: string,
+  status: MonitoramentoParada['status'],
+): MonitoramentoParada {
+  return {
+    paradaId: id,
+    ordem: 1,
+    entregaId: null,
+    cliente: 'Cliente',
+    endereco: 'Rua 1',
+    bairro: 'Centro',
+    telefone: null,
+    observacao: null,
+    status,
+    dataHoraStatus: null,
+    statusObservacao: null,
+    distancia: 1000,
+    tempo: 300,
+  }
+}
+
 describe('MonitoramentoService', () => {
   const service = new MonitoramentoService()
 
@@ -32,10 +58,22 @@ describe('MonitoramentoService', () => {
     vi.clearAllMocks()
   })
 
-  it('monta rotas com status de execução e próxima parada', async () => {
+  it('identifica rota em execução e concluída', () => {
+    expect(isRotaEmExecucao([parada('p1', 'EM_ROTA'), parada('p2', 'PENDENTE')])).toBe(
+      true,
+    )
+    expect(isRotaConcluida([parada('p1', 'ENTREGUE'), parada('p2', 'ENTREGUE')])).toBe(
+      true,
+    )
+    expect(isRotaEmExecucao([parada('p1', 'PENDENTE'), parada('p2', 'PENDENTE')])).toBe(
+      false,
+    )
+  })
+
+  it('mostra apenas rotas em andamento e move concluídas para histórico', async () => {
     rotaRepository.findByDate.mockResolvedValue([
       {
-        id: 'rota-1',
+        id: 'rota-ativa',
         enderecoInicial: 'Depósito',
         distanciaTotal: 5000,
         tempoTotal: 1200,
@@ -66,54 +104,93 @@ describe('MonitoramentoService', () => {
           },
         ],
       },
+      {
+        id: 'rota-concluida',
+        enderecoInicial: 'Depósito',
+        distanciaTotal: 3000,
+        tempoTotal: 900,
+        paradas: [
+          {
+            id: 'p3',
+            ordem: 1,
+            entregaId: 'e3',
+            cliente: 'Cliente C',
+            endereco: 'Rua C, 3',
+            bairro: 'Vila',
+            telefone: null,
+            observacao: null,
+            distancia: 3000,
+            tempo: 900,
+          },
+        ],
+      },
+      {
+        id: 'rota-salva',
+        enderecoInicial: 'Depósito',
+        distanciaTotal: 1000,
+        tempoTotal: 300,
+        paradas: [
+          {
+            id: 'p4',
+            ordem: 1,
+            entregaId: null,
+            cliente: 'Cliente D',
+            endereco: 'Rua D, 4',
+            bairro: 'Leste',
+            telefone: null,
+            observacao: null,
+            distancia: 1000,
+            tempo: 300,
+          },
+        ],
+      },
     ])
 
-    rotaExecucaoRepository.initForRota.mockResolvedValue([
-      {
-        paradaId: 'p1',
-        status: 'ENTREGUE',
-        observacao: null,
-        dataHoraStatus: new Date('2026-08-05T14:00:00Z'),
-      },
-      {
-        paradaId: 'p2',
-        status: 'EM_ROTA',
-        observacao: null,
-        dataHoraStatus: new Date('2026-08-05T14:30:00Z'),
-      },
-    ])
+    rotaExecucaoRepository.findByRotaId.mockImplementation(async (rotaId: string) => {
+      if (rotaId === 'rota-ativa') {
+        return [
+          {
+            paradaId: 'p1',
+            status: 'ENTREGUE',
+            observacao: null,
+            dataHoraStatus: new Date('2026-08-05T14:00:00Z'),
+          },
+          {
+            paradaId: 'p2',
+            status: 'EM_ROTA',
+            observacao: null,
+            dataHoraStatus: new Date('2026-08-05T14:30:00Z'),
+          },
+        ]
+      }
+
+      if (rotaId === 'rota-concluida') {
+        return [
+          {
+            paradaId: 'p3',
+            status: 'ENTREGUE',
+            observacao: null,
+            dataHoraStatus: new Date('2026-08-05T12:00:00Z'),
+          },
+        ]
+      }
+
+      return []
+    })
 
     entregaRepository.findAllByDate.mockResolvedValue([
       {
         id: 'e1',
-        nomeCliente: 'Cliente A',
-        endereco: 'Rua A, 1',
-        bairro: 'Centro',
-        horario: new Date('2026-08-05T13:00:00Z'),
-        valorEntrega: 15,
-        pagoPeloCliente: false,
         motoboyId: 'm1',
         motoboy: { id: 'm1', nome: 'João' },
       },
       {
         id: 'e2',
-        nomeCliente: 'Cliente B',
-        endereco: 'Rua B, 2',
-        bairro: 'Jardim',
-        horario: new Date('2026-08-05T14:00:00Z'),
-        valorEntrega: 20,
-        pagoPeloCliente: false,
         motoboyId: 'm1',
         motoboy: { id: 'm1', nome: 'João' },
       },
       {
         id: 'e3',
-        nomeCliente: 'Avulsa',
-        endereco: 'Rua C, 3',
-        bairro: 'Vila',
-        horario: new Date('2026-08-05T15:00:00Z'),
-        valorEntrega: 10,
-        pagoPeloCliente: false,
         motoboyId: 'm1',
         motoboy: { id: 'm1', nome: 'João' },
       },
@@ -122,15 +199,10 @@ describe('MonitoramentoService', () => {
     const result = await service.getMonitoramento('2026-08-05')
 
     expect(result.rotas).toHaveLength(1)
-    expect(result.rotas[0]?.motoboyNome).toBe('João')
-    expect(result.rotas[0]?.stats.entregues).toBe(1)
-    expect(result.rotas[0]?.stats.emRota).toBe(1)
-    expect(result.rotas[0]?.proximaParada?.paradaId).toBe('p2')
-    expect(result.rotas[0]?.distanciaRestante).toBe(2000)
-    expect(result.rotas[0]?.tempoRestante).toBe(600)
-    expect(result.entregasAvulsas).toHaveLength(1)
-    expect(result.entregasAvulsas[0]?.entregas).toHaveLength(1)
+    expect(result.rotas[0]?.rotaId).toBe('rota-ativa')
+    expect(result.historico).toHaveLength(1)
+    expect(result.historico[0]?.rotaId).toBe('rota-concluida')
     expect(result.resumo.totalRotas).toBe(1)
-    expect(result.resumo.entregasAvulsas).toBe(1)
+    expect(result.resumo.rotasConcluidas).toBe(1)
   })
 })

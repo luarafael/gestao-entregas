@@ -46,24 +46,8 @@ export interface MonitoramentoRota {
   paradas: MonitoramentoParada[]
 }
 
-export interface MonitoramentoEntregaAvulsa {
-  id: string
-  nomeCliente: string | null
-  endereco: string
-  bairro: string
-  horario: string
-  valorEntrega: number
-  pagoPeloCliente: boolean
-  motoboyId: string | null
-  motoboyNome: string
-}
-
-export interface MonitoramentoGrupoAvulso {
-  motoboyId: string | null
-  motoboyNome: string
-  entregas: MonitoramentoEntregaAvulsa[]
-  totalEntregas: number
-  valorTotal: number
+export interface MonitoramentoRotaHistorico extends MonitoramentoRota {
+  concluidaEm: string | null
 }
 
 export interface MonitoramentoResponse {
@@ -76,8 +60,8 @@ export interface MonitoramentoResponse {
     emRota: number
     pendentes: number
     problemas: number
-    entregasAvulsas: number
+    rotasConcluidas: number
   }
   rotas: MonitoramentoRota[]
-  entregasAvulsas: MonitoramentoGrupoAvulso[]
+  historico: MonitoramentoRotaHistorico[]
 }
