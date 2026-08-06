@@ -3,6 +3,7 @@ import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, In
 import { IconPackage } from '@/shared/components/icons'
 import type { PlannerStop, PrioridadeParada } from '../schemas/routing.schema'
 import { formatDistance, formatDuration } from '../utils/googleMapsUrl'
+import { formatUrgentLabel } from '../utils/urgentPriority'
 
 interface ListaEntregasProps {
   stops: PlannerStop[]
@@ -92,7 +93,9 @@ export function ListaEntregas({
                           </Badge>
                         ) : null}
                         {stop.prioridade === 'URGENTE' ? (
-                          <Badge variant="warning">Urgente</Badge>
+                          <Badge variant="warning">
+                            {formatUrgentLabel(stop.ordemUrgencia)}
+                          </Badge>
                         ) : null}
                         {stop.entregaId ? (
                           <Badge variant="success">Do cadastro</Badge>

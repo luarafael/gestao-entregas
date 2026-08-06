@@ -8,6 +8,7 @@ import type {
 } from '../schemas/rota.schema.js'
 import {
   buildHaversineMatrix,
+  applyUrgentPriority,
   matrixOrderToParadaIndices,
   optimizeStopOrder,
   paradaIndicesToMatrixOrder,
@@ -34,15 +35,19 @@ function buildSuggestions(params: {
     )
   }
 
-  const urgentes = order
-    .map((index) => ({ index, parada: paradas[index] }))
-    .filter((item) => item.parada?.prioridade === 'URGENTE')
+  const urgentes = order.filter(
+    (index) => paradas[index]?.prioridade === 'URGENTE',
+  )
 
-  if (urgentes.length > 0 && order[0] !== undefined) {
-    const first = paradas[order[0]]
-    if (first?.prioridade !== 'URGENTE') {
+  if (urgentes.length > 1) {
+    const ordens = urgentes.map((index) => paradas[index]?.ordemUrgencia)
+    const definidas = ordens.filter((value) => value != null)
+    const duplicadas = definidas.length !== new Set(definidas).size
+    const semOrdem = ordens.some((value) => value == null)
+
+    if (duplicadas || semOrdem) {
       sugestoes.push(
-        'Há entregas urgentes que podem ser priorizadas no início da rota.',
+        'Defina a ordem de urgência (1ª, 2ª…) para ordenar entregas urgentes entre si.',
       )
     }
   }
@@ -125,14 +130,28 @@ export class RotaService {
         order = input.paradas
           .map((_, index) => index)
           .sort((a, b) => {
-            const pa = input.paradas[a]?.prioridade === 'URGENTE' ? 0 : 1
-            const pb = input.paradas[b]?.prioridade === 'URGENTE' ? 0 : 1
-            return pa - pb
+            const pa = input.paradas[a]
+            const pb = input.paradas[b]
+            if (pa?.prioridade === 'URGENTE' && pb?.prioridade !== 'URGENTE') {
+              return -1
+            }
+            if (pa?.prioridade !== 'URGENTE' && pb?.prioridade === 'URGENTE') {
+              return 1
+            }
+            if (pa?.prioridade === 'URGENTE' && pb?.prioridade === 'URGENTE') {
+              return (
+                (pa.ordemUrgencia ?? Number.POSITIVE_INFINITY) -
+                (pb.ordemUrgencia ?? Number.POSITIVE_INFINITY)
+              )
+            }
+            return a - b
           })
         useCoordFallback = true
         aproximada = true
       }
     }
+
+    order = applyUrgentPriority(order, input.paradas)
 
     if (!polyline && originCoord) {
       const routePoints = [
@@ -144,17 +163,6 @@ export class RotaService {
       if (routePoints.length >= 2) {
         polyline = (await osrmService.computeRoutePolyline(routePoints)) ?? undefined
       }
-    }
-
-    // Preferir urgentes no início quando possível sem quebrar muito
-    const urgentFirst = [...order].sort((a, b) => {
-      const pa = input.paradas[a]?.prioridade === 'URGENTE' ? 0 : 1
-      const pb = input.paradas[b]?.prioridade === 'URGENTE' ? 0 : 1
-      return pa - pb
-    })
-    const hasUrgent = input.paradas.some((p) => p.prioridade === 'URGENTE')
-    if (hasUrgent && urgentFirst[0] !== order[0]) {
-      // Mantém NN/2-opt; só sugere — não força reordenar se já otimizado por tempo
     }
 
     const summary = useCoordFallback || !matrix
@@ -247,6 +255,7 @@ export class RotaService {
         bairro: parada.bairro,
         observacao: parada.observacao,
         prioridade: parada.prioridade,
+        ordemUrgencia: parada.ordemUrgencia ?? null,
         valorEntrega: parada.valorEntrega
           ? Number(parada.valorEntrega)
           : null,

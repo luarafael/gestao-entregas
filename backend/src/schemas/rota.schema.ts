@@ -3,16 +3,27 @@ import { toUtcDateOnly } from '../utils/date.utils.js'
 
 export const prioridadeParadaSchema = z.enum(['NORMAL', 'URGENTE'])
 
-export const optimizeParadaSchema = z.object({
-  tempId: z.string().min(1),
-  entregaId: z.string().optional().nullable(),
-  cliente: z.string().trim().optional().nullable(),
-  endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
-  bairro: z.string().trim().optional().nullable(),
-  observacao: z.string().trim().optional().nullable(),
-  prioridade: prioridadeParadaSchema.default('NORMAL'),
-  valorEntrega: z.coerce.number().nonnegative().optional().nullable(),
-})
+export const optimizeParadaSchema = z
+  .object({
+    tempId: z.string().min(1),
+    entregaId: z.string().optional().nullable(),
+    cliente: z.string().trim().optional().nullable(),
+    endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
+    bairro: z.string().trim().optional().nullable(),
+    observacao: z.string().trim().optional().nullable(),
+    prioridade: prioridadeParadaSchema.default('NORMAL'),
+    ordemUrgencia: z.coerce.number().int().positive().optional().nullable(),
+    valorEntrega: z.coerce.number().nonnegative().optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.prioridade === 'NORMAL' && data.ordemUrgencia != null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Ordem de urgência só se aplica a entregas urgentes',
+        path: ['ordemUrgencia'],
+      })
+    }
+  })
 
 export const optimizeRotaSchema = z.object({
   enderecoInicial: z.string().trim().min(1, 'Endereço inicial é obrigatório'),

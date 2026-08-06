@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Button,
@@ -12,17 +12,22 @@ import {
   type PlannerStop,
   type PlannerStopFormData,
 } from '../schemas/routing.schema'
+import { resolveNextOrdemUrgencia } from '../utils/urgentPriority'
 
 interface FormularioEntregaProps {
   open: boolean
   editing: PlannerStop | null
+  stops: PlannerStop[]
   onClose: () => void
   onSubmit: (data: PlannerStopFormData) => void
 }
 
+const ORDEM_URGENCIA_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
 export function FormularioEntrega({
   open,
   editing,
+  stops,
   onClose,
   onSubmit,
 }: FormularioEntregaProps) {
@@ -30,6 +35,9 @@ export function FormularioEntrega({
     register,
     handleSubmit,
     reset,
+    control,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<PlannerStopFormData>({
     resolver: zodResolver(plannerStopSchema),
@@ -39,19 +47,37 @@ export function FormularioEntrega({
       bairro: '',
       observacao: '',
       prioridade: 'NORMAL',
+      ordemUrgencia: undefined,
     },
   })
 
+  const prioridade = useWatch({ control, name: 'prioridade' })
+  const suggestedOrdem = resolveNextOrdemUrgencia(stops, editing?.tempId)
+
   useEffect(() => {
     if (!open) return
+    const initialPrioridade = editing?.prioridade ?? 'NORMAL'
     reset({
       cliente: editing?.cliente ?? '',
       endereco: editing?.endereco ?? '',
       bairro: editing?.bairro ?? '',
       observacao: editing?.observacao ?? '',
-      prioridade: editing?.prioridade ?? 'NORMAL',
+      prioridade: initialPrioridade,
+      ordemUrgencia:
+        initialPrioridade === 'URGENTE'
+          ? editing?.ordemUrgencia ?? suggestedOrdem
+          : undefined,
     })
-  }, [editing, open, reset])
+  }, [editing, open, reset, suggestedOrdem])
+
+  useEffect(() => {
+    if (prioridade === 'URGENTE' && !getValues('ordemUrgencia')) {
+      setValue('ordemUrgencia', suggestedOrdem)
+    }
+    if (prioridade === 'NORMAL') {
+      setValue('ordemUrgencia', undefined)
+    }
+  }, [prioridade, suggestedOrdem, setValue, getValues])
 
   return (
     <Modal
@@ -102,6 +128,30 @@ export function FormularioEntrega({
             <option value="URGENTE">Urgente</option>
           </select>
         </label>
+        {prioridade === 'URGENTE' ? (
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium text-muted-foreground">
+              Ordem entre urgentes
+            </span>
+            <select
+              className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3 text-sm"
+              {...register('ordemUrgencia', { valueAsNumber: true })}
+            >
+              {ORDEM_URGENCIA_OPTIONS.map((ordem) => (
+                <option key={ordem} value={ordem}>
+                  {ordem}ª mais urgente
+                  {ordem === suggestedOrdem && !editing?.ordemUrgencia
+                    ? ' (sugerida)'
+                    : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              1ª = primeira parada da rota. Urgentes sempre vêm antes das
+              normais.
+            </p>
+          </label>
+        ) : null}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancelar

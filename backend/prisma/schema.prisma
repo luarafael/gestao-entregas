@@ -93,6 +93,7 @@ model RotaParada {
   distancia    Decimal?         @db.Decimal(12, 2)
   tempo        Int?
   prioridade   PrioridadeParada @default(NORMAL)
+  ordemUrgencia  Int?
   valorEntrega Decimal?         @db.Decimal(10, 2)
   latitude     Float?
   longitude    Float?

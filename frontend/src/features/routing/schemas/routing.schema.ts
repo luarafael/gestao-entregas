@@ -2,13 +2,24 @@ import { z } from 'zod'
 
 export const prioridadeParadaSchema = z.enum(['NORMAL', 'URGENTE'])
 
-export const plannerStopSchema = z.object({
-  cliente: z.string().trim().optional(),
-  endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
-  bairro: z.string().trim().optional(),
-  observacao: z.string().trim().optional(),
-  prioridade: prioridadeParadaSchema,
-})
+export const plannerStopSchema = z
+  .object({
+    cliente: z.string().trim().optional(),
+    endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
+    bairro: z.string().trim().optional(),
+    observacao: z.string().trim().optional(),
+    prioridade: prioridadeParadaSchema,
+    ordemUrgencia: z.coerce.number().int().positive().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.prioridade === 'NORMAL' && data.ordemUrgencia != null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Ordem de urgência só se aplica a entregas urgentes',
+        path: ['ordemUrgencia'],
+      })
+    }
+  })
 
 export type PrioridadeParada = z.infer<typeof prioridadeParadaSchema>
 export type PlannerStopFormData = z.infer<typeof plannerStopSchema>
@@ -24,6 +35,7 @@ export interface PlannerStop {
   bairro?: string | null
   observacao?: string | null
   prioridade: PrioridadeParada
+  ordemUrgencia?: number | null
   valorEntrega?: number | null
   ordem?: number
   distancia?: number | null
@@ -63,6 +75,7 @@ export interface RotaPlanejada {
     distancia?: string | null
     tempo?: number | null
     prioridade: PrioridadeParada
+    ordemUrgencia?: number | null
     valorEntrega?: string | null
     latitude?: number | null
     longitude?: number | null

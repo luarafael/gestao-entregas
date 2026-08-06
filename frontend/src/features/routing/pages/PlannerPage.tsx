@@ -16,6 +16,7 @@ import {
   useSaveRoute,
 } from '../hooks/useRouting'
 import { createPlannerStop } from '../utils/parseAddresses'
+import { normalizePlannerStopForm } from '../utils/urgentPriority'
 import {
   buildGoogleMapsNavigationUrls,
 } from '../utils/googleMapsUrl'
@@ -55,16 +56,23 @@ export function PlannerPage() {
   const displayStops = result?.paradas ?? stops
 
   const handleAddOrUpdate = (data: PlannerStopFormData) => {
+    const normalized = normalizePlannerStopForm(
+      data,
+      stops,
+      editing?.tempId,
+    )
+
     if (editing) {
       setStops((current) =>
         current.map((stop) =>
           stop.tempId === editing.tempId
             ? {
                 ...stop,
-                ...data,
-                cliente: data.cliente || null,
-                bairro: data.bairro || null,
-                observacao: data.observacao || null,
+                ...normalized,
+                cliente: normalized.cliente || null,
+                bairro: normalized.bairro || null,
+                observacao: normalized.observacao || null,
+                ordemUrgencia: normalized.ordemUrgencia ?? null,
               }
             : stop,
         ),
@@ -74,11 +82,12 @@ export function PlannerPage() {
       setStops((current) => [
         ...current,
         createPlannerStop({
-          cliente: data.cliente,
-          endereco: data.endereco,
-          bairro: data.bairro,
-          observacao: data.observacao,
-          prioridade: data.prioridade,
+          cliente: normalized.cliente,
+          endereco: normalized.endereco,
+          bairro: normalized.bairro,
+          observacao: normalized.observacao,
+          prioridade: normalized.prioridade,
+          ordemUrgencia: normalized.ordemUrgencia ?? null,
         }),
       ])
     }
@@ -162,6 +171,7 @@ export function PlannerPage() {
       bairro: parada.bairro,
       observacao: parada.observacao,
       prioridade: parada.prioridade,
+      ordemUrgencia: parada.ordemUrgencia ?? null,
       valorEntrega: parada.valorEntrega
         ? Number(parada.valorEntrega)
         : null,
@@ -353,6 +363,7 @@ export function PlannerPage() {
       <FormularioEntrega
         open={formOpen}
         editing={editing}
+        stops={stops}
         onClose={() => {
           setFormOpen(false)
           setEditing(null)

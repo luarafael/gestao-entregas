@@ -101,6 +101,34 @@ export function paradaIndicesToMatrixOrder(paradaOrder: number[]): number[] {
   return paradaOrder.map((index) => index + 1)
 }
 
+export interface ParadaPrioridade {
+  prioridade?: 'NORMAL' | 'URGENTE'
+  ordemUrgencia?: number | null
+}
+
+/** Urgentes primeiro; entre urgentes, menor ordemUrgencia vem antes. */
+export function applyUrgentPriority<T extends ParadaPrioridade>(
+  order: number[],
+  paradas: T[],
+): number[] {
+  const position = new Map(order.map((index, idx) => [index, idx]))
+
+  const urgent = order
+    .filter((index) => paradas[index]?.prioridade === 'URGENTE')
+    .sort((a, b) => {
+      const ordemA = paradas[a]?.ordemUrgencia ?? Number.POSITIVE_INFINITY
+      const ordemB = paradas[b]?.ordemUrgencia ?? Number.POSITIVE_INFINITY
+      if (ordemA !== ordemB) return ordemA - ordemB
+      return (position.get(a) ?? 0) - (position.get(b) ?? 0)
+    })
+
+  const normal = order
+    .filter((index) => paradas[index]?.prioridade !== 'URGENTE')
+    .sort((a, b) => (position.get(a) ?? 0) - (position.get(b) ?? 0))
+
+  return [...urgent, ...normal]
+}
+
 export function haversineMeters(
   lat1: number,
   lon1: number,

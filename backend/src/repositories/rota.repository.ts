@@ -25,6 +25,7 @@ export class RotaRepository {
             distancia: parada.distancia ?? null,
             tempo: parada.tempo ?? null,
             prioridade: parada.prioridade,
+            ordemUrgencia: parada.ordemUrgencia ?? null,
             valorEntrega: parada.valorEntrega ?? null,
             latitude: parada.latitude ?? null,
             longitude: parada.longitude ?? null,

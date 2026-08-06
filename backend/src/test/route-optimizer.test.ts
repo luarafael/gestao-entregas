@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  applyUrgentPriority,
   buildHaversineMatrix,
   matrixOrderToParadaIndices,
   nearestNeighborOrder,
@@ -83,5 +84,17 @@ describe('route-optimizer', () => {
     expect(summary.legs[1]?.distancia).toBeGreaterThan(0)
     expect(summary.legs[2]?.distancia).toBeGreaterThan(0)
     expect(summary.distanciaTotal).toBeGreaterThan(0)
+  })
+
+  it('coloca urgentes no início respeitando ordemUrgencia', () => {
+    const paradas = [
+      { prioridade: 'NORMAL' as const, ordemUrgencia: null },
+      { prioridade: 'URGENTE' as const, ordemUrgencia: 2 },
+      { prioridade: 'URGENTE' as const, ordemUrgencia: 1 },
+      { prioridade: 'NORMAL' as const, ordemUrgencia: null },
+    ]
+
+    const order = applyUrgentPriority([0, 1, 2, 3], paradas)
+    expect(order).toEqual([2, 1, 0, 3])
   })
 })
