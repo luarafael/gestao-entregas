@@ -38,6 +38,7 @@ import {
   getTodayInputDate,
   type GeneratePrestacaoFormData,
 } from '../schemas/prestacao.schema'
+import { exportPrestacaoPdf } from '../utils/exportPrestacaoPdf'
 import type { GeneratePrestacaoResponse, PrestacaoContas } from '../types'
 import { toast } from '@/shared/stores/toast.store'
 
@@ -78,6 +79,7 @@ export function PrestacaoPage() {
   })
 
   const selectedDate = useWatch({ control, name: 'data' }) || getTodayInputDate()
+  const observacoes = useWatch({ control, name: 'observacoes' }) ?? ''
   const previewQuery = usePrestacaoPreview(selectedDate)
   const preview = previewQuery.data
 
@@ -123,7 +125,48 @@ export function PrestacaoPage() {
     valorTotal: Number(item.valorTotal),
     valorPendencias: Number(item.valorPendencias),
     valorFinal: Number(item.valorFinal),
+    observacoes: item.observacoes,
   })
+
+  const handleExportPreviewPdf = () => {
+    if (!preview || preview.totalEntregas === 0) return
+
+    exportPrestacaoPdf({
+      date: preview.data,
+      totalEntregas: preview.totalEntregas,
+      valorTotal: preview.valorTotal,
+      entregasPagasPeloCliente: preview.entregasPagasPeloCliente,
+      valorPagasPeloCliente: preview.valorPagasPeloCliente,
+      valorPendencias: preview.valorPendencias,
+      valorFinal: preview.valorFinal,
+      totalPendencias: preview.totalPendencias,
+      observacoes: observacoes.trim() || null,
+    })
+    toast('PDF exportado com sucesso', 'success')
+  }
+
+  const handleExportGeneratedPdf = () => {
+    if (!generatedResult) return
+
+    const { prestacao } = generatedResult
+    exportPrestacaoPdf({
+      date: prestacao.data.slice(0, 10),
+      totalEntregas: prestacao.totalEntregas,
+      valorTotal: Number(prestacao.valorTotal),
+      entregasPagasPeloCliente: preview?.entregasPagasPeloCliente,
+      valorPagasPeloCliente: preview?.valorPagasPeloCliente,
+      valorPendencias: Number(prestacao.valorPendencias),
+      valorFinal: Number(prestacao.valorFinal),
+      totalPendencias: preview?.totalPendencias,
+      observacoes: prestacao.observacoes,
+    })
+    toast('PDF exportado com sucesso', 'success')
+  }
+
+  const handleExportHistoryPdf = (item: PrestacaoContas) => {
+    exportPrestacaoPdf(buildDailyReportFromPrestacao(item))
+    toast('PDF exportado com sucesso', 'success')
+  }
 
   const handleSendCurrent = () => {
     if (!generatedResult?.whatsappText) return
@@ -273,7 +316,17 @@ export function PrestacaoPage() {
                     {formatPrestacaoDate(selectedDate)}. Verifique se a data
                     corresponde ao dia em que as entregas foram cadastradas.
                   </p>
-                ) : null}
+                ) : (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleExportPreviewPdf}
+                    >
+                      Exportar PDF
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -303,6 +356,7 @@ export function PrestacaoPage() {
             text={generatedResult.whatsappText}
             onCopy={handleCopyCurrent}
             onSend={handleSendCurrent}
+            onExportPdf={handleExportGeneratedPdf}
             isCopying={copyMutation.isPending}
           />
         </div>
@@ -331,6 +385,7 @@ export function PrestacaoPage() {
             onPageChange={setHistoryPage}
             onCopy={handleCopyFromHistory}
             onSend={handleSendFromHistory}
+            onExportPdf={handleExportHistoryPdf}
             onEdit={handleOpenEdit}
             onDelete={setDeletingPrestacao}
             copyingId={copyingId}

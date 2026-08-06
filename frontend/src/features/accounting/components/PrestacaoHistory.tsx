@@ -17,6 +17,7 @@ interface PrestacaoHistoryProps {
   onPageChange: (page: number) => void
   onCopy: (id: string) => void
   onSend: (item: PrestacaoContas) => void
+  onExportPdf: (item: PrestacaoContas) => void
   onEdit: (item: PrestacaoContas) => void
   onDelete: (item: PrestacaoContas) => void
   copyingId?: string | null
@@ -32,6 +33,7 @@ export function PrestacaoHistory({
   onPageChange,
   onCopy,
   onSend,
+  onExportPdf,
   onEdit,
   onDelete,
   copyingId,
@@ -93,6 +95,13 @@ export function PrestacaoHistory({
                       onClick={() => onEdit(item)}
                     >
                       Editar
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onExportPdf(item)}
+                    >
+                      PDF
                     </Button>
                     <Button
                       variant="secondary"

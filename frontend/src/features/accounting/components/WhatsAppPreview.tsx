@@ -6,6 +6,7 @@ interface WhatsAppPreviewProps {
   title?: string
   onCopy: () => void
   onSend: () => void
+  onExportPdf?: () => void
   isCopying?: boolean
 }
 
@@ -14,6 +15,7 @@ export function WhatsAppPreview({
   title = 'Texto para WhatsApp',
   onCopy,
   onSend,
+  onExportPdf,
   isCopying = false,
 }: WhatsAppPreviewProps) {
   return (
@@ -45,6 +47,16 @@ export function WhatsAppPreview({
           >
             Copiar texto
           </Button>
+          {onExportPdf ? (
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={onExportPdf}
+            >
+              Exportar PDF
+            </Button>
+          ) : null}
         </div>
       </CardContent>
     </Card>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ReportPeriod } from '@/shared/types/api.types'
+import { Button } from '@/shared/components/ui'
 import {
   useNeighborhoodReport,
   usePeriodDailyBreakdown,
@@ -13,6 +14,8 @@ import { PeriodFilter } from '../components/PeriodFilter'
 import { PrestacaoTrendChart } from '../components/PrestacaoTrendChart'
 import { ReportSummaryCards } from '../components/ReportSummaryCards'
 import { getPeriodLabel } from '../utils/chart.utils'
+import { exportReportPdf } from '../utils/exportReportPdf'
+import { toast } from '@/shared/stores/toast.store'
 
 export function ReportsPage() {
   const [period, setPeriod] = useState<ReportPeriod>('week')
@@ -24,6 +27,23 @@ export function ReportsPage() {
 
   const periodLabel = getPeriodLabel(period)
   const dailyBreakdown = dailyBreakdownQuery.data ?? []
+  const canExportPdf =
+    Boolean(summaryQuery.data) &&
+    !summaryQuery.isLoading &&
+    !dailyBreakdownQuery.isLoading &&
+    !neighborhoodQuery.isLoading
+
+  const handleExportPdf = () => {
+    if (!summaryQuery.data) return
+
+    exportReportPdf({
+      period,
+      summary: summaryQuery.data,
+      dailyBreakdown,
+      neighborhoods: neighborhoodQuery.data ?? [],
+    })
+    toast('PDF exportado com sucesso', 'success')
+  }
 
   return (
     <div className="space-y-6">
@@ -35,7 +55,16 @@ export function ReportsPage() {
             período.
           </p>
         </div>
-        <PeriodFilter value={period} onChange={setPeriod} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button
+            variant="secondary"
+            onClick={handleExportPdf}
+            disabled={!canExportPdf}
+          >
+            Exportar PDF
+          </Button>
+          <PeriodFilter value={period} onChange={setPeriod} />
+        </div>
       </section>
 
       <ReportSummaryCards
