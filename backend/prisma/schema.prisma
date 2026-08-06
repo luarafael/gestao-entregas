@@ -89,10 +89,10 @@ model PrestacaoMotoboy {
   motoboyId       String                  @map("motoboy_id")
   motoboy         Usuario                 @relation(fields: [motoboyId], references: [id], onDelete: Cascade)
   data            DateTime                @db.Date
-  totalEntregas   Int
-  valorTotal      Decimal                 @db.Decimal(10, 2)
-  valorPendencias Decimal                 @db.Decimal(10, 2)
-  valorFinal      Decimal                 @db.Decimal(10, 2)
+  totalEntregas   Int                     @map("total_entregas")
+  valorTotal      Decimal                 @map("valor_total") @db.Decimal(10, 2)
+  valorPendencias Decimal                 @map("valor_pendencias") @db.Decimal(10, 2)
+  valorFinal      Decimal                 @map("valor_final") @db.Decimal(10, 2)
   observacoes     String?
   status          StatusPrestacaoMotoboy  @default(ENVIADA)
   motivoRejeicao  String?                 @map("motivo_rejeicao")
