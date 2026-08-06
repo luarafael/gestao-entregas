@@ -67,6 +67,16 @@ enum PrioridadeParada {
   URGENTE
 }
 
+enum StatusExecucaoParada {
+  PENDENTE
+  EM_ROTA
+  ENTREGUE
+  CLIENTE_AUSENTE
+  NAO_LOCALIZADO
+  CANCELADA
+  FALHA_ENTREGA
+}
+
 model RotaPlanejada {
   id               String       @id @default(cuid())
   data             DateTime     @db.Date
@@ -76,6 +86,7 @@ model RotaPlanejada {
   aproximada       Boolean      @default(false)
   criadoEm         DateTime     @default(now())
   paradas          RotaParada[]
+  execucoes        RotaExecucao[]
 
   @@index([data])
   @@map("rotas_planejadas")
@@ -88,6 +99,7 @@ model RotaParada {
   cliente      String?
   endereco     String
   bairro       String?
+  telefone     String?
   observacao   String?
   ordem        Int
   distancia    Decimal?         @db.Decimal(12, 2)
@@ -98,10 +110,31 @@ model RotaParada {
   latitude     Float?
   longitude    Float?
   rota         RotaPlanejada    @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  execucoes    RotaExecucao[]
 
   @@index([rotaId])
   @@index([entregaId])
   @@map("rota_paradas")
+}
+
+model RotaExecucao {
+  id             String               @id @default(cuid())
+  rotaId         String
+  paradaId       String?
+  entregaId      String?
+  ordem          Int
+  status         StatusExecucaoParada @default(PENDENTE)
+  dataHoraStatus DateTime?
+  observacao     String?
+  criadoEm       DateTime             @default(now())
+  atualizadoEm   DateTime             @updatedAt
+  rota           RotaPlanejada        @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  parada         RotaParada?          @relation(fields: [paradaId], references: [id], onDelete: SetNull)
+
+  @@index([rotaId])
+  @@index([paradaId])
+  @@index([entregaId])
+  @@map("rota_execucao")
 }
 
 model ConfiguracaoPlanejador {

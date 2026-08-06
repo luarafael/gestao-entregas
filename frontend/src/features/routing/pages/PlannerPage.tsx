@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui'
-import { IconRoute } from '@/shared/components/icons'
+import { IconRoute, IconWhatsApp } from '@/shared/components/icons'
 import { toast } from '@/shared/stores/toast.store'
 import { WhatsAppPreview } from '@/features/accounting/components/WhatsAppPreview'
 import {
@@ -14,6 +14,9 @@ import { ListaEntregas } from '../components/ListaEntregas'
 import { ImportadorEnderecos } from '../components/ImportadorEnderecos'
 import { ImportarEntregasModal } from '../components/ImportarEntregasModal'
 import { ResumoRota } from '../components/ResumoRota'
+import { BarraProgressoExecucao } from '../components/BarraProgressoExecucao'
+import { ProximaParadaCard } from '../components/ProximaParadaCard'
+import { HistoricoExecucao } from '../components/HistoricoExecucao'
 import { MapaRota } from '../components/MapaRota'
 import { HistoricoRotas } from '../components/HistoricoRotas'
 import {
@@ -21,6 +24,7 @@ import {
   useOptimizeRoute,
   useSaveRoute,
 } from '../hooks/useRouting'
+import { routingService } from '../services/routing.service'
 import { createPlannerStop } from '../utils/parseAddresses'
 import { normalizePlannerStopForm } from '../utils/urgentPriority'
 import {
@@ -31,11 +35,24 @@ import type {
   PlannerStop,
   PlannerStopFormData,
   RotaPlanejada,
+  StatusExecucao,
 } from '../schemas/routing.schema'
 import {
   buildRouteWhatsAppPayload,
   formatRouteWhatsAppText,
 } from '../utils/whatsappRouteMessage'
+import { formatRouteProgressWhatsAppText } from '../utils/whatsappRouteProgressMessage'
+import {
+  applyStatusUpdate,
+  buildHistoricoEntry,
+  getActiveStopsForRoute,
+  getNextStop,
+  getStopStatus,
+  isActiveRouteStop,
+  mergeStopsWithStatus,
+  withDefaultStatus,
+  type ExecucaoHistoricoItem,
+} from '../utils/executionStatus'
 import { DEFAULT_START_ADDRESS } from '../schemas/routing.schema'
 
 export function PlannerPage() {
@@ -51,15 +68,48 @@ export function PlannerPage() {
   const [tab, setTab] = useState<'planejar' | 'historico'>('planejar')
   const [sendModalOpen, setSendModalOpen] = useState(false)
   const [sendPayload, setSendPayload] = useState<WhatsAppSendPayload | null>(null)
+  const [progressModalOpen, setProgressModalOpen] = useState(false)
+  const [autoRecalc, setAutoRecalc] = useState(true)
+  const [savedRotaId, setSavedRotaId] = useState<string | null>(null)
+  const [historicoExecucao, setHistoricoExecucao] = useState<
+    ExecucaoHistoricoItem[]
+  >([])
 
   const optimizeMutation = useOptimizeRoute()
   const saveMutation = useSaveRoute()
   const copyMutation = useCopyWhatsAppText()
 
+  const displayStops = result?.paradas ?? stops
+
   const whatsappText = useMemo(() => {
     if (!result) return ''
     return formatRouteWhatsAppText(buildRouteWhatsAppPayload(result))
   }, [result])
+
+  const progressWhatsappText = useMemo(() => {
+    if (!result) return ''
+    return formatRouteProgressWhatsAppText({
+      stops: displayStops,
+      distanciaRestante: result.distanciaTotal,
+      tempoRestante: result.tempoTotal,
+      data: new Date().toISOString(),
+    })
+  }, [displayStops, result])
+
+  const nextStop = useMemo(
+    () => (result ? getNextStop(displayStops) : null),
+    [displayStops, result],
+  )
+
+  const executionMode = Boolean(result)
+
+  const syncStops = (updated: PlannerStop[]) => {
+    const normalized = updated.map(withDefaultStatus)
+    setStops(normalized)
+    setResult((current) =>
+      current ? { ...current, paradas: normalized } : current,
+    )
+  }
 
   const existingEntregaIds = useMemo(
     () =>
@@ -70,8 +120,6 @@ export function PlannerPage() {
       ),
     [stops],
   )
-
-  const displayStops = result?.paradas ?? stops
 
   const handleAddOrUpdate = (data: PlannerStopFormData) => {
     const normalized = normalizePlannerStopForm(
@@ -89,6 +137,7 @@ export function PlannerPage() {
                 ...normalized,
                 cliente: normalized.cliente || null,
                 bairro: normalized.bairro || null,
+                telefone: normalized.telefone || null,
                 observacao: normalized.observacao || null,
                 ordemUrgencia: normalized.ordemUrgencia ?? null,
               }
@@ -103,6 +152,7 @@ export function PlannerPage() {
           cliente: normalized.cliente,
           endereco: normalized.endereco,
           bairro: normalized.bairro,
+          telefone: normalized.telefone,
           observacao: normalized.observacao,
           prioridade: normalized.prioridade,
           ordemUrgencia: normalized.ordemUrgencia ?? null,
@@ -135,8 +185,9 @@ export function PlannerPage() {
       enderecoInicial,
       paradas: stops,
     })
-    setResult(optimized)
-    setStops(optimized.paradas)
+    const merged = mergeStopsWithStatus(stops, optimized.paradas)
+    setResult({ ...optimized, paradas: merged })
+    setStops(merged)
     toast(
       optimized.aproximada
         ? 'Rota calculada (aproximada)'
@@ -145,19 +196,109 @@ export function PlannerPage() {
     )
   }
 
+  const recalcRemainingRoute = async (currentStops: PlannerStop[]) => {
+    const inactive = currentStops.filter(
+      (stop) => !isActiveRouteStop(getStopStatus(stop)),
+    )
+    const active = getActiveStopsForRoute(currentStops)
+
+    if (active.length === 0) {
+      setResult((current) =>
+        current
+          ? {
+              ...current,
+              paradas: currentStops,
+              distanciaTotal: 0,
+              tempoTotal: 0,
+            }
+          : current,
+      )
+      return
+    }
+
+    const optimized = await optimizeMutation.mutateAsync({
+      enderecoInicial,
+      paradas: active,
+    })
+    const mergedActive = mergeStopsWithStatus(active, optimized.paradas).map(
+      (stop, index) => ({
+        ...stop,
+        ordem: inactive.length + index + 1,
+      }),
+    )
+    const finalStops = [
+      ...inactive.map((stop, index) => ({ ...stop, ordem: index + 1 })),
+      ...mergedActive,
+    ]
+
+    setStops(finalStops)
+    setResult({
+      ...optimized,
+      paradas: finalStops,
+      totalEntregas: finalStops.length,
+    })
+  }
+
+  const handleStatusChange = async (
+    stop: PlannerStop,
+    status: StatusExecucao,
+    observacao?: string | null,
+  ) => {
+    const updated = applyStatusUpdate(stop, status, observacao)
+    const nextStops = displayStops.map((item) =>
+      item.tempId === stop.tempId ? updated : item,
+    )
+    syncStops(nextStops)
+    setHistoricoExecucao((current) => [
+      ...current,
+      buildHistoricoEntry(updated),
+    ])
+    setSelectedTempId(updated.tempId)
+
+    if (savedRotaId && stop.paradaId) {
+      try {
+        await routingService.updateExecucaoParada(savedRotaId, stop.paradaId, {
+          status,
+          observacao: observacao ?? null,
+        })
+      } catch {
+        toast('Erro ao salvar status no servidor', 'error')
+      }
+    }
+
+    if (status === 'ENTREGUE' && autoRecalc) {
+      await recalcRemainingRoute(nextStops)
+    }
+  }
+
   const handleSave = async () => {
     if (!result) {
       toast('Calcule a rota antes de salvar', 'error')
       return
     }
 
-    await saveMutation.mutateAsync({
+    const saved = await saveMutation.mutateAsync({
       enderecoInicial: result.enderecoInicial,
       distanciaTotal: result.distanciaTotal,
       tempoTotal: result.tempoTotal,
       aproximada: result.aproximada,
       paradas: result.paradas,
     })
+
+    setSavedRotaId(saved.id)
+    const withParadaIds = result.paradas.map((stop) => {
+      const parada = saved.paradas.find(
+        (item) =>
+          item.ordem === stop.ordem &&
+          item.endereco === stop.endereco &&
+          (item.cliente ?? '') === (stop.cliente ?? ''),
+      )
+      return {
+        ...stop,
+        paradaId: parada?.id ?? stop.paradaId ?? null,
+      }
+    })
+    syncStops(withParadaIds)
   }
 
   const handleCopyWhatsApp = () => {
@@ -171,8 +312,14 @@ export function PlannerPage() {
     setSendModalOpen(true)
   }
 
+  const handleSendProgressWhatsApp = () => {
+    if (!progressWhatsappText) return
+    setSendPayload({ baseText: progressWhatsappText })
+    setProgressModalOpen(true)
+  }
+
   const handleNavigate = () => {
-    const ordered = result?.paradas ?? stops
+    const ordered = getActiveStopsForRoute(result?.paradas ?? stops)
     if (ordered.length === 0) {
       toast('Não há paradas para navegar', 'error')
       return
@@ -191,13 +338,15 @@ export function PlannerPage() {
     }
   }
 
-  const handleLoadRoute = (rota: RotaPlanejada) => {
-    const loaded = rota.paradas.map((parada) => ({
+  const handleLoadRoute = async (rota: RotaPlanejada) => {
+    const loaded: PlannerStop[] = rota.paradas.map((parada) => ({
       tempId: parada.id,
+      paradaId: parada.id,
       entregaId: parada.entregaId,
       cliente: parada.cliente,
       endereco: parada.endereco,
       bairro: parada.bairro,
+      telefone: parada.telefone ?? null,
       observacao: parada.observacao,
       prioridade: parada.prioridade,
       ordemUrgencia: parada.ordemUrgencia ?? null,
@@ -209,7 +358,26 @@ export function PlannerPage() {
       tempo: parada.tempo,
       latitude: parada.latitude,
       longitude: parada.longitude,
+      statusExecucao: 'PENDENTE' as StatusExecucao,
     }))
+
+    setSavedRotaId(rota.id)
+
+    try {
+      const execucoes = await routingService.getExecucao(rota.id)
+      for (const execucao of execucoes) {
+        const index = loaded.findIndex((stop) => stop.paradaId === execucao.paradaId)
+        if (index === -1) continue
+        loaded[index] = {
+          ...loaded[index]!,
+          statusExecucao: execucao.status as StatusExecucao,
+          statusObservacao: execucao.observacao,
+          statusAtualizadoEm: execucao.dataHoraStatus,
+        }
+      }
+    } catch {
+      toast('Não foi possível carregar o andamento salvo', 'info')
+    }
 
     setStops(loaded)
     setResult({
@@ -223,6 +391,11 @@ export function PlannerPage() {
       sugestoes: [],
       paradas: loaded,
     })
+    setHistoricoExecucao(
+      loaded
+        .filter((stop) => stop.statusAtualizadoEm)
+        .map((stop) => buildHistoricoEntry(stop)),
+    )
     setTab('planejar')
     toast('Rota carregada no planejador', 'success')
   }
@@ -269,11 +442,15 @@ export function PlannerPage() {
             aproximada={result?.aproximada}
           />
 
+          {executionMode ? (
+            <BarraProgressoExecucao stops={displayStops} />
+          ) : null}
+
           <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             <div className="space-y-4">
               <EnderecoInicial />
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button onClick={() => {
                   setEditing(null)
                   setFormOpen(true)
@@ -283,6 +460,16 @@ export function PlannerPage() {
                 <Button variant="secondary" onClick={() => setImportOpen(true)}>
                   Importar entregas
                 </Button>
+                {executionMode ? (
+                  <label className="flex items-center gap-2 rounded-xl border border-border/60 bg-surface/30 px-3 py-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={autoRecalc}
+                      onChange={(event) => setAutoRecalc(event.target.checked)}
+                    />
+                    Recalcular automaticamente
+                  </label>
+                ) : null}
                 <Button
                   size="lg"
                   className="sm:ml-auto"
@@ -299,6 +486,9 @@ export function PlannerPage() {
               <ListaEntregas
                 stops={displayStops}
                 optimized={Boolean(result)}
+                executionMode={executionMode}
+                nextStopTempId={nextStop?.tempId}
+                onStatusChange={handleStatusChange}
                 onEdit={(stop) => {
                   setEditing(stop)
                   setFormOpen(true)
@@ -311,6 +501,10 @@ export function PlannerPage() {
                 }}
                 onReorder={handleReorder}
               />
+
+              {executionMode ? (
+                <HistoricoExecucao items={historicoExecucao} />
+              ) : null}
 
               <ImportadorEnderecos
                 onImport={(imported) => {
@@ -325,8 +519,13 @@ export function PlannerPage() {
                 origem={result?.origem ?? null}
                 paradas={displayStops}
                 selectedTempId={selectedTempId}
+                executionMode={executionMode}
                 onSelect={(stop) => setSelectedTempId(stop.tempId)}
               />
+
+              {executionMode ? (
+                <ProximaParadaCard stop={nextStop} />
+              ) : null}
 
               {selectedStop ? (
                 <Card glass>
@@ -380,6 +579,23 @@ export function PlannerPage() {
                 />
               ) : null}
 
+              {executionMode ? (
+                <Card glass>
+                  <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
+                    <div>
+                      <p className="font-medium">Andamento da rota</p>
+                      <p className="text-sm text-muted-foreground">
+                        Compartilhe o progresso das entregas em tempo real.
+                      </p>
+                    </div>
+                    <Button variant="secondary" onClick={handleSendProgressWhatsApp}>
+                      <IconWhatsApp className="mr-2 size-4" />
+                      Compartilhar andamento da rota
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : null}
+
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="secondary"
@@ -424,6 +640,15 @@ export function PlannerPage() {
         open={sendModalOpen}
         onClose={() => {
           setSendModalOpen(false)
+          setSendPayload(null)
+        }}
+        payload={sendPayload}
+      />
+
+      <WhatsAppSendModal
+        open={progressModalOpen}
+        onClose={() => {
+          setProgressModalOpen(false)
           setSendPayload(null)
         }}
         payload={sendPayload}

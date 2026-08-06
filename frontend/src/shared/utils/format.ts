@@ -23,3 +23,9 @@ export function formatTimeBR(iso: string): string {
     timeZone: BUSINESS_TIMEZONE,
   })
 }
+
+export function formatDateTimeBR(value: string | Date): string {
+  return `${formatDateBR(value)} ${formatTimeBR(
+    typeof value === 'string' ? value : value.toISOString(),
+  )}`
+}

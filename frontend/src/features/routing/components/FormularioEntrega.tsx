@@ -46,6 +46,7 @@ export function FormularioEntrega({
       cliente: '',
       endereco: '',
       bairro: '',
+      telefone: '',
       observacao: '',
       prioridade: 'NORMAL',
       ordemUrgencia: undefined,
@@ -62,6 +63,7 @@ export function FormularioEntrega({
       cliente: editing?.cliente ?? '',
       endereco: editing?.endereco ?? '',
       bairro: editing?.bairro ?? '',
+      telefone: editing?.telefone ?? '',
       observacao: editing?.observacao ?? '',
       prioridade: initialPrioridade,
       ordemUrgencia:
@@ -114,6 +116,12 @@ export function FormularioEntrega({
             placeholder="Ex: Centro, Meireles..."
             error={errors.bairro?.message}
             {...register('bairro')}
+          />
+          <Input
+            label="Telefone"
+            placeholder="Opcional"
+            error={errors.telefone?.message}
+            {...register('telefone')}
           />
           <Textarea
             label="Observação"

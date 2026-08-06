@@ -20,6 +20,7 @@ export class RotaRepository {
             cliente: parada.cliente ?? null,
             endereco: parada.endereco,
             bairro: parada.bairro ?? null,
+            telefone: parada.telefone ?? null,
             observacao: parada.observacao ?? null,
             ordem: parada.ordem,
             distancia: parada.distancia ?? null,

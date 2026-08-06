@@ -100,6 +100,7 @@ export function createPlannerStop(
   return {
     tempId: createTempId(),
     prioridade: partial.prioridade ?? 'NORMAL',
+    statusExecucao: partial.statusExecucao ?? 'PENDENTE',
     ...partial,
   }
 }

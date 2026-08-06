@@ -7,6 +7,7 @@ export const plannerStopSchema = z
     cliente: z.string().trim().optional(),
     endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
     bairro: z.string().trim().optional(),
+    telefone: z.string().trim().optional(),
     observacao: z.string().trim().optional(),
     prioridade: prioridadeParadaSchema,
     ordemUrgencia: z.number().int().positive().optional(),
@@ -24,6 +25,15 @@ export const plannerStopSchema = z
 export type PrioridadeParada = z.infer<typeof prioridadeParadaSchema>
 export type PlannerStopFormData = z.infer<typeof plannerStopSchema>
 
+export type StatusExecucao =
+  | 'PENDENTE'
+  | 'EM_ROTA'
+  | 'ENTREGUE'
+  | 'CLIENTE_AUSENTE'
+  | 'NAO_LOCALIZADO'
+  | 'CANCELADA'
+  | 'FALHA_ENTREGA'
+
 export const DEFAULT_START_ADDRESS =
   'Leite Gondim, 895 - Antônio Bezerra - Fortaleza/CE'
 
@@ -33,6 +43,7 @@ export interface PlannerStop {
   cliente?: string | null
   endereco: string
   bairro?: string | null
+  telefone?: string | null
   observacao?: string | null
   prioridade: PrioridadeParada
   ordemUrgencia?: number | null
@@ -42,6 +53,10 @@ export interface PlannerStop {
   tempo?: number | null
   latitude?: number | null
   longitude?: number | null
+  paradaId?: string | null
+  statusExecucao?: StatusExecucao
+  statusObservacao?: string | null
+  statusAtualizadoEm?: string | null
 }
 
 export interface OptimizedRouteResult {
@@ -70,6 +85,7 @@ export interface RotaPlanejada {
     cliente?: string | null
     endereco: string
     bairro?: string | null
+    telefone?: string | null
     observacao?: string | null
     ordem: number
     distancia?: string | null

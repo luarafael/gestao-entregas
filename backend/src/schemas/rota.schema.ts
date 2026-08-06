@@ -11,6 +11,7 @@ export const optimizeParadaSchema = z
     endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
     bairro: z.string().trim().optional().nullable(),
     observacao: z.string().trim().optional().nullable(),
+    telefone: z.string().trim().optional().nullable(),
     prioridade: prioridadeParadaSchema.default('NORMAL'),
     ordemUrgencia: z.coerce.number().int().positive().optional().nullable(),
     valorEntrega: z.coerce.number().nonnegative().optional().nullable(),

@@ -86,4 +86,30 @@ export const routingService = {
       body: JSON.stringify({ enderecoPartidaPadrao }),
     })
   },
+
+  getExecucao(rotaId: string) {
+    return apiFetch<
+      Array<{
+        id: string
+        rotaId: string
+        paradaId: string | null
+        entregaId: string | null
+        ordem: number
+        status: string
+        dataHoraStatus: string | null
+        observacao: string | null
+      }>
+    >(`/api/rotas/${rotaId}/execucao`)
+  },
+
+  updateExecucaoParada(
+    rotaId: string,
+    paradaId: string,
+    payload: { status: string; observacao?: string | null },
+  ) {
+    return apiFetch<unknown>(`/api/rotas/${rotaId}/execucao/paradas/${paradaId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  },
 }

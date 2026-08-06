@@ -4,6 +4,7 @@ import L from 'leaflet'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui'
 import type { PlannerStop } from '../schemas/routing.schema'
 import { formatDistance, formatDuration } from '../utils/googleMapsUrl'
+import { getMarkerStyle, getNextStop } from '../utils/executionStatus'
 import 'leaflet/dist/leaflet.css'
 
 interface MapaRotaProps {
@@ -11,9 +12,10 @@ interface MapaRotaProps {
   paradas: PlannerStop[]
   selectedTempId?: string | null
   onSelect?: (stop: PlannerStop) => void
+  executionMode?: boolean
 }
 
-function createNumberIcon(label: string, color: string) {
+function createMarkerIcon(label: string, color: string) {
   return L.divIcon({
     className: '',
     html: `<div style="
@@ -21,7 +23,7 @@ function createNumberIcon(label: string, color: string) {
       color:white;
       width:28px;height:28px;border-radius:9999px;
       display:flex;align-items:center;justify-content:center;
-      font-size:12px;font-weight:700;border:2px solid white;
+      font-size:${label.length > 2 ? '10px' : '12px'};font-weight:700;border:2px solid white;
       box-shadow:0 1px 4px rgba(0,0,0,.35)">${label}</div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
@@ -52,7 +54,13 @@ export function MapaRota({
   paradas,
   selectedTempId,
   onSelect,
+  executionMode = false,
 }: MapaRotaProps) {
+  const nextStop = useMemo(
+    () => (executionMode ? getNextStop(paradas) : null),
+    [executionMode, paradas],
+  )
+
   const points = useMemo(() => {
     const list: Array<[number, number]> = []
     if (origem) list.push([origem.lat, origem.lng])
@@ -87,20 +95,27 @@ export function MapaRota({
             {origem ? (
               <Marker
                 position={[origem.lat, origem.lng]}
-                icon={createNumberIcon('P', '#6366f1')}
+                icon={createMarkerIcon('P', '#16a34a')}
               >
                 <Popup>Ponto de partida</Popup>
               </Marker>
             ) : null}
-            {paradas.map((stop, index) =>
-              stop.latitude != null && stop.longitude != null ? (
+            {paradas.map((stop, index) => {
+              if (stop.latitude == null || stop.longitude == null) return null
+
+              const markerStyle = executionMode
+                ? getMarkerStyle(stop, nextStop?.tempId)
+                : {
+                    color:
+                      selectedTempId === stop.tempId ? '#d97706' : '#16a34a',
+                    symbol: String(stop.ordem ?? index + 1),
+                  }
+
+              return (
                 <Marker
                   key={stop.tempId}
                   position={[stop.latitude, stop.longitude]}
-                  icon={createNumberIcon(
-                    String(stop.ordem ?? index + 1),
-                    selectedTempId === stop.tempId ? '#d97706' : '#16a34a',
-                  )}
+                  icon={createMarkerIcon(markerStyle.symbol, markerStyle.color)}
                   eventHandlers={{
                     click: () => onSelect?.(stop),
                   }}
@@ -120,8 +135,8 @@ export function MapaRota({
                     </div>
                   </Popup>
                 </Marker>
-              ) : null,
-            )}
+              )
+            })}
             {points.length > 1 ? (
               <Polyline positions={points} pathOptions={{ color: '#6366f1', weight: 4 }} />
             ) : null}

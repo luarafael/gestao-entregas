@@ -15,6 +15,11 @@ import {
   type ListRotasInput,
 } from '../schemas/rota.schema.js'
 import { rotaService } from '../services/rota.service.js'
+import { rotaExecucaoService } from '../services/rota-execucao.service.js'
+import {
+  bulkSyncExecucaoSchema,
+  updateExecucaoParadaSchema,
+} from '../schemas/rota-execucao.schema.js'
 
 export const rotaRoutes = Router()
 
@@ -62,6 +67,39 @@ rotaRoutes.put(
   asyncHandler(async (req, res) => {
     const result = await rotaService.setEnderecoPartidaPadrao(
       req.body.enderecoPartidaPadrao,
+    )
+    res.json(result)
+  }),
+)
+
+rotaRoutes.get(
+  '/:id/execucao',
+  asyncHandler(async (req, res) => {
+    const result = await rotaExecucaoService.getOrInit(getRouteParam(req, 'id'))
+    res.json(result)
+  }),
+)
+
+rotaRoutes.patch(
+  '/:id/execucao/paradas/:paradaId',
+  validateBody(updateExecucaoParadaSchema),
+  asyncHandler(async (req, res) => {
+    const result = await rotaExecucaoService.updateParada(
+      getRouteParam(req, 'id'),
+      getRouteParam(req, 'paradaId'),
+      req.body,
+    )
+    res.json(result)
+  }),
+)
+
+rotaRoutes.put(
+  '/:id/execucao/sync',
+  validateBody(bulkSyncExecucaoSchema),
+  asyncHandler(async (req, res) => {
+    const result = await rotaExecucaoService.bulkSync(
+      getRouteParam(req, 'id'),
+      req.body,
     )
     res.json(result)
   }),

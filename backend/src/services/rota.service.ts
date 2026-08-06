@@ -1,5 +1,6 @@
 import { NotFoundError } from '../errors/app.error.js'
 import { rotaRepository } from '../repositories/rota.repository.js'
+import { rotaExecucaoRepository } from '../repositories/rota-execucao.repository.js'
 import type {
   ListRotasInput,
   OptimizeRotaInput,
@@ -218,7 +219,9 @@ export class RotaService {
   }
 
   async save(input: SaveRotaInput) {
-    return rotaRepository.create(input)
+    const rota = await rotaRepository.create(input)
+    await rotaExecucaoRepository.initForRota(rota.id)
+    return rota
   }
 
   async list(filters: ListRotasInput) {
@@ -253,6 +256,7 @@ export class RotaService {
         cliente: parada.cliente,
         endereco: parada.endereco,
         bairro: parada.bairro,
+        telefone: parada.telefone,
         observacao: parada.observacao,
         prioridade: parada.prioridade,
         ordemUrgencia: parada.ordemUrgencia ?? null,
