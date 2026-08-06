@@ -70,7 +70,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 | `VITE_APP_NAME` | Nome do cliente (sidebar e login) |
 | `VITE_APP_SUBTITLE` | Subtítulo (sidebar) |
 
-4. **Logo do cliente:** substituir `frontend/public/app-logo.png` antes do deploy, ou fazer commit em branch dedicada ao cliente com o logo dele.
+4. **Logo do cliente:** substituir `frontend/public/app-logo.png` e os ícones PWA (`pwa-icon-192.png`, `pwa-icon-512.png`) antes do deploy.
 
 5. Deploy e anotar a URL (ex.: `https://gestao-cliente.vercel.app`).
 

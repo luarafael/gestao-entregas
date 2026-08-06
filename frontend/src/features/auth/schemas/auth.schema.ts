@@ -5,6 +5,8 @@ export interface AuthUser {
   role: 'ADMIN' | 'MOTOBOY'
 }
 
+export type UserRole = AuthUser['role']
+
 export interface LoginResponse {
   token: string
   user: AuthUser
