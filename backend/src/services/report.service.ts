@@ -32,8 +32,12 @@ export class ReportService {
     )
   }
 
-  getPrestacaoTrend(period: ReportPeriod) {
-    return reportRepository.getPrestacaoTrend(period)
+  getPrestacaoTrend(query: ReportSummaryQuery) {
+    return reportRepository.getPrestacaoTrend(
+      query.period,
+      new Date(),
+      query.motoboyId,
+    )
   }
 
   getDashboardIndicators(period: ReportPeriod = 'week', motoboyId?: string) {

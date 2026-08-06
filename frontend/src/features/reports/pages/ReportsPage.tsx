@@ -2,6 +2,10 @@ import { useState } from 'react'
 import type { ReportPeriod } from '@/shared/types/api.types'
 import { Button } from '@/shared/components/ui'
 import {
+  MotoboySelect,
+  type MotoboySelectValue,
+} from '@/shared/components/MotoboySelect'
+import {
   useNeighborhoodReport,
   usePeriodDailyBreakdown,
   usePrestacaoTrend,
@@ -19,11 +23,14 @@ import { toast } from '@/shared/stores/toast.store'
 
 export function ReportsPage() {
   const [period, setPeriod] = useState<ReportPeriod>('week')
+  const [motoboyFilter, setMotoboyFilter] =
+    useState<MotoboySelectValue>('all')
+  const motoboyId = motoboyFilter === 'all' ? undefined : motoboyFilter
 
-  const summaryQuery = useReportSummary(period)
-  const dailyBreakdownQuery = usePeriodDailyBreakdown(period)
-  const neighborhoodQuery = useNeighborhoodReport(period, 8)
-  const prestacaoTrendQuery = usePrestacaoTrend(period)
+  const summaryQuery = useReportSummary(period, motoboyId)
+  const dailyBreakdownQuery = usePeriodDailyBreakdown(period, motoboyId)
+  const neighborhoodQuery = useNeighborhoodReport(period, 8, motoboyId)
+  const prestacaoTrendQuery = usePrestacaoTrend(period, motoboyId)
 
   const periodLabel = getPeriodLabel(period)
   const dailyBreakdown = dailyBreakdownQuery.data ?? []
@@ -41,6 +48,7 @@ export function ReportsPage() {
       summary: summaryQuery.data,
       dailyBreakdown,
       neighborhoods: neighborhoodQuery.data ?? [],
+      scopeLabel: motoboyId ? 'Motoboy selecionado' : 'Todos os motoboys',
     })
     toast('PDF exportado com sucesso', 'success')
   }
@@ -51,11 +59,19 @@ export function ReportsPage() {
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Relatórios</h2>
           <p className="text-sm text-muted-foreground">
-            Indicadores, gráficos e detalhamento das prestações fechadas no
-            período.
+            {motoboyId
+              ? 'Indicadores e gráficos do motoboy selecionado.'
+              : 'Indicadores, gráficos e detalhamento das prestações fechadas no período.'}
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <MotoboySelect
+            id="reports-motoboy"
+            value={motoboyFilter}
+            onChange={setMotoboyFilter}
+            allowAll
+            label="Motoboy"
+          />
           <Button
             variant="secondary"
             onClick={handleExportPdf}

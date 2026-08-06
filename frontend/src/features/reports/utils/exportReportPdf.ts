@@ -23,6 +23,7 @@ export interface ReportPdfInput {
   summary: ReportSummary
   dailyBreakdown: DailyTrendPoint[]
   neighborhoods: NeighborhoodReportPoint[]
+  scopeLabel?: string
 }
 
 export function buildReportPdfFilename(period: ReportPeriod) {
@@ -32,7 +33,10 @@ export function buildReportPdfFilename(period: ReportPeriod) {
 
 export function exportReportPdf(input: ReportPdfInput) {
   const periodLabel = getPeriodLabel(input.period)
-  const { doc, y: startY } = createPdfWithHeader(`Relatório — ${periodLabel}`)
+  const scopeSuffix = input.scopeLabel ? ` — ${input.scopeLabel}` : ''
+  const { doc, y: startY } = createPdfWithHeader(
+    `Relatório — ${periodLabel}${scopeSuffix}`,
+  )
   let y = startY
   const rightX = doc.internal.pageSize.getWidth() - PDF_MARGIN
 

@@ -54,7 +54,7 @@ reportRoutes.get(
   validateQuery(reportSummaryQuerySchema),
   asyncHandler(async (req, res) => {
     const trend = await reportService.getPrestacaoTrend(
-      getValidatedQuery<ReportSummaryQuery>(req).period,
+      getValidatedQuery<ReportSummaryQuery>(req),
     )
     res.json(trend)
   }),

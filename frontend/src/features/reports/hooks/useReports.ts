@@ -66,12 +66,17 @@ export function useNeighborhoodReport(
   })
 }
 
-export function usePrestacaoTrend(period: ReportPeriod) {
+export function usePrestacaoTrend(period: ReportPeriod, motoboyId?: string) {
+  const scope = motoboyId ?? 'all'
+
   return useQuery({
-    queryKey: ['reports', 'prestacao-trend', period],
+    queryKey: ['reports', 'prestacao-trend', period, scope],
     queryFn: () =>
       apiFetch<PrestacaoTrendPoint[]>(
-        `/api/reports/prestacao-trend?period=${period}`,
+        withMotoboyParam(
+          `/api/reports/prestacao-trend?period=${period}`,
+          motoboyId,
+        ),
       ),
     staleTime: 5 * 60_000,
   })

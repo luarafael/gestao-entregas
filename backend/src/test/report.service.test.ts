@@ -74,9 +74,26 @@ describe('ReportService', () => {
   it('delega tendência de prestações', async () => {
     reportRepository.getPrestacaoTrend.mockResolvedValue([{ valorFinal: 80 }])
 
-    const result = await service.getPrestacaoTrend('month')
+    const result = await service.getPrestacaoTrend({ period: 'month' })
 
+    expect(reportRepository.getPrestacaoTrend).toHaveBeenCalledWith(
+      'month',
+      expect.any(Date),
+      undefined,
+    )
     expect(result[0]?.valorFinal).toBe(80)
+  })
+
+  it('delega tendência de prestações filtrada por motoboy', async () => {
+    reportRepository.getPrestacaoTrend.mockResolvedValue([{ valorFinal: 40 }])
+
+    await service.getPrestacaoTrend({ period: 'week', motoboyId: 'm1' })
+
+    expect(reportRepository.getPrestacaoTrend).toHaveBeenCalledWith(
+      'week',
+      expect.any(Date),
+      'm1',
+    )
   })
 
   it('retorna indicadores do dashboard', async () => {

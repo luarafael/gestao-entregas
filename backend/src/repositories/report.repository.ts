@@ -136,20 +136,37 @@ export class ReportRepository {
     }))
   }
 
-  async getPrestacaoTrend(period: ReportPeriod, reference = new Date()) {
+  async getPrestacaoTrend(
+    period: ReportPeriod,
+    reference = new Date(),
+    motoboyId?: string,
+  ) {
     const { start, end } = getUtcDateOnlyRange(period, reference)
 
-    const prestacoes = await prisma.prestacaoContas.findMany({
-      where: {
-        data: { gte: start, lte: end },
-      },
-      orderBy: { data: 'asc' },
-      select: {
-        data: true,
-        valorFinal: true,
-        totalEntregas: true,
-      },
-    })
+    const prestacoes = motoboyId
+      ? await prisma.prestacaoMotoboy.findMany({
+          where: {
+            motoboyId,
+            data: { gte: start, lte: end },
+          },
+          orderBy: { data: 'asc' },
+          select: {
+            data: true,
+            valorFinal: true,
+            totalEntregas: true,
+          },
+        })
+      : await prisma.prestacaoContas.findMany({
+          where: {
+            data: { gte: start, lte: end },
+          },
+          orderBy: { data: 'asc' },
+          select: {
+            data: true,
+            valorFinal: true,
+            totalEntregas: true,
+          },
+        })
 
     return prestacoes.map((prestacao) => ({
       date: formatDateOnlyISO(prestacao.data),
