@@ -2,6 +2,12 @@ import { useMemo, useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui'
 import { IconRoute } from '@/shared/components/icons'
 import { toast } from '@/shared/stores/toast.store'
+import { WhatsAppPreview } from '@/features/accounting/components/WhatsAppPreview'
+import {
+  WhatsAppSendModal,
+  type WhatsAppSendPayload,
+} from '@/features/accounting/components/WhatsAppSendModal'
+import { useCopyWhatsAppText } from '@/features/accounting/hooks/usePrestacao'
 import { EnderecoInicial } from '../components/EnderecoInicial'
 import { FormularioEntrega } from '../components/FormularioEntrega'
 import { ListaEntregas } from '../components/ListaEntregas'
@@ -26,6 +32,10 @@ import type {
   PlannerStopFormData,
   RotaPlanejada,
 } from '../schemas/routing.schema'
+import {
+  buildRouteWhatsAppPayload,
+  formatRouteWhatsAppText,
+} from '../utils/whatsappRouteMessage'
 import { DEFAULT_START_ADDRESS } from '../schemas/routing.schema'
 
 export function PlannerPage() {
@@ -39,9 +49,17 @@ export function PlannerPage() {
   const [importOpen, setImportOpen] = useState(false)
   const [selectedTempId, setSelectedTempId] = useState<string | null>(null)
   const [tab, setTab] = useState<'planejar' | 'historico'>('planejar')
+  const [sendModalOpen, setSendModalOpen] = useState(false)
+  const [sendPayload, setSendPayload] = useState<WhatsAppSendPayload | null>(null)
 
   const optimizeMutation = useOptimizeRoute()
   const saveMutation = useSaveRoute()
+  const copyMutation = useCopyWhatsAppText()
+
+  const whatsappText = useMemo(() => {
+    if (!result) return ''
+    return formatRouteWhatsAppText(buildRouteWhatsAppPayload(result))
+  }, [result])
 
   const existingEntregaIds = useMemo(
     () =>
@@ -140,6 +158,17 @@ export function PlannerPage() {
       aproximada: result.aproximada,
       paradas: result.paradas,
     })
+  }
+
+  const handleCopyWhatsApp = () => {
+    if (!whatsappText) return
+    copyMutation.mutate(whatsappText)
+  }
+
+  const handleSendWhatsApp = () => {
+    if (!whatsappText) return
+    setSendPayload({ baseText: whatsappText })
+    setSendModalOpen(true)
   }
 
   const handleNavigate = () => {
@@ -342,6 +371,15 @@ export function PlannerPage() {
                 </Card>
               ) : null}
 
+              {result ? (
+                <WhatsAppPreview
+                  text={whatsappText}
+                  onCopy={handleCopyWhatsApp}
+                  onSend={handleSendWhatsApp}
+                  isCopying={copyMutation.isPending}
+                />
+              ) : null}
+
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="secondary"
@@ -380,6 +418,15 @@ export function PlannerPage() {
           toast(`${imported.length} entrega(s) adicionada(s)`, 'success')
         }}
         existingEntregaIds={existingEntregaIds}
+      />
+
+      <WhatsAppSendModal
+        open={sendModalOpen}
+        onClose={() => {
+          setSendModalOpen(false)
+          setSendPayload(null)
+        }}
+        payload={sendPayload}
       />
     </div>
   )

@@ -9,7 +9,7 @@ export const plannerStopSchema = z
     bairro: z.string().trim().optional(),
     observacao: z.string().trim().optional(),
     prioridade: prioridadeParadaSchema,
-    ordemUrgencia: z.coerce.number().int().positive().optional(),
+    ordemUrgencia: z.number().int().positive().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.prioridade === 'NORMAL' && data.ordemUrgencia != null) {

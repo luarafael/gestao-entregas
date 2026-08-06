@@ -138,7 +138,12 @@ export function FormularioEntrega({
               </span>
               <select
                 className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3 text-sm"
-                {...register('ordemUrgencia', { valueAsNumber: true })}
+                {...register('ordemUrgencia', {
+                  setValueAs: (value) => {
+                    const parsed = Number(value)
+                    return Number.isNaN(parsed) ? undefined : parsed
+                  },
+                })}
               >
                 {ORDEM_URGENCIA_OPTIONS.map((ordem) => (
                   <option key={ordem} value={ordem}>
