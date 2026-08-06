@@ -30,7 +30,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         <img
           src="/app-logo.png"
           alt="Sistema Rotas"
-          className="size-10 shrink-0 rounded-xl object-cover"
+          className="size-10 shrink-0 rounded-xl object-contain"
         />
         <div>
           <p className="text-sm font-semibold tracking-tight">Sistema Rotas</p>
