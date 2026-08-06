@@ -20,6 +20,7 @@ describe('permissions', () => {
   it('bloqueia areas administrativas para motoboy', () => {
     expect(canAccessRoute('MOTOBOY', '/relatorios')).toBe(false)
     expect(canAccessRoute('MOTOBOY', '/prestacao')).toBe(false)
+    expect(canAccessRoute('MOTOBOY', '/motoboys')).toBe(false)
     expect(canAccessRoute('MOTOBOY', '/pendencias')).toBe(true)
     expect(canAccessRoute('MOTOBOY', '/meu-dia')).toBe(true)
     expect(canAccessRoute('MOTOBOY', '/entregas')).toBe(true)

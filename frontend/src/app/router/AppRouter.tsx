@@ -38,6 +38,12 @@ const MonitoramentoPage = lazy(() =>
   })),
 )
 
+const MotoboysPage = lazy(() =>
+  import('@/features/motoboys/pages/MotoboysPage').then((module) => ({
+    default: module.MotoboysPage,
+  })),
+)
+
 const DashboardPage = lazy(() =>
   import('@/features/dashboard/pages/DashboardPage').then((module) => ({
     default: module.DashboardPage,
@@ -97,6 +103,7 @@ const routes = [
               { path: 'minha-prestacao', element: <MinhaPrestacaoPage /> },
               { path: 'aprovacoes', element: <AprovacoesPage /> },
               { path: 'monitoramento', element: <MonitoramentoPage /> },
+              { path: 'motoboys', element: <MotoboysPage /> },
               { path: 'entregas', element: <DeliveriesPage /> },
               { path: 'pendencias', element: <PendingPage /> },
               { path: 'prestacao', element: <PrestacaoPage /> },

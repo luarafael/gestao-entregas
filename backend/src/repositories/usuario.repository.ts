@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js'
 import type { UsuarioRole } from '../../generated/prisma/client.js'
+import type { Prisma } from '../../generated/prisma/client.js'
 
 export interface CreateUsuarioInput {
   nome: string
@@ -7,6 +8,23 @@ export interface CreateUsuarioInput {
   senhaHash: string
   role?: UsuarioRole
 }
+
+export interface ListMotoboysFilters {
+  page: number
+  limit: number
+  search?: string
+  ativo?: boolean
+}
+
+const motoboyPublicSelect = {
+  id: true,
+  nome: true,
+  email: true,
+  role: true,
+  ativo: true,
+  criadoEm: true,
+  atualizadoEm: true,
+} as const
 
 export const usuarioRepository = {
   findByEmail(email: string) {
@@ -21,6 +39,44 @@ export const usuarioRepository = {
     })
   },
 
+  findMotoboyById(id: string) {
+    return prisma.usuario.findFirst({
+      where: { id, role: 'MOTOBOY' },
+      select: motoboyPublicSelect,
+    })
+  },
+
+  async findMotoboys(filters: ListMotoboysFilters) {
+    const skip = (filters.page - 1) * filters.limit
+    const search = filters.search?.trim()
+
+    const where: Prisma.UsuarioWhereInput = {
+      role: 'MOTOBOY',
+      ...(filters.ativo !== undefined ? { ativo: filters.ativo } : {}),
+      ...(search
+        ? {
+            OR: [
+              { nome: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    }
+
+    const [data, total] = await Promise.all([
+      prisma.usuario.findMany({
+        where,
+        skip,
+        take: filters.limit,
+        orderBy: [{ ativo: 'desc' }, { nome: 'asc' }],
+        select: motoboyPublicSelect,
+      }),
+      prisma.usuario.count({ where }),
+    ])
+
+    return { data, total }
+  },
+
   create(input: CreateUsuarioInput) {
     return prisma.usuario.create({
       data: {
@@ -29,6 +85,36 @@ export const usuarioRepository = {
         senhaHash: input.senhaHash,
         role: input.role ?? 'MOTOBOY',
       },
+      select: motoboyPublicSelect,
+    })
+  },
+
+  updateMotoboy(
+    id: string,
+    data: {
+      nome?: string
+      email?: string
+      senhaHash?: string
+    },
+  ) {
+    return prisma.usuario.update({
+      where: { id },
+      data: {
+        ...(data.nome !== undefined ? { nome: data.nome.trim() } : {}),
+        ...(data.email !== undefined
+          ? { email: data.email.toLowerCase().trim() }
+          : {}),
+        ...(data.senhaHash !== undefined ? { senhaHash: data.senhaHash } : {}),
+      },
+      select: motoboyPublicSelect,
+    })
+  },
+
+  setAtivo(id: string, ativo: boolean) {
+    return prisma.usuario.update({
+      where: { id },
+      data: { ativo },
+      select: motoboyPublicSelect,
     })
   },
 

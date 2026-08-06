@@ -25,6 +25,10 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
     title: 'Monitoramento',
     subtitle: 'Entregas em tempo quase real',
   },
+  '/motoboys': {
+    title: 'Motoboys',
+    subtitle: 'Funcionários da empresa',
+  },
   '/entregas': {
     title: 'Entregas',
     subtitle: 'Cadastro e listagem',

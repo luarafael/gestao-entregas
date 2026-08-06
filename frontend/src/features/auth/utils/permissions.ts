@@ -19,6 +19,7 @@ export const ADMIN_ONLY_ROUTES = [
   '/relatorios',
   '/aprovacoes',
   '/monitoramento',
+  '/motoboys',
 ] as const
 
 export function canAccessRoute(role: UserRole, pathname: string): boolean {
