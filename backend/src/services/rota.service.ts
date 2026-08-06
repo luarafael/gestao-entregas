@@ -180,9 +180,33 @@ export class RotaService {
       ? summarizeRouteFromCoords(order, originCoord, coords)
       : summarizeRoute(paradaIndicesToMatrixOrder(order), matrix)
 
+    const orderedCoords = order
+      .map((index) => coords[index])
+      .filter((point): point is { lat: number; lng: number } => point !== null)
+
+    let legs = summary.legs
+    let distanciaTotal = summary.distanciaTotal
+    let tempoTotal = summary.tempoTotal
+
+    if (originCoord && orderedCoords.length === order.length) {
+      try {
+        const osrmLegs = await osrmService.computeRouteLegs([
+          originCoord,
+          ...orderedCoords,
+        ])
+        if (osrmLegs && osrmLegs.length === order.length) {
+          legs = osrmLegs
+          distanciaTotal = osrmLegs.reduce((sum, leg) => sum + leg.distancia, 0)
+          tempoTotal = osrmLegs.reduce((sum, leg) => sum + leg.tempo, 0)
+        }
+      } catch {
+        // mantém legs da matriz/haversine
+      }
+    }
+
     const paradasOrdenadas = order.map((index, position) => {
       const parada = input.paradas[index]!
-      const leg = summary.legs[position]
+      const leg = legs[position]
       const coord = coords[index]
 
       return {
@@ -218,8 +242,8 @@ export class RotaService {
     return {
       enderecoInicial: input.enderecoInicial,
       origem: originCoord,
-      distanciaTotal: Math.round(summary.distanciaTotal),
-      tempoTotal: Math.round(summary.tempoTotal),
+      distanciaTotal: Math.round(distanciaTotal),
+      tempoTotal: Math.round(tempoTotal),
       totalEntregas: paradasOrdenadas.length,
       aproximada,
       polyline: polyline ?? null,

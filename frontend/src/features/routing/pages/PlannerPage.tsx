@@ -51,6 +51,8 @@ import {
   isActiveRouteStop,
   isAllStopsDelivered,
   mergeStopsWithStatus,
+  restoreStopRouteMetrics,
+  snapshotStopRouteMetrics,
   sumStopRouteMetrics,
   withDefaultStatus,
   type ExecucaoHistoricoItem,
@@ -242,6 +244,7 @@ export function PlannerPage() {
   }
 
   const recalcRemainingRoute = async (currentStops: PlannerStop[]) => {
+    const metricsSnapshot = snapshotStopRouteMetrics(currentStops)
     const inactive = currentStops.filter(
       (stop) => !isActiveRouteStop(getStopStatus(stop)),
     )
@@ -280,21 +283,27 @@ export function PlannerPage() {
     }
 
     const mergedActive = mergeStopsWithStatus(active, optimized.paradas).map(
-      (stop, index) => ({
-        ...stop,
-        ordem: inactive.length + index + 1,
-        distancia:
-          optimized.distanciaTotal > 0
-            ? stop.distancia
-            : active[index]?.distancia ?? stop.distancia,
-        tempo:
-          optimized.tempoTotal > 0
-            ? stop.tempo
-            : active[index]?.tempo ?? stop.tempo,
-      }),
+      (stop, index) =>
+        restoreStopRouteMetrics(
+          {
+            ...stop,
+            ordem: inactive.length + index + 1,
+            distancia:
+              optimized.distanciaTotal > 0
+                ? stop.distancia
+                : active[index]?.distancia ?? stop.distancia,
+            tempo:
+              optimized.tempoTotal > 0
+                ? stop.tempo
+                : active[index]?.tempo ?? stop.tempo,
+          },
+          metricsSnapshot,
+        ),
     )
     const finalStops = [
-      ...inactive.map((stop, index) => ({ ...stop, ordem: index + 1 })),
+      ...inactive.map((stop, index) =>
+        restoreStopRouteMetrics({ ...stop, ordem: index + 1 }, metricsSnapshot),
+      ),
       ...mergedActive,
     ]
     const finalMetrics = sumStopRouteMetrics(finalStops)
@@ -435,7 +444,8 @@ export function PlannerPage() {
         ? Number(parada.valorEntrega)
         : null,
       ordem: parada.ordem,
-      distancia: parada.distancia ? Number(parada.distancia) : null,
+      distancia:
+        parada.distancia != null ? Number(parada.distancia) : null,
       tempo: parada.tempo,
       latitude: parada.latitude,
       longitude: parada.longitude,

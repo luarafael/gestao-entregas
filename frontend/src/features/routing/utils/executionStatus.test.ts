@@ -3,8 +3,11 @@ import {
   computeExecutionStats,
   getNextStop,
   getActiveStopsForRoute,
+  getStopLegMetrics,
   isProblemStatus,
   isAllStopsDelivered,
+  applyStatusUpdate,
+  mergeStopsWithStatus,
 } from './executionStatus'
 import type { PlannerStop } from '../schemas/routing.schema'
 
@@ -74,5 +77,44 @@ describe('executionStatus', () => {
         baseStop({ tempId: '2', statusExecucao: 'PENDENTE' }),
       ]),
     ).toBe(false)
+  })
+
+  it('congela km e tempo ao marcar entregue', () => {
+    const delivered = applyStatusUpdate(
+      baseStop({
+        distancia: 5200,
+        tempo: 900,
+      }),
+      'ENTREGUE',
+    )
+
+    expect(delivered.distanciaEntrega).toBe(5200)
+    expect(delivered.tempoEntrega).toBe(900)
+    expect(getStopLegMetrics(delivered)).toEqual({
+      distancia: 5200,
+      tempo: 900,
+    })
+  })
+
+  it('preserva metricas ao mesclar paradas apos recalculo', () => {
+    const base = [
+      baseStop({
+        tempId: '1',
+        distancia: 5200,
+        tempo: 900,
+        statusExecucao: 'ENTREGUE',
+      }),
+    ]
+    const updated = [
+      baseStop({
+        tempId: '1',
+        distancia: 0,
+        tempo: 0,
+      }),
+    ]
+
+    const merged = mergeStopsWithStatus(base, updated)
+    expect(merged[0]?.distancia).toBe(5200)
+    expect(merged[0]?.tempo).toBe(900)
   })
 })

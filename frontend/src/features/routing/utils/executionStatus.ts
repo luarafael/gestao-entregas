@@ -121,12 +121,117 @@ export function isAllStopsDelivered(stops: PlannerStop[]): boolean {
 
 export function sumStopRouteMetrics(stops: PlannerStop[]) {
   return stops.reduce(
-    (acc, stop) => ({
-      distancia: acc.distancia + (stop.distancia ?? 0),
-      tempo: acc.tempo + (stop.tempo ?? 0),
-    }),
+    (acc, stop) => {
+      const { distancia, tempo } = getStopLegMetrics(stop)
+      return {
+        distancia: acc.distancia + (distancia ?? 0),
+        tempo: acc.tempo + (tempo ?? 0),
+      }
+    },
     { distancia: 0, tempo: 0 },
   )
+}
+
+export function hasStopRouteMetrics(stop: PlannerStop): boolean {
+  return (stop.distancia ?? 0) > 0 && (stop.tempo ?? 0) > 0
+}
+
+export function preserveStopRouteMetrics(
+  next: PlannerStop,
+  previous?: PlannerStop | null,
+): PlannerStop {
+  if (!previous) return next
+  if (hasStopRouteMetrics(next)) return next
+
+  const distancia =
+    (next.distancia ?? 0) > 0 ? next.distancia : previous.distancia ?? next.distancia
+  const tempo =
+    (next.tempo ?? 0) > 0 ? next.tempo : previous.tempo ?? next.tempo
+
+  if (distancia === next.distancia && tempo === next.tempo) {
+    return next
+  }
+
+  return {
+    ...next,
+    distancia,
+    tempo,
+  }
+}
+
+export function snapshotStopRouteMetrics(stops: PlannerStop[]) {
+  return new Map(
+    stops.map((stop) => {
+      const metrics = getStopLegMetrics(stop)
+      return [
+        stop.tempId,
+        {
+          distancia: metrics.distancia ?? stop.distancia ?? null,
+          tempo: metrics.tempo ?? stop.tempo ?? null,
+        },
+      ]
+    }),
+  )
+}
+
+export function restoreStopRouteMetrics(
+  stop: PlannerStop,
+  snapshot: Map<string, { distancia: number | null; tempo: number | null }>,
+): PlannerStop {
+  const saved = snapshot.get(stop.tempId)
+  const frozenDistancia =
+    (stop.distanciaEntrega ?? 0) > 0 ? stop.distanciaEntrega : null
+  const frozenTempo = (stop.tempoEntrega ?? 0) > 0 ? stop.tempoEntrega : null
+
+  if (frozenDistancia != null && frozenTempo != null) {
+    return {
+      ...stop,
+      distancia: frozenDistancia,
+      tempo: frozenTempo,
+    }
+  }
+
+  if (!saved) return stop
+
+  const distancia =
+    (stop.distancia ?? 0) > 0 ? stop.distancia : saved.distancia ?? stop.distancia
+  const tempo = (stop.tempo ?? 0) > 0 ? stop.tempo : saved.tempo ?? stop.tempo
+
+  if (distancia === stop.distancia && tempo === stop.tempo) {
+    return stop
+  }
+
+  return {
+    ...stop,
+    distancia,
+    tempo,
+  }
+}
+
+export function getStopLegMetrics(stop: PlannerStop): {
+  distancia: number | null
+  tempo: number | null
+} {
+  if (getStopStatus(stop) === 'ENTREGUE') {
+    const distancia =
+      (stop.distanciaEntrega ?? 0) > 0
+        ? stop.distanciaEntrega!
+        : (stop.distancia ?? 0) > 0
+          ? stop.distancia!
+          : null
+    const tempo =
+      (stop.tempoEntrega ?? 0) > 0
+        ? stop.tempoEntrega!
+        : (stop.tempo ?? 0) > 0
+          ? stop.tempo!
+          : null
+    return { distancia, tempo }
+  }
+
+  return {
+    distancia: (stop.distancia ?? 0) > 0 ? stop.distancia! : null,
+    tempo: (stop.tempo ?? 0) > 0 ? stop.tempo! : null,
+  }
 }
 
 export function computeExecutionStats(stops: PlannerStop[]) {
@@ -173,13 +278,18 @@ export function mergeStopsWithStatus(
   return updated.map((stop) => {
     const previous = statusByTempId.get(stop.tempId)
     if (!previous) return withDefaultStatus(stop)
+    const merged = preserveStopRouteMetrics(stop, previous)
     return {
-      ...stop,
+      ...merged,
       statusExecucao: previous.statusExecucao ?? 'PENDENTE',
       statusObservacao: previous.statusObservacao ?? null,
       statusAtualizadoEm: previous.statusAtualizadoEm ?? null,
       telefone: stop.telefone ?? previous.telefone ?? null,
       paradaId: stop.paradaId ?? previous.paradaId ?? null,
+      latitude: stop.latitude ?? previous.latitude ?? null,
+      longitude: stop.longitude ?? previous.longitude ?? null,
+      distanciaEntrega: previous.distanciaEntrega ?? stop.distanciaEntrega ?? null,
+      tempoEntrega: previous.tempoEntrega ?? stop.tempoEntrega ?? null,
     }
   })
 }
@@ -189,12 +299,33 @@ export function applyStatusUpdate(
   status: StatusExecucao,
   observacao?: string | null,
 ): PlannerStop {
-  return {
+  const updated = {
     ...stop,
     statusExecucao: status,
     statusObservacao: observacao ?? stop.statusObservacao ?? null,
     statusAtualizadoEm: new Date().toISOString(),
   }
+
+  if (status === 'ENTREGUE') {
+    const distanciaEntrega =
+      (stop.distancia ?? 0) > 0
+        ? stop.distancia
+        : stop.distanciaEntrega ?? stop.distancia ?? null
+    const tempoEntrega =
+      (stop.tempo ?? 0) > 0
+        ? stop.tempo
+        : stop.tempoEntrega ?? stop.tempo ?? null
+
+    return {
+      ...updated,
+      distanciaEntrega,
+      tempoEntrega,
+      distancia: distanciaEntrega,
+      tempo: tempoEntrega,
+    }
+  }
+
+  return updated
 }
 
 export function getActiveStopsForRoute(stops: PlannerStop[]): PlannerStop[] {

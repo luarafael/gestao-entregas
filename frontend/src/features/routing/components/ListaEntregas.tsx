@@ -8,6 +8,7 @@ import {
   STATUS_COLORS,
   STATUS_EXECUCAO_OPTIONS,
   STATUS_LABELS,
+  getStopLegMetrics,
   getStopStatus,
   type StatusExecucao,
 } from '../utils/executionStatus'
@@ -109,6 +110,7 @@ export function ListaEntregas({
             {filtered.map((stop) => {
               const index = stops.findIndex((item) => item.tempId === stop.tempId)
               const status = getStopStatus(stop)
+              const legMetrics = getStopLegMetrics(stop)
               const colors = STATUS_COLORS[status]
               const isNext = stop.tempId === nextStopTempId
 
@@ -178,14 +180,14 @@ export function ListaEntregas({
                           Status: {stop.statusObservacao}
                         </p>
                       ) : null}
-                      {stop.distancia != null || stop.tempo != null ? (
+                      {legMetrics.distancia != null || legMetrics.tempo != null ? (
                         <p className="text-xs text-muted-foreground">
-                          {stop.distancia != null
-                            ? formatDistance(stop.distancia)
+                          {legMetrics.distancia != null
+                            ? formatDistance(legMetrics.distancia)
                             : '—'}{' '}
                           ·{' '}
-                          {stop.tempo != null
-                            ? formatDuration(stop.tempo)
+                          {legMetrics.tempo != null
+                            ? formatDuration(legMetrics.tempo)
                             : '—'}
                         </p>
                       ) : null}

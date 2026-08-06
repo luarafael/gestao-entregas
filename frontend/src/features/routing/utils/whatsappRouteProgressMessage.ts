@@ -6,6 +6,7 @@ import { formatDistance, formatDuration } from './googleMapsUrl'
 import {
   computeExecutionStats,
   getActiveStopsForRoute,
+  getStopLegMetrics,
   getStopStatus,
   isAllStopsDelivered,
   isProblemStatus,
@@ -71,9 +72,10 @@ function formatStatusTime(stop: PlannerStop): string | null {
 }
 
 function appendTrecho(lines: string[], stop: PlannerStop) {
-  if (stop.distancia != null && stop.tempo != null) {
+  const { distancia, tempo } = getStopLegMetrics(stop)
+  if (distancia != null && tempo != null && distancia > 0 && tempo > 0) {
     lines.push(
-      `   ${WA.clock} Trecho: ${formatDistance(stop.distancia)} · ${formatDuration(stop.tempo)}`,
+      `   ${WA.clock} Trecho: ${formatDistance(distancia)} · ${formatDuration(tempo)}`,
     )
   }
 }

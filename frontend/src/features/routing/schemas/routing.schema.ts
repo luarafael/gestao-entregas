@@ -51,6 +51,9 @@ export interface PlannerStop {
   ordem?: number
   distancia?: number | null
   tempo?: number | null
+  /** Congelado ao marcar ENTREGUE para não perder no recálculo */
+  distanciaEntrega?: number | null
+  tempoEntrega?: number | null
   latitude?: number | null
   longitude?: number | null
   paradaId?: string | null

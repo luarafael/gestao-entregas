@@ -42,6 +42,34 @@ async function computeRouteMatrix(
   return { meters, seconds }
 }
 
+async function computeRouteLegs(
+  points: LatLng[],
+): Promise<Array<{ distancia: number; tempo: number }> | null> {
+  if (points.length < 2) return null
+
+  const url = `${OSRM_BASE}/route/v1/driving/${toCoordinatePath(points)}?overview=false`
+
+  const response = await fetch(url, { signal: AbortSignal.timeout(20_000) })
+  if (!response.ok) return null
+
+  const data = (await response.json()) as {
+    code?: string
+    routes?: Array<{
+      legs?: Array<{ distance?: number; duration?: number }>
+    }>
+  }
+
+  if (data.code !== 'Ok') return null
+
+  const legs = data.routes?.[0]?.legs ?? []
+  if (legs.length !== points.length - 1) return null
+
+  return legs.map((leg) => ({
+    distancia: Math.round(leg.distance ?? 0),
+    tempo: Math.round(leg.duration ?? 0),
+  }))
+}
+
 async function computeRoutePolyline(points: LatLng[]): Promise<string | null> {
   if (points.length < 2) return null
 
@@ -61,5 +89,6 @@ async function computeRoutePolyline(points: LatLng[]): Promise<string | null> {
 
 export const osrmService = {
   computeRouteMatrix,
+  computeRouteLegs,
   computeRoutePolyline,
 }
