@@ -30,6 +30,9 @@ backend/generated/
 # Docker
 postgres_data/
 
+# Documentação comercial (apenas local)
+docs/comercial/
+
 # Misc
 *.tsbuildinfo
 promtp.txt.bak

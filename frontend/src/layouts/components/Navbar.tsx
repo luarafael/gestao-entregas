@@ -1,6 +1,8 @@
-import { ThemeToggle } from '@/shared/components/ui'
+import { ThemeToggle, Button } from '@/shared/components/ui'
 import { IconMenu } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
+import { useAuthStore } from '@/features/auth/stores/auth.store'
+import { useNavigate } from 'react-router-dom'
 
 interface NavbarProps {
   title: string
@@ -15,6 +17,15 @@ export function Navbar({
   onMenuClick,
   className,
 }: NavbarProps) {
+  const navigate = useNavigate()
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <header
       className={cn(
@@ -41,6 +52,16 @@ export function Navbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {user ? (
+          <div className="hidden items-center gap-2 sm:flex">
+            <span className="max-w-[10rem] truncate text-xs text-muted-foreground">
+              {user.nome}
+            </span>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              Sair
+            </Button>
+          </div>
+        ) : null}
         <ThemeToggle />
       </div>
     </header>

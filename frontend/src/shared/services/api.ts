@@ -1,5 +1,10 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
+import {
+  clearAuthSessionStorage,
+  getAccessToken,
+} from '@/features/auth/auth-token'
+
 export class ApiError extends Error {
   status: number
 
@@ -13,14 +18,32 @@ export class ApiError extends Error {
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
+  options?: { auth?: boolean },
 ): Promise<T> {
+  const headers = new Headers(init?.headers)
+  if (!headers.has('Content-Type') && init?.body) {
+    headers.set('Content-Type', 'application/json')
+  }
+
+  const useAuth = options?.auth !== false
+  if (useAuth) {
+    const token = getAccessToken()
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`)
+    }
+  }
+
   const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    },
     ...init,
+    headers,
   })
+
+  if (response.status === 401 && useAuth) {
+    clearAuthSessionStorage()
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.assign('/login')
+    }
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}))

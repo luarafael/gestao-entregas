@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   IconHome,
@@ -9,6 +9,12 @@ import {
   IconRoute,
 } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
+import { Button } from '@/shared/components/ui'
+import { useAuthStore } from '@/features/auth/stores/auth.store'
+
+const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'Sistema Rotas'
+const APP_SUBTITLE =
+  import.meta.env.VITE_APP_SUBTITLE ?? 'Gestão de entregas'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: IconHome },
@@ -24,19 +30,29 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onNavigate }: SidebarProps) {
+  const navigate = useNavigate()
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+
+  const handleLogout = () => {
+    logout()
+    onNavigate?.()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <aside className="flex h-full flex-col border-r border-border/60 bg-card/40 backdrop-blur-xl">
       <div className="flex h-16 items-center gap-3 border-b border-border/60 px-5">
         <div className="flex size-12 shrink-0 items-center justify-center">
           <img
             src="/app-logo.png"
-            alt="Sistema Rotas"
+            alt={APP_NAME}
             className="max-h-full max-w-full object-contain object-center"
           />
         </div>
         <div>
-          <p className="text-sm font-semibold tracking-tight">Sistema Rotas</p>
-          <p className="text-xs text-muted-foreground">Gestão de entregas</p>
+          <p className="text-sm font-semibold tracking-tight">{APP_NAME}</p>
+          <p className="text-xs text-muted-foreground">{APP_SUBTITLE}</p>
         </div>
       </div>
 
@@ -73,7 +89,16 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="border-t border-border/60 p-4">
+      <div className="border-t border-border/60 p-4 space-y-3">
+        {user ? (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-foreground">{user.nome}</p>
+            <p className="text-xs text-muted-foreground">{user.email}</p>
+            <Button variant="secondary" size="sm" className="w-full" onClick={handleLogout}>
+              Sair
+            </Button>
+          </div>
+        ) : null}
         <p className="text-xs text-muted-foreground">
           Controle diário de entregas e prestação de contas.
         </p>

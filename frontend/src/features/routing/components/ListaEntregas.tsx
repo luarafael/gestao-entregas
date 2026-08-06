@@ -195,7 +195,7 @@ export function ListaEntregas({
                     <div className="flex flex-col gap-2 sm:items-end">
                       {executionMode && onStatusChange ? (
                         <select
-                          className="h-9 min-w-[10rem] rounded-xl border border-border/70 bg-surface/50 px-2 text-sm"
+                          className="h-9 min-w-40 rounded-xl border border-border/70 bg-surface/50 px-2 text-sm"
                           value={status}
                           onChange={(event) =>
                             handleStatusSelect(

@@ -1,0 +1,19 @@
+import { apiFetch } from '@/shared/services/api'
+import type { AuthUser, LoginResponse } from '../schemas/auth.schema'
+
+export const authService = {
+  login(email: string, senha: string) {
+    return apiFetch<LoginResponse>(
+      '/api/auth/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email, senha }),
+      },
+      { auth: false },
+    )
+  },
+
+  me() {
+    return apiFetch<AuthUser>('/api/auth/me')
+  },
+}
