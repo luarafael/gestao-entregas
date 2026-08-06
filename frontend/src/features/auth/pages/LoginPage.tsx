@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/shared/components/ui'
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, PasswordInput } from '@/shared/components/ui'
 import { toast } from '@/shared/stores/toast.store'
 import { useAuthStore } from '../stores/auth.store'
 
@@ -62,9 +62,8 @@ export function LoginPage() {
               placeholder="seu@email.com"
               required
             />
-            <Input
+            <PasswordInput
               label="Senha"
-              type="password"
               autoComplete="current-password"
               value={senha}
               onChange={(event) => setSenha(event.target.value)}

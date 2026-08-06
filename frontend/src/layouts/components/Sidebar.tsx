@@ -9,8 +9,8 @@ import {
   IconRoute,
 } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
-import { Button } from '@/shared/components/ui'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
+import { UserProfilePanel } from '@/features/auth/components/UserProfilePanel'
 
 const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'Sistema Rotas'
 const APP_SUBTITLE =
@@ -90,15 +90,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </nav>
 
       <div className="border-t border-border/60 p-4 space-y-3">
-        {user ? (
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-foreground">{user.nome}</p>
-            <p className="text-xs text-muted-foreground">{user.email}</p>
-            <Button variant="secondary" size="sm" className="w-full" onClick={handleLogout}>
-              Sair
-            </Button>
-          </div>
-        ) : null}
+        {user ? <UserProfilePanel user={user} onLogout={handleLogout} /> : null}
         <p className="text-xs text-muted-foreground">
           Controle diário de entregas e prestação de contas.
         </p>

@@ -124,6 +124,28 @@ export function IconMapPin(props: IconProps) {
   )
 }
 
+export function IconEye(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+export function IconEyeOff(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+      <path d="M3 3l18 18" strokeLinecap="round" />
+      <path
+        d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4M6.7 6.7C4.6 8.1 3 10 2 12s3.5 7 10 7c1.8 0 3.4-.4 4.8-1.1M17.3 17.3C19.4 15.9 21 14 22 12s-3.5-7-10-7c-1.8 0-3.4.4-4.8 1.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 /** Logo do app: pacote + rota (entregas) */
 export function IconAppLogo(props: IconProps) {
   return (

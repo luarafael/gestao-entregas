@@ -1,7 +1,8 @@
-import { ThemeToggle, Button } from '@/shared/components/ui'
+import { ThemeToggle } from '@/shared/components/ui'
 import { IconMenu } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
+import { UserProfilePanel } from '@/features/auth/components/UserProfilePanel'
 import { useNavigate } from 'react-router-dom'
 
 interface NavbarProps {
@@ -53,14 +54,12 @@ export function Navbar({
 
       <div className="flex items-center gap-2">
         {user ? (
-          <div className="hidden items-center gap-2 sm:flex">
-            <span className="max-w-[10rem] truncate text-xs text-muted-foreground">
-              {user.nome}
-            </span>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              Sair
-            </Button>
-          </div>
+          <UserProfilePanel
+            user={user}
+            onLogout={handleLogout}
+            layout="navbar"
+            className="hidden sm:flex"
+          />
         ) : null}
         <ThemeToggle />
       </div>
