@@ -3,20 +3,23 @@ import { toUtcDateOnly } from '../utils/date.utils.js'
 
 export const prioridadeParadaSchema = z.enum(['NORMAL', 'URGENTE'])
 
-export const optimizeParadaSchema = z
-  .object({
-    tempId: z.string().min(1),
-    entregaId: z.string().optional().nullable(),
-    cliente: z.string().trim().optional().nullable(),
-    endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
-    bairro: z.string().trim().optional().nullable(),
-    observacao: z.string().trim().optional().nullable(),
-    telefone: z.string().trim().optional().nullable(),
-    prioridade: prioridadeParadaSchema.default('NORMAL'),
-    ordemUrgencia: z.coerce.number().int().positive().optional().nullable(),
-    valorEntrega: z.coerce.number().nonnegative().optional().nullable(),
-  })
-  .superRefine((data, ctx) => {
+const optimizeParadaBaseSchema = z.object({
+  tempId: z.string().min(1),
+  entregaId: z.string().optional().nullable(),
+  cliente: z.string().trim().optional().nullable(),
+  endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
+  bairro: z.string().trim().optional().nullable(),
+  observacao: z.string().trim().optional().nullable(),
+  telefone: z.string().trim().optional().nullable(),
+  prioridade: prioridadeParadaSchema.default('NORMAL'),
+  ordemUrgencia: z.coerce.number().int().positive().optional().nullable(),
+  valorEntrega: z.coerce.number().nonnegative().optional().nullable(),
+  latitude: z.coerce.number().optional().nullable(),
+  longitude: z.coerce.number().optional().nullable(),
+})
+
+export const optimizeParadaSchema = optimizeParadaBaseSchema.superRefine(
+  (data, ctx) => {
     if (data.prioridade === 'NORMAL' && data.ordemUrgencia != null) {
       ctx.addIssue({
         code: 'custom',
@@ -24,7 +27,14 @@ export const optimizeParadaSchema = z
         path: ['ordemUrgencia'],
       })
     }
-  })
+  },
+)
+
+export const saveParadaSchema = optimizeParadaBaseSchema.extend({
+  ordem: z.coerce.number().int().positive(),
+  distancia: z.coerce.number().nonnegative().optional().nullable(),
+  tempo: z.coerce.number().int().nonnegative().optional().nullable(),
+})
 
 export const optimizeRotaSchema = z.object({
   enderecoInicial: z.string().trim().min(1, 'Endereço inicial é obrigatório'),
@@ -47,17 +57,7 @@ export const saveRotaSchema = z.object({
   aproximada: z.boolean().default(false),
   polyline: z.string().optional().nullable(),
   sugestoes: z.array(z.string()).optional(),
-  paradas: z
-    .array(
-      optimizeParadaSchema.extend({
-        ordem: z.coerce.number().int().positive(),
-        distancia: z.coerce.number().nonnegative().optional().nullable(),
-        tempo: z.coerce.number().int().nonnegative().optional().nullable(),
-        latitude: z.coerce.number().optional().nullable(),
-        longitude: z.coerce.number().optional().nullable(),
-      }),
-    )
-    .min(1),
+  paradas: z.array(saveParadaSchema).min(1),
 })
 
 export const listRotasSchema = z.object({

@@ -113,6 +113,14 @@ export function PlannerPage() {
     [displayStops, result],
   )
 
+  const routeMetrics = useMemo(() => {
+    const fromStops = sumStopRouteMetrics(displayStops)
+    return {
+      distanciaTotal: fromStops.distancia || result?.distanciaTotal || 0,
+      tempoTotal: fromStops.tempo || result?.tempoTotal || 0,
+    }
+  }, [displayStops, result])
+
   const executionMode = Boolean(result)
 
   const syncStops = (updated: PlannerStop[]) => {
@@ -200,6 +208,19 @@ export function PlannerPage() {
     const merged = mergeStopsWithStatus(stops, optimized.paradas)
     setResult({ ...optimized, paradas: merged })
     setStops(merged)
+
+    if (
+      optimized.paradas.length > 0 &&
+      optimized.distanciaTotal === 0 &&
+      optimized.tempoTotal === 0
+    ) {
+      toast(
+        'Não foi possível calcular distâncias. Verifique endereço e bairro de cada parada.',
+        'error',
+      )
+      return
+    }
+
     toast(
       optimized.aproximada
         ? 'Rota calculada (aproximada)'
@@ -213,15 +234,17 @@ export function PlannerPage() {
       (stop) => !isActiveRouteStop(getStopStatus(stop)),
     )
     const active = getActiveStopsForRoute(currentStops)
+    const inactiveMetrics = sumStopRouteMetrics(inactive)
 
     if (active.length === 0) {
+      setStops(currentStops)
       setResult((current) =>
         current
           ? {
               ...current,
               paradas: currentStops,
-              distanciaTotal: 0,
-              tempoTotal: 0,
+              distanciaTotal: inactiveMetrics.distancia,
+              tempoTotal: inactiveMetrics.tempo,
             }
           : current,
       )
@@ -232,22 +255,49 @@ export function PlannerPage() {
       enderecoInicial,
       paradas: active,
     })
+
+    if (
+      optimized.distanciaTotal === 0 &&
+      optimized.tempoTotal === 0 &&
+      active.some((stop) => stop.latitude != null)
+    ) {
+      toast(
+        'Recálculo falhou; mantendo distâncias anteriores das paradas entregues.',
+        'info',
+      )
+    }
+
     const mergedActive = mergeStopsWithStatus(active, optimized.paradas).map(
       (stop, index) => ({
         ...stop,
         ordem: inactive.length + index + 1,
+        distancia:
+          optimized.distanciaTotal > 0
+            ? stop.distancia
+            : active[index]?.distancia ?? stop.distancia,
+        tempo:
+          optimized.tempoTotal > 0
+            ? stop.tempo
+            : active[index]?.tempo ?? stop.tempo,
       }),
     )
     const finalStops = [
       ...inactive.map((stop, index) => ({ ...stop, ordem: index + 1 })),
       ...mergedActive,
     ]
+    const finalMetrics = sumStopRouteMetrics(finalStops)
 
     setStops(finalStops)
     setResult({
       ...optimized,
       paradas: finalStops,
       totalEntregas: finalStops.length,
+      distanciaTotal:
+        finalMetrics.distancia ||
+        inactiveMetrics.distancia + optimized.distanciaTotal,
+      tempoTotal:
+        finalMetrics.tempo || inactiveMetrics.tempo + optimized.tempoTotal,
+      origem: optimized.origem ?? result?.origem ?? null,
     })
   }
 
@@ -448,8 +498,8 @@ export function PlannerPage() {
         <>
           <ResumoRota
             totalEntregas={displayStops.length}
-            distanciaTotal={result?.distanciaTotal ?? 0}
-            tempoTotal={result?.tempoTotal ?? 0}
+            distanciaTotal={routeMetrics.distanciaTotal}
+            tempoTotal={routeMetrics.tempoTotal}
             enderecoInicial={enderecoInicial}
             aproximada={result?.aproximada}
           />

@@ -79,8 +79,18 @@ export class RotaService {
     let matrix = null as ReturnType<typeof buildHaversineMatrix> | null
     let useCoordFallback = false
 
-    const originCoord = await googleRoutesService.geocode(input.enderecoInicial)
-    const coords = await googleRoutesService.geocodeMany(addresses)
+    const originCoord =
+      (await googleRoutesService.geocode(input.enderecoInicial)) ??
+      null
+    const geocodedCoords = await googleRoutesService.geocodeMany(addresses)
+    const coords = geocodedCoords.map((coord, index) => {
+      if (coord) return coord
+      const parada = input.paradas[index]
+      if (parada?.latitude != null && parada?.longitude != null) {
+        return { lat: parada.latitude, lng: parada.longitude }
+      }
+      return null
+    })
 
     try {
       const googleMatrix = await googleRoutesService.computeRouteMatrix(

@@ -117,6 +117,12 @@ async function geocodePhoton(candidate: string): Promise<LatLng | null> {
   return { lat: coordinates[1], lng: coordinates[0] }
 }
 
+const NOMINATIM_DELAY_MS = 1100
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export async function geocode(
   value: string | GeocodeRequest,
 ): Promise<LatLng | null> {
@@ -133,25 +139,26 @@ export async function geocode(
     }
 
     for (const candidate of candidates) {
+      const photon = await geocodePhoton(candidate)
+      if (photon) return photon
+    }
+
+    for (const candidate of candidates) {
       const nominatim = await geocodeNominatimFreeform(candidate)
       if (nominatim) return nominatim
+      if (!hasApiKey()) {
+        await delay(NOMINATIM_DELAY_MS)
+      }
     }
 
     const structured = await geocodeNominatimStructured(input)
     if (structured) return structured
-
-    for (const candidate of candidates) {
-      const photon = await geocodePhoton(candidate)
-      if (photon) return photon
-    }
 
     return null
   } catch {
     return null
   }
 }
-
-const NOMINATIM_DELAY_MS = 350
 
 export async function geocodeMany(
   values: Array<string | GeocodeRequest>,
@@ -160,9 +167,6 @@ export async function geocodeMany(
 
   for (const value of values) {
     results.push(await geocode(value))
-    if (!hasApiKey()) {
-      await new Promise((resolve) => setTimeout(resolve, NOMINATIM_DELAY_MS))
-    }
   }
 
   return results
