@@ -17,10 +17,12 @@ export function useOptimizeRoute() {
     mutationFn: ({
       enderecoInicial,
       paradas,
+      preservarOrdem = false,
     }: {
       enderecoInicial: string
       paradas: PlannerStop[]
-    }) => routingService.optimize(enderecoInicial, paradas),
+      preservarOrdem?: boolean
+    }) => routingService.optimize(enderecoInicial, paradas, { preservarOrdem }),
     onError: () => {
       toast('Erro ao calcular a rota', 'error')
     },

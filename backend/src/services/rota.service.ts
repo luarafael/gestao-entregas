@@ -67,13 +67,25 @@ function buildSuggestions(params: {
   return sugestoes
 }
 
+function resolveManualOrder(paradas: OptimizeRotaInput['paradas']): number[] {
+  return paradas
+    .map((parada, index) => ({
+      index,
+      ordem: parada.ordem ?? index + 1,
+    }))
+    .sort((a, b) => a.ordem - b.ordem || a.index - b.index)
+    .map((item) => item.index)
+}
+
 export class RotaService {
   async optimize(input: OptimizeRotaInput) {
     const addresses = input.paradas.map((parada) => ({
       endereco: parada.endereco,
       bairro: parada.bairro,
     }))
-    let order: number[] = []
+    let order: number[] = input.preservarOrdem
+      ? resolveManualOrder(input.paradas)
+      : []
     let aproximada = true
     let polyline: string | undefined
     let matrix = null as ReturnType<typeof buildHaversineMatrix> | null
@@ -100,7 +112,9 @@ export class RotaService {
 
       if (googleMatrix) {
         matrix = googleMatrix
-        order = matrixOrderToParadaIndices(optimizeStopOrder(googleMatrix))
+        if (!input.preservarOrdem) {
+          order = matrixOrderToParadaIndices(optimizeStopOrder(googleMatrix))
+        }
         aproximada = false
 
         const orderedAddresses = order.map((index) =>
@@ -125,7 +139,9 @@ export class RotaService {
           const osrmMatrix = await osrmService.computeRouteMatrix(geocodedPoints)
           if (osrmMatrix) {
             matrix = osrmMatrix
-            order = matrixOrderToParadaIndices(optimizeStopOrder(osrmMatrix))
+            if (!input.preservarOrdem) {
+              order = matrixOrderToParadaIndices(optimizeStopOrder(osrmMatrix))
+            }
             aproximada = false
           }
         } catch {
@@ -134,11 +150,14 @@ export class RotaService {
 
         if (!matrix) {
           matrix = buildHaversineMatrix(geocodedPoints)
-          order = matrixOrderToParadaIndices(optimizeStopOrder(matrix))
+          if (!input.preservarOrdem) {
+            order = matrixOrderToParadaIndices(optimizeStopOrder(matrix))
+          }
           aproximada = true
         }
       } else {
-        order = input.paradas
+        if (!input.preservarOrdem) {
+          order = input.paradas
           .map((_, index) => index)
           .sort((a, b) => {
             const pa = input.paradas[a]
@@ -157,12 +176,19 @@ export class RotaService {
             }
             return a - b
           })
+        }
         useCoordFallback = true
         aproximada = true
       }
     }
 
-    order = applyUrgentPriority(order, input.paradas)
+    if (input.preservarOrdem && order.length === 0) {
+      order = resolveManualOrder(input.paradas)
+    }
+
+    if (!input.preservarOrdem) {
+      order = applyUrgentPriority(order, input.paradas)
+    }
 
     if (!polyline && originCoord) {
       const routePoints = [

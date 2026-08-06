@@ -24,7 +24,10 @@ interface ListaEntregasProps {
     observacao?: string | null,
   ) => void
   optimized?: boolean
-  executionMode?: boolean
+  showStatusControls?: boolean
+  deliveryStarted?: boolean
+  reorderEnabled?: boolean
+  orderDirty?: boolean
   nextStopTempId?: string | null
 }
 
@@ -35,7 +38,10 @@ export function ListaEntregas({
   onReorder,
   onStatusChange,
   optimized = false,
-  executionMode = false,
+  showStatusControls = false,
+  deliveryStarted = false,
+  reorderEnabled = true,
+  orderDirty = false,
   nextStopTempId,
 }: ListaEntregasProps) {
   const [search, setSearch] = useState('')
@@ -99,6 +105,11 @@ export function ListaEntregas({
         </div>
       </CardHeader>
       <CardContent>
+        {orderDirty ? (
+          <p className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            Ordem alterada. Recalcule a rota para atualizar distâncias e tempos.
+          </p>
+        ) : null}
         {filtered.length === 0 ? (
           <EmptyState
             icon={<IconPackage className="size-6" />}
@@ -117,16 +128,22 @@ export function ListaEntregas({
               return (
                 <div
                   key={stop.tempId}
-                  draggable={!executionMode}
-                  onDragStart={() => setDragIndex(index)}
-                  onDragOver={(event) => event.preventDefault()}
+                  draggable={reorderEnabled}
+                  onDragStart={() => {
+                    if (!reorderEnabled) return
+                    setDragIndex(index)
+                  }}
+                  onDragOver={(event) => {
+                    if (!reorderEnabled) return
+                    event.preventDefault()
+                  }}
                   onDrop={() => {
-                    if (dragIndex === null || dragIndex === index) return
+                    if (!reorderEnabled || dragIndex === null || dragIndex === index) return
                     onReorder(dragIndex, index)
                     setDragIndex(null)
                   }}
                   className={`rounded-xl border bg-surface/30 p-3 ${colors.row} ${
-                    executionMode ? '' : 'cursor-grab active:cursor-grabbing'
+                    reorderEnabled ? 'cursor-grab active:cursor-grabbing' : ''
                   } ${isNext ? 'ring-2 ring-blue-500/40' : ''}`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -193,7 +210,7 @@ export function ListaEntregas({
                       ) : null}
                     </div>
                     <div className="flex flex-col gap-2 sm:items-end">
-                      {executionMode && onStatusChange ? (
+                      {showStatusControls && onStatusChange ? (
                         <select
                           className="h-9 min-w-40 rounded-xl border border-border/70 bg-surface/50 px-2 text-sm"
                           value={status}
@@ -274,7 +291,12 @@ export function ListaEntregas({
                 </div>
               )
             })}
-            {!executionMode ? (
+            {!reorderEnabled && optimized && !deliveryStarted ? (
+              <p className="pt-1 text-xs text-muted-foreground">
+                A ordem está protegida. Ative &quot;Permitir alterar ordem&quot; para reorganizar as paradas.
+              </p>
+            ) : null}
+            {reorderEnabled ? (
               <p className="pt-1 text-xs text-muted-foreground">
                 Arraste os itens para reordenar a rota manualmente.
               </p>

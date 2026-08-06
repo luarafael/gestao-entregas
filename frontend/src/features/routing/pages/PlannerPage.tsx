@@ -74,6 +74,8 @@ export function PlannerPage() {
   const [sendPayload, setSendPayload] = useState<WhatsAppSendPayload | null>(null)
   const [progressModalOpen, setProgressModalOpen] = useState(false)
   const [autoRecalc, setAutoRecalc] = useState(true)
+  const [reorderLocked, setReorderLocked] = useState(false)
+  const [orderDirty, setOrderDirty] = useState(false)
   const [savedRotaId, setSavedRotaId] = useState<string | null>(null)
   const [progressUpdatedAt, setProgressUpdatedAt] = useState<string>(
     new Date().toISOString(),
@@ -135,7 +137,10 @@ export function PlannerPage() {
     }
   }, [displayStops, result])
 
-  const executionMode = Boolean(result)
+  const routePlanned = Boolean(result)
+  const executionActive = hasExecutionUpdates
+  const canEditOrder = !executionActive
+  const reorderEnabled = canEditOrder && (!routePlanned || !reorderLocked)
 
   const syncStops = (updated: PlannerStop[]) => {
     const normalized = updated.map(withDefaultStatus)
@@ -154,6 +159,12 @@ export function PlannerPage() {
       ),
     [stops],
   )
+
+  const resetRoutePlanning = () => {
+    setResult(null)
+    setOrderDirty(false)
+    setReorderLocked(false)
+  }
 
   const handleAddOrUpdate = (data: PlannerStopFormData) => {
     const normalized = normalizePlannerStopForm(
@@ -193,20 +204,52 @@ export function PlannerPage() {
         }),
       ])
     }
-    setResult(null)
+    resetRoutePlanning()
   }
 
   const handleReorder = (fromIndex: number, toIndex: number) => {
-    setStops((current) => {
-      const source = result?.paradas ?? current
-      const next = [...source]
-      const [moved] = next.splice(fromIndex, 1)
-      if (!moved) return current
-      next.splice(toIndex, 0, moved)
-      return next.map((stop, index) => ({ ...stop, ordem: index + 1 }))
-    })
-    setResult(null)
+    const source = result?.paradas ?? stops
+    const next = [...source]
+    const [moved] = next.splice(fromIndex, 1)
+    if (!moved) return
+
+    next.splice(toIndex, 0, moved)
+    const reordered = next.map((stop, index) => ({ ...stop, ordem: index + 1 }))
+
+    setStops(reordered)
+    setResult((current) =>
+      current ? { ...current, paradas: reordered } : current,
+    )
+    setOrderDirty(true)
     toast('Ordem alterada. Recalcule a rota para atualizar distâncias.', 'info')
+  }
+
+  const applyOptimizedResult = (
+    currentStops: PlannerStop[],
+    optimized: OptimizedRouteResult,
+  ) => {
+    const merged = mergeStopsWithStatus(currentStops, optimized.paradas)
+    setResult({ ...optimized, paradas: merged })
+    setStops(merged)
+    return merged
+  }
+
+  const handleRecalculateManualOrder = async () => {
+    const currentStops = result?.paradas ?? stops
+    if (currentStops.length === 0) {
+      toast('Adicione ao menos uma entrega', 'error')
+      return
+    }
+
+    const optimized = await optimizeMutation.mutateAsync({
+      enderecoInicial,
+      paradas: currentStops,
+      preservarOrdem: true,
+    })
+    applyOptimizedResult(currentStops, optimized)
+    setOrderDirty(false)
+    setReorderLocked(true)
+    toast('Rota recalculada com a ordem atual', 'success')
   }
 
   const handleOptimize = async () => {
@@ -219,9 +262,9 @@ export function PlannerPage() {
       enderecoInicial,
       paradas: stops,
     })
-    const merged = mergeStopsWithStatus(stops, optimized.paradas)
-    setResult({ ...optimized, paradas: merged })
-    setStops(merged)
+    applyOptimizedResult(stops, optimized)
+    setReorderLocked(true)
+    setOrderDirty(false)
 
     if (
       optimized.paradas.length > 0 &&
@@ -482,6 +525,8 @@ export function PlannerPage() {
       sugestoes: [],
       paradas: loaded,
     })
+    setReorderLocked(true)
+    setOrderDirty(false)
     setHistoricoExecucao(
       loaded
         .filter((stop) => stop.statusAtualizadoEm)
@@ -539,7 +584,7 @@ export function PlannerPage() {
             aproximada={result?.aproximada}
           />
 
-          {executionMode ? (
+          {routePlanned ? (
             <BarraProgressoExecucao stops={displayStops} />
           ) : null}
 
@@ -557,7 +602,17 @@ export function PlannerPage() {
                 <Button variant="secondary" onClick={() => setImportOpen(true)}>
                   Importar entregas
                 </Button>
-                {executionMode ? (
+                {routePlanned && !executionActive ? (
+                  <label className="flex items-center gap-2 rounded-xl border border-border/60 bg-surface/30 px-3 py-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={!reorderLocked}
+                      onChange={(event) => setReorderLocked(!event.target.checked)}
+                    />
+                    Permitir alterar ordem
+                  </label>
+                ) : null}
+                {executionActive ? (
                   <label className="flex items-center gap-2 rounded-xl border border-border/60 bg-surface/30 px-3 py-2 text-sm">
                     <input
                       type="checkbox"
@@ -566,6 +621,15 @@ export function PlannerPage() {
                     />
                     Recalcular automaticamente
                   </label>
+                ) : null}
+                {orderDirty ? (
+                  <Button
+                    variant="secondary"
+                    isLoading={optimizeMutation.isPending}
+                    onClick={handleRecalculateManualOrder}
+                  >
+                    Recalcular rota
+                  </Button>
                 ) : null}
                 <Button
                   size="lg"
@@ -582,8 +646,11 @@ export function PlannerPage() {
 
               <ListaEntregas
                 stops={displayStops}
-                optimized={Boolean(result)}
-                executionMode={executionMode}
+                optimized={routePlanned}
+                showStatusControls={routePlanned}
+                deliveryStarted={executionActive}
+                reorderEnabled={reorderEnabled}
+                orderDirty={orderDirty}
                 nextStopTempId={nextStop?.tempId}
                 onStatusChange={handleStatusChange}
                 onEdit={(stop) => {
@@ -594,19 +661,19 @@ export function PlannerPage() {
                   setStops((current) =>
                     current.filter((stop) => stop.tempId !== tempId),
                   )
-                  setResult(null)
+                  resetRoutePlanning()
                 }}
                 onReorder={handleReorder}
               />
 
-              {executionMode ? (
+              {executionActive ? (
                 <HistoricoExecucao items={historicoExecucao} />
               ) : null}
 
               <ImportadorEnderecos
                 onImport={(imported) => {
                   setStops((current) => [...current, ...imported])
-                  setResult(null)
+                  resetRoutePlanning()
                 }}
               />
             </div>
@@ -616,11 +683,11 @@ export function PlannerPage() {
                 origem={result?.origem ?? null}
                 paradas={displayStops}
                 selectedTempId={selectedTempId}
-                executionMode={executionMode}
+                executionMode={routePlanned}
                 onSelect={(stop) => setSelectedTempId(stop.tempId)}
               />
 
-              {executionMode ? (
+              {routePlanned ? (
                 <ProximaParadaCard stop={nextStop} />
               ) : null}
 
@@ -667,7 +734,7 @@ export function PlannerPage() {
                 </Card>
               ) : null}
 
-              {result && !hasExecutionUpdates ? (
+              {routePlanned && !executionActive ? (
                 <WhatsAppPreview
                   title="Rota planejada — WhatsApp"
                   text={whatsappText}
@@ -677,7 +744,7 @@ export function PlannerPage() {
                 />
               ) : null}
 
-              {executionMode && hasExecutionUpdates ? (
+              {routePlanned && executionActive ? (
                 <WhatsAppPreview
                   title={
                     routeCompleted
@@ -725,7 +792,7 @@ export function PlannerPage() {
         onClose={() => setImportOpen(false)}
         onImport={(imported) => {
           setStops((current) => [...current, ...imported])
-          setResult(null)
+          resetRoutePlanning()
           toast(`${imported.length} entrega(s) adicionada(s)`, 'success')
         }}
         existingEntregaIds={existingEntregaIds}

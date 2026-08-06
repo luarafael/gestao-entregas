@@ -7,10 +7,18 @@ import type {
 } from '../schemas/routing.schema'
 
 export const routingService = {
-  optimize(enderecoInicial: string, paradas: PlannerStop[]) {
+  optimize(
+    enderecoInicial: string,
+    paradas: PlannerStop[],
+    options?: { preservarOrdem?: boolean },
+  ) {
     return apiFetch<OptimizedRouteResult>('/api/rotas/optimize', {
       method: 'POST',
-      body: JSON.stringify({ enderecoInicial, paradas }),
+      body: JSON.stringify({
+        enderecoInicial,
+        paradas,
+        preservarOrdem: options?.preservarOrdem ?? false,
+      }),
     })
   },
 

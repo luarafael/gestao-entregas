@@ -13,6 +13,7 @@ const optimizeParadaBaseSchema = z.object({
   telefone: z.string().trim().optional().nullable(),
   prioridade: prioridadeParadaSchema.default('NORMAL'),
   ordemUrgencia: z.coerce.number().int().positive().optional().nullable(),
+  ordem: z.coerce.number().int().positive().optional(),
   valorEntrega: z.coerce.number().nonnegative().optional().nullable(),
   latitude: z.coerce.number().optional().nullable(),
   longitude: z.coerce.number().optional().nullable(),
@@ -39,6 +40,7 @@ export const saveParadaSchema = optimizeParadaBaseSchema.extend({
 export const optimizeRotaSchema = z.object({
   enderecoInicial: z.string().trim().min(1, 'Endereço inicial é obrigatório'),
   paradas: z.array(optimizeParadaSchema).min(1, 'Informe ao menos uma entrega'),
+  preservarOrdem: z.boolean().optional().default(false),
 })
 
 export const saveRotaSchema = z.object({
