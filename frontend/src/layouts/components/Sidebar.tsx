@@ -27,11 +27,13 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <aside className="flex h-full flex-col border-r border-border/60 bg-card/40 backdrop-blur-xl">
       <div className="flex h-16 items-center gap-3 border-b border-border/60 px-5">
-        <img
-          src="/app-logo.png"
-          alt="Sistema Rotas"
-          className="size-10 shrink-0 rounded-xl object-contain"
-        />
+        <div className="flex size-12 shrink-0 items-center justify-center">
+          <img
+            src="/app-logo.png"
+            alt="Sistema Rotas"
+            className="max-h-full max-w-full object-contain object-center"
+          />
+        </div>
         <div>
           <p className="text-sm font-semibold tracking-tight">Sistema Rotas</p>
           <p className="text-xs text-muted-foreground">Gestão de entregas</p>
