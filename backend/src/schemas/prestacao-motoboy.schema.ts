@@ -13,6 +13,8 @@ export const submitPrestacaoMotoboySchema = z.object({
       return toUtcDateOnly(value)
     }),
   observacoes: z.string().trim().optional(),
+  /** Admin gera/envia prestação em nome do motoboy selecionado */
+  motoboyId: z.string().trim().min(1).optional(),
 })
 
 export const listPrestacoesMotoboySchema = z.object({
@@ -28,6 +30,7 @@ export const previewPrestacaoMotoboyQuerySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida')
     .optional()
     .transform((value) => (value ? toUtcDateOnly(value) : undefined)),
+  motoboyId: z.string().trim().min(1).optional(),
 })
 
 export const rejectPrestacaoMotoboySchema = z.object({

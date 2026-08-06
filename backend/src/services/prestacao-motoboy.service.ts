@@ -1,8 +1,14 @@
-import { ConflictError, ForbiddenError, NotFoundError } from '../errors/app.error.js'
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from '../errors/app.error.js'
 import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 import { entregaRepository } from '../repositories/entrega.repository.js'
 import { pendenciaRepository } from '../repositories/pendencia.repository.js'
 import { prestacaoMotoboyRepository } from '../repositories/prestacao-motoboy.repository.js'
+import { usuarioRepository } from '../repositories/usuario.repository.js'
 import type {
   ListPrestacoesMotoboyInput,
   RejectPrestacaoMotoboyInput,
@@ -53,15 +59,31 @@ export class PrestacaoMotoboyService {
     }
   }
 
-  async preview(user: AuthenticatedUser, input?: SubmitPrestacaoMotoboyInput) {
-    const motoboyId = isAdminUser(user)
-      ? undefined
-      : user.id
-
-    if (!motoboyId) {
-      throw new ForbiddenError('Informe o motoboy para visualizar a prévia')
+  private async resolveMotoboyTarget(
+    user: AuthenticatedUser,
+    motoboyId?: string,
+  ) {
+    if (!isAdminUser(user)) {
+      return { motoboyId: user.id, motoboyNome: user.nome }
     }
 
+    if (!motoboyId) {
+      throw new ValidationError('Selecione um motoboy')
+    }
+
+    const motoboy = await usuarioRepository.findMotoboyById(motoboyId)
+    if (!motoboy || !motoboy.ativo) {
+      throw new NotFoundError('Motoboy não encontrado')
+    }
+
+    return { motoboyId: motoboy.id, motoboyNome: motoboy.nome }
+  }
+
+  async preview(
+    user: AuthenticatedUser,
+    input?: Pick<SubmitPrestacaoMotoboyInput, 'data' | 'motoboyId'>,
+  ) {
+    const { motoboyId } = await this.resolveMotoboyTarget(user, input?.motoboyId)
     const date = this.normalizeDate(input?.data)
     const totals = await this.calculateTotals(motoboyId, date)
     const existing = await prestacaoMotoboyRepository.findByMotoboyAndDate(
@@ -84,15 +106,16 @@ export class PrestacaoMotoboyService {
   }
 
   async submit(user: AuthenticatedUser, input: SubmitPrestacaoMotoboyInput) {
-    if (isAdminUser(user)) {
-      throw new ForbiddenError('Somente motoboys podem enviar prestação')
-    }
+    const { motoboyId, motoboyNome } = await this.resolveMotoboyTarget(
+      user,
+      input.motoboyId,
+    )
 
     const date = this.normalizeDate(input.data)
-    const totals = await this.calculateTotals(user.id, date)
-    const entregas = await entregaRepository.findByDate(date, user.id)
+    const totals = await this.calculateTotals(motoboyId, date)
+    const entregas = await entregaRepository.findByDate(date, motoboyId)
     const existing = await prestacaoMotoboyRepository.findByMotoboyAndDate(
-      user.id,
+      motoboyId,
       date,
     )
 
@@ -119,13 +142,13 @@ export class PrestacaoMotoboyService {
     const prestacao = existing
       ? await prestacaoMotoboyRepository.update(existing.id, payload)
       : await prestacaoMotoboyRepository.create({
-          motoboyId: user.id,
+          motoboyId,
           data: date,
           ...payload,
         })
 
     const whatsappText = generateMotoboyPrestacaoWhatsAppText(
-      user.nome,
+      motoboyNome,
       prestacao,
       entregas,
       totals.pendencias,

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -14,6 +15,10 @@ import {
   Textarea,
 } from '@/shared/components/ui'
 import { IconReceipt, IconTrending } from '@/shared/components/icons'
+import {
+  MotoboySelect,
+  type MotoboySelectValue,
+} from '@/shared/components/MotoboySelect'
 import { formatCurrency } from '@/shared/utils/cn'
 import {
   useCopyWhatsAppText,
@@ -23,9 +28,17 @@ import {
   usePrestacaoPreview,
   useUpdatePrestacao,
 } from '../hooks/usePrestacao'
+import {
+  useCopyPrestacaoMotoboyWhatsApp,
+  usePrestacaoMotoboyHistory,
+  usePrestacaoMotoboyPreview,
+  useSubmitPrestacaoMotoboy,
+} from '@/features/motoboy/hooks/usePrestacaoMotoboy'
 import { prestacaoService } from '../services/prestacao.service'
+import { prestacaoMotoboyService } from '@/features/motoboy/services/prestacaoMotoboy.service'
 import { PrestacaoResultCard } from '../components/PrestacaoResultCard'
 import { PrestacaoMotoboyConsolidacao } from '../components/PrestacaoMotoboyConsolidacao'
+import { PrestacaoMotoboyHistory } from '../components/PrestacaoMotoboyHistory'
 import { WhatsAppPreview } from '../components/WhatsAppPreview'
 import { PrestacaoHistory } from '../components/PrestacaoHistory'
 import { PrestacaoEditModal } from '../components/PrestacaoEditModal'
@@ -39,13 +52,27 @@ import {
   getTodayInputDate,
   type GeneratePrestacaoFormData,
 } from '../schemas/prestacao.schema'
+import { formatPrestacaoMotoboyDate } from '@/features/motoboy/schemas/prestacaoMotoboy.schema'
 import { exportPrestacaoPdf } from '../utils/exportPrestacaoPdf'
 import type { GeneratePrestacaoResponse, PrestacaoContas } from '../types'
+import type { SubmitPrestacaoMotoboyResponse } from '@/features/motoboy/types/prestacaoMotoboy.types'
 import { toast } from '@/shared/stores/toast.store'
 
+const motoboyStatusLabels = {
+  ENVIADA: { label: 'Aguardando aprovação', variant: 'warning' as const },
+  APROVADA: { label: 'Aprovada', variant: 'success' as const },
+  REJEITADA: { label: 'Rejeitada', variant: 'danger' as const },
+}
+
 export function PrestacaoPage() {
+  const [motoboyFilter, setMotoboyFilter] = useState<MotoboySelectValue>('all')
+  const motoboyId = motoboyFilter === 'all' ? undefined : motoboyFilter
+  const isMotoboyScope = Boolean(motoboyId)
+
   const [generatedResult, setGeneratedResult] =
     useState<GeneratePrestacaoResponse | null>(null)
+  const [motoboyGenerated, setMotoboyGenerated] =
+    useState<SubmitPrestacaoMotoboyResponse | null>(null)
   const [historyPage, setHistoryPage] = useState(1)
   const [copyingId, setCopyingId] = useState<string | null>(null)
   const [sendingId, setSendingId] = useState<string | null>(null)
@@ -60,8 +87,14 @@ export function PrestacaoPage() {
     useState<PrestacaoContas | null>(null)
 
   const historyQuery = usePrestacaoHistory({ page: historyPage, limit: 10 })
+  const motoboyHistoryQuery = usePrestacaoMotoboyHistory(
+    { page: historyPage, limit: 10, motoboyId },
+    isMotoboyScope,
+  )
   const generateMutation = useGeneratePrestacao()
+  const submitMotoboyMutation = useSubmitPrestacaoMotoboy()
   const copyMutation = useCopyWhatsAppText()
+  const copyMotoboyMutation = useCopyPrestacaoMotoboyWhatsApp()
   const updateMutation = useUpdatePrestacao()
   const deleteMutation = useDeletePrestacao()
 
@@ -82,7 +115,13 @@ export function PrestacaoPage() {
   const selectedDate = useWatch({ control, name: 'data' }) || getTodayInputDate()
   const observacoes = useWatch({ control, name: 'observacoes' }) ?? ''
   const previewQuery = usePrestacaoPreview(selectedDate)
+  const motoboyPreviewQuery = usePrestacaoMotoboyPreview(
+    selectedDate,
+    motoboyId,
+    isMotoboyScope,
+  )
   const preview = previewQuery.data
+  const motoboyPreview = motoboyPreviewQuery.data
 
   useEffect(() => {
     reset({
@@ -91,20 +130,50 @@ export function PrestacaoPage() {
     })
   }, [reset])
 
+  const handleMotoboyFilterChange = (value: MotoboySelectValue) => {
+    setMotoboyFilter(value)
+    setHistoryPage(1)
+    setGeneratedResult(null)
+    setMotoboyGenerated(null)
+  }
+
   const historyItems = historyQuery.data?.data ?? []
   const historyMeta = historyQuery.data?.meta
-  const hasNoDeliveries = preview && preview.totalEntregas === 0
+  const motoboyHistoryItems = motoboyHistoryQuery.data?.data ?? []
+  const motoboyHistoryMeta = motoboyHistoryQuery.data?.meta
+  const hasNoDeliveries = isMotoboyScope
+    ? motoboyPreview && motoboyPreview.totalEntregas === 0
+    : preview && preview.totalEntregas === 0
   const hasPendingMotoboyApprovals =
-    (preview?.pendentesAprovacaoMotoboy ?? 0) > 0
+    !isMotoboyScope && (preview?.pendentesAprovacaoMotoboy ?? 0) > 0
+  const canSubmitMotoboy =
+    motoboyPreview?.statusExistente !== 'ENVIADA' &&
+    motoboyPreview?.statusExistente !== 'APROVADA'
 
   const handleGenerate = handleSubmit(async (data) => {
+    if (isMotoboyScope && motoboyId) {
+      const result = await submitMotoboyMutation.mutateAsync({
+        ...data,
+        motoboyId,
+      })
+      setMotoboyGenerated(result)
+      setGeneratedResult(null)
+      return
+    }
+
     const result = await generateMutation.mutateAsync(data)
     setGeneratedResult(result)
+    setMotoboyGenerated(null)
   })
 
   const handleCopyCurrent = () => {
     if (!generatedResult?.whatsappText) return
     copyMutation.mutate(generatedResult.whatsappText)
+  }
+
+  const handleCopyMotoboyCurrent = () => {
+    if (!motoboyGenerated?.whatsappText) return
+    copyMotoboyMutation.mutate(motoboyGenerated.whatsappText)
   }
 
   const buildDailyReportFromPreview = () => {
@@ -136,6 +205,23 @@ export function PrestacaoPage() {
   })
 
   const handleExportPreviewPdf = () => {
+    if (isMotoboyScope) {
+      if (!motoboyPreview || motoboyPreview.totalEntregas === 0) return
+      exportPrestacaoPdf({
+        date: motoboyPreview.data,
+        totalEntregas: motoboyPreview.totalEntregas,
+        valorTotal: motoboyPreview.valorTotal,
+        entregasPagasPeloCliente: motoboyPreview.entregasPagasPeloCliente,
+        valorPagasPeloCliente: motoboyPreview.valorPagasPeloCliente,
+        valorPendencias: motoboyPreview.valorPendencias,
+        valorFinal: motoboyPreview.valorFinal,
+        totalPendencias: motoboyPreview.totalPendencias,
+        observacoes: observacoes.trim() || null,
+      })
+      toast('PDF exportado com sucesso', 'success')
+      return
+    }
+
     if (!preview || preview.totalEntregas === 0) return
 
     exportPrestacaoPdf({
@@ -217,6 +303,18 @@ export function PrestacaoPage() {
     }
   }
 
+  const handleCopyMotoboyFromHistory = async (id: string) => {
+    try {
+      setCopyingId(id)
+      const { text } = await prestacaoMotoboyService.getWhatsAppText(id)
+      await copyMotoboyMutation.mutateAsync(text)
+    } catch {
+      toast('Erro ao buscar texto da prestação', 'error')
+    } finally {
+      setCopyingId(null)
+    }
+  }
+
   const handleOpenEdit = (item: PrestacaoContas) => {
     setEditingPrestacao(item)
     setEditObservacoes(item.observacoes ?? '')
@@ -254,20 +352,42 @@ export function PrestacaoPage() {
     setDeletingPrestacao(null)
   }
 
+  const activePreviewLoading = isMotoboyScope
+    ? motoboyPreviewQuery.isLoading
+    : previewQuery.isLoading
+  const activePreviewError = isMotoboyScope
+    ? motoboyPreviewQuery.isError
+    : previewQuery.isError
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">
-          Prestação de Contas
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Feche o dia, salve o histórico e copie o relatório para o WhatsApp.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Prestação de Contas
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {isMotoboyScope
+              ? 'Gere a prestação do motoboy selecionado e acompanhe o histórico.'
+              : 'Feche o dia da empresa, salve o histórico e copie o relatório para o WhatsApp.'}
+          </p>
+        </div>
+
+        <MotoboySelect
+          id="prestacao-motoboy"
+          value={motoboyFilter}
+          onChange={handleMotoboyFilterChange}
+          label="Motoboy"
+        />
       </div>
 
       <Card glass>
         <CardHeader>
-          <CardTitle>Gerar prestação do dia</CardTitle>
+          <CardTitle>
+            {isMotoboyScope
+              ? 'Gerar prestação do motoboy'
+              : 'Gerar prestação do dia'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleGenerate} className="space-y-4">
@@ -278,18 +398,77 @@ export function PrestacaoPage() {
               {...register('data')}
             />
 
-            {previewQuery.isLoading ? (
+            {isMotoboyScope && motoboyPreview?.statusExistente ? (
+              <Badge
+                variant={
+                  motoboyStatusLabels[motoboyPreview.statusExistente].variant
+                }
+              >
+                {motoboyStatusLabels[motoboyPreview.statusExistente].label}
+              </Badge>
+            ) : null}
+
+            {activePreviewLoading ? (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {Array.from({ length: 4 }).map((_, index) => (
                   <StatCardSkeleton key={index} />
                 ))}
               </div>
-            ) : previewQuery.isError ? (
+            ) : activePreviewError ? (
               <EmptyState
                 icon={<IconTrending className="size-6" />}
                 title="Não foi possível carregar a prévia"
                 description="Verifique se a API está rodando para visualizar os totais."
               />
+            ) : isMotoboyScope ? (
+              <div className="space-y-3 rounded-xl border border-border/60 bg-surface/20 p-4">
+                <p className="text-sm font-medium">
+                  Prévia de {formatPrestacaoMotoboyDate(selectedDate)}
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <PreviewItem
+                    label="Entregas"
+                    value={String(motoboyPreview?.totalEntregas ?? 0)}
+                  />
+                  <PreviewItem
+                    label="Valor das entregas"
+                    value={formatCurrency(motoboyPreview?.valorTotal ?? 0)}
+                  />
+                  <PreviewItem
+                    label="Repasse pendente"
+                    value={formatCurrency(motoboyPreview?.valorPendencias ?? 0)}
+                  />
+                  <PreviewItem
+                    label="Total a receber"
+                    value={formatCurrency(motoboyPreview?.valorFinal ?? 0)}
+                    highlight
+                  />
+                </div>
+                {motoboyPreview?.entregasPagasPeloCliente ? (
+                  <p className="text-sm text-muted-foreground">
+                    {motoboyPreview.entregasPagasPeloCliente} corrida(s) paga(s)
+                    pelo cliente (
+                    {formatCurrency(motoboyPreview.valorPagasPeloCliente)}) —
+                    fora do total.
+                  </p>
+                ) : null}
+                {hasNoDeliveries ? (
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    Nenhuma entrega deste motoboy em{' '}
+                    {formatPrestacaoMotoboyDate(selectedDate)}.
+                  </p>
+                ) : (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleExportPreviewPdf}
+                    >
+                      Exportar PDF
+                    </Button>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="space-y-3 rounded-xl border border-border/60 bg-surface/20 p-4">
                 <p className="text-sm font-medium">
@@ -368,10 +547,20 @@ export function PrestacaoPage() {
               type="submit"
               size="lg"
               className="w-full sm:w-auto"
-              isLoading={generateMutation.isPending}
-              disabled={hasPendingMotoboyApprovals}
+              isLoading={
+                isMotoboyScope
+                  ? submitMotoboyMutation.isPending
+                  : generateMutation.isPending
+              }
+              disabled={
+                isMotoboyScope ? !canSubmitMotoboy : hasPendingMotoboyApprovals
+              }
             >
-              Gerar Prestação do Dia
+              {isMotoboyScope
+                ? motoboyPreview?.statusExistente === 'REJEITADA'
+                  ? 'Reenviar para aprovação'
+                  : 'Enviar prestação do motoboy'
+                : 'Gerar Prestação do Dia'}
             </Button>
             {hasPendingMotoboyApprovals ? (
               <p className="text-sm text-amber-600 dark:text-amber-400">
@@ -383,7 +572,7 @@ export function PrestacaoPage() {
         </CardContent>
       </Card>
 
-      {generatedResult ? (
+      {generatedResult && !isMotoboyScope ? (
         <div className="space-y-4">
           <PrestacaoResultCard result={generatedResult} />
           <WhatsAppPreview
@@ -396,15 +585,47 @@ export function PrestacaoPage() {
         </div>
       ) : null}
 
+      {motoboyGenerated && isMotoboyScope ? (
+        <WhatsAppPreview
+          text={motoboyGenerated.whatsappText}
+          title="Texto da prestação do motoboy"
+          onCopy={handleCopyMotoboyCurrent}
+          onSend={handleCopyMotoboyCurrent}
+          isCopying={copyMotoboyMutation.isPending}
+        />
+      ) : null}
+
       <section className="rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
         <div className="mb-4">
           <h3 className="text-lg font-semibold tracking-tight">Histórico</h3>
           <p className="text-sm text-muted-foreground">
-            Prestações de contas geradas anteriormente
+            {isMotoboyScope
+              ? 'Prestações enviadas deste motoboy'
+              : 'Prestações de contas da empresa'}
           </p>
         </div>
 
-        {historyQuery.isError ? (
+        {isMotoboyScope ? (
+          motoboyHistoryQuery.isError ? (
+            <EmptyState
+              icon={<IconReceipt className="size-6" />}
+              title="Erro ao carregar histórico"
+              description="Não foi possível buscar as prestações do motoboy."
+            />
+          ) : (
+            <PrestacaoMotoboyHistory
+              items={motoboyHistoryItems}
+              isLoading={
+                motoboyHistoryQuery.isLoading || motoboyHistoryQuery.isFetching
+              }
+              page={motoboyHistoryMeta?.page ?? 1}
+              totalPages={motoboyHistoryMeta?.totalPages ?? 1}
+              onPageChange={setHistoryPage}
+              onCopy={handleCopyMotoboyFromHistory}
+              copyingId={copyingId}
+            />
+          )
+        ) : historyQuery.isError ? (
           <EmptyState
             icon={<IconReceipt className="size-6" />}
             title="Erro ao carregar histórico"

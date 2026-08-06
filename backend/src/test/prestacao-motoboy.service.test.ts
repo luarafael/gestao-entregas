@@ -1,6 +1,10 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { PrestacaoMotoboyService } from '../services/prestacao-motoboy.service.js'
-import { ConflictError, ForbiddenError } from '../errors/app.error.js'
+import {
+  ConflictError,
+  ForbiddenError,
+  ValidationError,
+} from '../errors/app.error.js'
 import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 
 const entregaRepository = vi.hoisted(() => ({
@@ -23,10 +27,17 @@ const prestacaoMotoboyRepository = vi.hoisted(() => ({
   countPending: vi.fn(),
 }))
 
+const usuarioRepository = vi.hoisted(() => ({
+  findMotoboyById: vi.fn(),
+}))
+
 vi.mock('../repositories/entrega.repository.js', () => ({ entregaRepository }))
 vi.mock('../repositories/pendencia.repository.js', () => ({ pendenciaRepository }))
 vi.mock('../repositories/prestacao-motoboy.repository.js', () => ({
   prestacaoMotoboyRepository,
+}))
+vi.mock('../repositories/usuario.repository.js', () => ({
+  usuarioRepository,
 }))
 
 const motoboyUser: AuthenticatedUser = {
@@ -84,10 +95,51 @@ describe('PrestacaoMotoboyService', () => {
     expect(result.whatsappText).toContain('João')
   })
 
-  it('bloqueia admin de enviar prestação', async () => {
+  it('exige motoboyId quando admin envia prestação', async () => {
     await expect(service.submit(adminUser, {})).rejects.toBeInstanceOf(
-      ForbiddenError,
+      ValidationError,
     )
+  })
+
+  it('permite admin enviar prestação em nome do motoboy', async () => {
+    usuarioRepository.findMotoboyById.mockResolvedValue({
+      id: 'motoboy-1',
+      nome: 'João',
+      ativo: true,
+    })
+
+    const result = await service.submit(adminUser, { motoboyId: 'motoboy-1' })
+
+    expect(usuarioRepository.findMotoboyById).toHaveBeenCalledWith('motoboy-1')
+    expect(prestacaoMotoboyRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ motoboyId: 'motoboy-1' }),
+    )
+    expect(result.prestacao.status).toBe('ENVIADA')
+  })
+
+  it('prévia do admin exige motoboy selecionado', async () => {
+    await expect(service.preview(adminUser, {})).rejects.toBeInstanceOf(
+      ValidationError,
+    )
+  })
+
+  it('prévia do admin por motoboy', async () => {
+    usuarioRepository.findMotoboyById.mockResolvedValue({
+      id: 'motoboy-1',
+      nome: 'João',
+      ativo: true,
+    })
+
+    const preview = await service.preview(adminUser, {
+      motoboyId: 'motoboy-1',
+      data: new Date('2026-08-05'),
+    })
+
+    expect(entregaRepository.getStatsByDate).toHaveBeenCalledWith(
+      expect.any(Date),
+      'motoboy-1',
+    )
+    expect(preview.valorFinal).toBe(45)
   })
 
   it('impede reenvio quando já enviada', async () => {

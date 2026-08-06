@@ -46,12 +46,13 @@ prestacaoMotoboyRoutes.get(
 
 prestacaoMotoboyRoutes.get(
   '/preview',
-  requireRole('MOTOBOY'),
+  requireRole('ADMIN', 'MOTOBOY'),
   validateQuery(previewPrestacaoMotoboyQuerySchema),
   asyncHandler(async (req, res) => {
     const query = getValidatedQuery<PreviewPrestacaoMotoboyQuery>(req)
     const preview = await prestacaoMotoboyService.preview(req.user!, {
       data: query.data,
+      motoboyId: query.motoboyId,
     })
     res.json(preview)
   }),
@@ -71,7 +72,7 @@ prestacaoMotoboyRoutes.get(
 
 prestacaoMotoboyRoutes.post(
   '/',
-  requireRole('MOTOBOY'),
+  requireRole('ADMIN', 'MOTOBOY'),
   validateBody(submitPrestacaoMotoboySchema),
   asyncHandler(async (req, res) => {
     const result = await prestacaoMotoboyService.submit(req.user!, req.body)

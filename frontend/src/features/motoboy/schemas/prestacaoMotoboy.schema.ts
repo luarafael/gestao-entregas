@@ -5,6 +5,7 @@ import { formatDateBR } from '@/shared/utils/format'
 export const submitPrestacaoMotoboyFormSchema = z.object({
   data: z.string().optional(),
   observacoes: z.string().trim().optional(),
+  motoboyId: z.string().trim().min(1).optional(),
 })
 
 export type SubmitPrestacaoMotoboyFormData = z.infer<
@@ -15,6 +16,7 @@ export function toSubmitPayload(data: SubmitPrestacaoMotoboyFormData) {
   return {
     data: data.data || undefined,
     observacoes: data.observacoes?.trim() || undefined,
+    motoboyId: data.motoboyId || undefined,
   }
 }
 

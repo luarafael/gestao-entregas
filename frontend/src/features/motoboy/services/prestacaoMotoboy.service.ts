@@ -9,10 +9,17 @@ import type { SubmitPrestacaoMotoboyFormData } from '../schemas/prestacaoMotoboy
 import { toSubmitPayload } from '../schemas/prestacaoMotoboy.schema'
 
 export const prestacaoMotoboyService = {
-  preview(date?: string) {
-    const params = date ? `?data=${encodeURIComponent(date)}` : ''
+  preview(date?: string, motoboyId?: string) {
+    const params = new URLSearchParams()
+    if (date) {
+      params.set('data', date)
+    }
+    if (motoboyId) {
+      params.set('motoboyId', motoboyId)
+    }
+    const query = params.toString()
     return apiFetch<PrestacaoMotoboyPreview>(
-      `/api/prestacoes-motoboy/preview${params}`,
+      `/api/prestacoes-motoboy/preview${query ? `?${query}` : ''}`,
     )
   },
 
@@ -23,13 +30,21 @@ export const prestacaoMotoboyService = {
     })
   },
 
-  list(filters: { page: number; limit: number; status?: PrestacaoMotoboy['status'] }) {
+  list(filters: {
+    page: number
+    limit: number
+    status?: PrestacaoMotoboy['status']
+    motoboyId?: string
+  }) {
     const params = new URLSearchParams({
       page: String(filters.page),
       limit: String(filters.limit),
     })
     if (filters.status) {
       params.set('status', filters.status)
+    }
+    if (filters.motoboyId) {
+      params.set('motoboyId', filters.motoboyId)
     }
 
     return apiFetch<PaginatedResponse<PrestacaoMotoboy>>(
