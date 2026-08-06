@@ -9,6 +9,18 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
     title: 'Dashboard',
     subtitle: 'Visão geral do dia',
   },
+  '/meu-dia': {
+    title: 'Meu dia',
+    subtitle: 'Suas entregas e ganhos',
+  },
+  '/minha-prestacao': {
+    title: 'Minha prestação',
+    subtitle: 'Enviar para aprovação',
+  },
+  '/aprovacoes': {
+    title: 'Aprovações',
+    subtitle: 'Prestações dos motoboys',
+  },
   '/entregas': {
     title: 'Entregas',
     subtitle: 'Cadastro e listagem',

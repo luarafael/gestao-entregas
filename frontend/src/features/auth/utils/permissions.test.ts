@@ -14,11 +14,14 @@ describe('permissions', () => {
 
   it('retorna rotas padrao por perfil', () => {
     expect(getDefaultHomePath('ADMIN')).toBe('/')
-    expect(getDefaultHomePath('MOTOBOY')).toBe('/planejador')
+    expect(getDefaultHomePath('MOTOBOY')).toBe('/meu-dia')
   })
 
   it('bloqueia areas administrativas para motoboy', () => {
     expect(canAccessRoute('MOTOBOY', '/relatorios')).toBe(false)
+    expect(canAccessRoute('MOTOBOY', '/prestacao')).toBe(false)
+    expect(canAccessRoute('MOTOBOY', '/pendencias')).toBe(true)
+    expect(canAccessRoute('MOTOBOY', '/meu-dia')).toBe(true)
     expect(canAccessRoute('MOTOBOY', '/entregas')).toBe(true)
     expect(canAccessRoute('MOTOBOY', '/planejador')).toBe(true)
   })

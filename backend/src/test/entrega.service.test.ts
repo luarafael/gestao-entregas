@@ -1,6 +1,7 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { EntregaService } from '../services/entrega.service.js'
-import { NotFoundError } from '../errors/app.error.js'
+import { ForbiddenError, NotFoundError } from '../errors/app.error.js'
+import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 
 const entregaRepository = vi.hoisted(() => ({
   create: vi.fn(),
@@ -14,6 +15,7 @@ const entregaRepository = vi.hoisted(() => ({
 
 const pendenciaRepository = vi.hoisted(() => ({
   getPendingTotal: vi.fn(),
+  findPendingRepasseByMotoboy: vi.fn(),
 }))
 
 vi.mock('../repositories/entrega.repository.js', () => ({
@@ -24,6 +26,20 @@ vi.mock('../repositories/pendencia.repository.js', () => ({
   pendenciaRepository,
 }))
 
+const adminUser: AuthenticatedUser = {
+  id: 'admin-1',
+  email: 'admin@test.com',
+  role: 'ADMIN',
+  nome: 'Admin',
+}
+
+const motoboyUser: AuthenticatedUser = {
+  id: 'motoboy-1',
+  email: 'motoboy@test.com',
+  role: 'MOTOBOY',
+  nome: 'Motoboy',
+}
+
 describe('EntregaService', () => {
   const service = new EntregaService()
 
@@ -31,22 +47,39 @@ describe('EntregaService', () => {
     vi.clearAllMocks()
   })
 
-  it('cria entrega', async () => {
-    entregaRepository.create.mockResolvedValue({ id: '1' })
+  it('cria entrega vinculada ao motoboy', async () => {
+    entregaRepository.create.mockResolvedValue({ id: '1', motoboyId: 'motoboy-1' })
 
-    const result = await service.create({
+    const result = await service.create(motoboyUser, {
       endereco: 'Rua A',
       bairro: 'Centro',
       valorEntrega: 10,
     })
 
-    expect(result).toEqual({ id: '1' })
+    expect(entregaRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ endereco: 'Rua A' }),
+      'motoboy-1',
+    )
+    expect(result).toEqual({ id: '1', motoboyId: 'motoboy-1' })
   })
 
   it('lança NotFoundError quando entrega não existe', async () => {
     entregaRepository.findById.mockResolvedValue(null)
 
-    await expect(service.findById('x')).rejects.toBeInstanceOf(NotFoundError)
+    await expect(service.findById(adminUser, 'x')).rejects.toBeInstanceOf(
+      NotFoundError,
+    )
+  })
+
+  it('bloqueia motoboy de acessar entrega de outro', async () => {
+    entregaRepository.findById.mockResolvedValue({
+      id: '1',
+      motoboyId: 'outro',
+    })
+
+    await expect(service.findById(motoboyUser, '1')).rejects.toBeInstanceOf(
+      ForbiddenError,
+    )
   })
 
   it('retorna estatísticas do dashboard', async () => {
@@ -69,13 +102,34 @@ describe('EntregaService', () => {
     })
   })
 
-  it('lista entregas paginadas', async () => {
+  it('retorna resumo do motoboy', async () => {
+    entregaRepository.getStatsByDate.mockResolvedValue({
+      totalEntregas: 2,
+      valorTotal: 30,
+      entregasPagasPeloCliente: 0,
+      valorPagasPeloCliente: 0,
+    })
+    pendenciaRepository.findPendingRepasseByMotoboy.mockResolvedValue({
+      totalPendencias: 1,
+      valorPendencias: 15,
+    })
+    entregaRepository.findByDate.mockResolvedValue([{ id: '1' }])
+
+    const resumo = await service.getMotoboyResumo(motoboyUser)
+
+    expect(resumo.entregasHoje).toBe(2)
+    expect(resumo.valorRecebidoHoje).toBe(30)
+    expect(resumo.pendenciasAbertas).toBe(1)
+    expect(resumo.entregas).toHaveLength(1)
+  })
+
+  it('lista entregas paginadas com escopo do motoboy', async () => {
     entregaRepository.findMany.mockResolvedValue({
       data: [{ id: '1' }],
       total: 1,
     })
 
-    const result = await service.list({
+    const result = await service.list(motoboyUser, {
       page: 1,
       limit: 10,
       filter: 'today',
@@ -83,17 +137,24 @@ describe('EntregaService', () => {
       sortOrder: 'desc',
     })
 
+    expect(entregaRepository.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ motoboyId: 'motoboy-1' }),
+    )
     expect(result.meta.totalPages).toBe(1)
     expect(result.data).toHaveLength(1)
   })
 
   it('atualiza e exclui entrega existente', async () => {
-    entregaRepository.findById.mockResolvedValue({ id: '1' })
+    entregaRepository.findById.mockResolvedValue({ id: '1', motoboyId: null })
     entregaRepository.update.mockResolvedValue({ id: '1' })
     entregaRepository.delete.mockResolvedValue({ id: '1' })
 
     await expect(
-      service.update('1', { endereco: 'Rua B', bairro: 'Centro', valorEntrega: 10 }),
+      service.update(adminUser, '1', {
+        endereco: 'Rua B',
+        bairro: 'Centro',
+        valorEntrega: 10,
+      }),
     ).resolves.toEqual({ id: '1' })
     await expect(service.delete('1')).resolves.toEqual({ id: '1' })
   })

@@ -15,6 +15,7 @@ import {
   type PendingFormData,
 } from '../schemas/pending.schema'
 import { getTodayInputDate } from '@/shared/utils/date'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import type { Pendencia } from '@/shared/types/api.types'
 
 interface PendingFormProps {
@@ -37,6 +38,7 @@ export function PendingForm({
   onCancelEdit,
   isSubmitting,
 }: PendingFormProps) {
+  const isAdmin = useIsAdmin()
   const {
     register,
     handleSubmit,
@@ -69,7 +71,11 @@ export function PendingForm({
     <Card glass className="h-fit">
       <CardHeader>
         <CardTitle>
-          {editingPending ? 'Editar Pendência' : 'Nova Pendência'}
+          {editingPending
+            ? 'Editar pendência'
+            : isAdmin
+              ? 'Nova pendência'
+              : 'Repasse pendente com o admin'}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -98,22 +104,24 @@ export function PendingForm({
             {...register('referenteAoDia')}
           />
 
-          <div className="space-y-1.5">
-            <label htmlFor="status" className="text-sm font-medium text-foreground">
-              Status
-            </label>
-            <select
-              id="status"
-              className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register('status')}
-            >
-              <option value="PENDENTE">Pendente</option>
-              <option value="RECEBIDO">Recebido</option>
-            </select>
-            {errors.status?.message ? (
-              <p className="text-xs text-danger">{errors.status.message}</p>
-            ) : null}
-          </div>
+          {isAdmin ? (
+            <div className="space-y-1.5">
+              <label htmlFor="status" className="text-sm font-medium text-foreground">
+                Status
+              </label>
+              <select
+                id="status"
+                className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                {...register('status')}
+              >
+                <option value="PENDENTE">Pendente</option>
+                <option value="RECEBIDO">Recebido</option>
+              </select>
+              {errors.status?.message ? (
+                <p className="text-xs text-danger">{errors.status.message}</p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap gap-2 pt-2">
             <Button type="submit" isLoading={isSubmitting} className="flex-1 sm:flex-none">

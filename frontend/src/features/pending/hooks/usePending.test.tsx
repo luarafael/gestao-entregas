@@ -58,6 +58,7 @@ describe('usePending', () => {
       valor: '10',
       referenteAoDia: '2026-07-12',
       status: 'PENDENTE',
+      tipo: 'CLIENTE',
       criadoEm: '',
     })
 

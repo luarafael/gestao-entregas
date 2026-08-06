@@ -107,3 +107,16 @@ export function generateWhatsAppText(
 
   return lines.join('\n')
 }
+
+export function generateMotoboyPrestacaoWhatsAppText(
+  motoboyNome: string,
+  prestacao: PrestacaoSummary,
+  entregas: EntregaSummary[],
+  pendencias: PendenciaSummary[],
+): string {
+  const base = generateWhatsAppText(prestacao, entregas, pendencias)
+  return base.replace(
+    `${WA.report} *Prestação de Contas*`,
+    `${WA.report} *Prestação do dia — ${motoboyNome}*`,
+  )
+}

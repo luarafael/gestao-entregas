@@ -17,6 +17,8 @@ export interface Entrega {
   valorEntrega: string
   pagoPeloCliente: boolean
   status: 'ENTREGUE' | 'CANCELADA'
+  motoboyId?: string | null
+  motoboy?: { id: string; nome: string } | null
   criadoEm: string
 }
 
@@ -36,7 +38,20 @@ export interface Pendencia {
   valor: string
   referenteAoDia: string
   status: 'PENDENTE' | 'RECEBIDO'
+  tipo: 'CLIENTE' | 'REPASSE_MOTOBOY'
+  motoboyId?: string | null
   criadoEm: string
+}
+
+export interface MotoboyResumo {
+  data: string
+  entregasHoje: number
+  valorRecebidoHoje: number
+  entregasPagasPeloCliente: number
+  valorPagasPeloCliente: number
+  pendenciasAbertas: number
+  valorPendenciasAbertas: number
+  entregas: Entrega[]
 }
 
 export type ReportPeriod = 'week' | 'month'

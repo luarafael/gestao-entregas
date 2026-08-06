@@ -42,6 +42,7 @@ describe('usePending mutations', () => {
       valor: '10',
       referenteAoDia: '2026-07-12',
       status: 'RECEBIDO',
+      tipo: 'CLIENTE',
       criadoEm: '',
     })
 

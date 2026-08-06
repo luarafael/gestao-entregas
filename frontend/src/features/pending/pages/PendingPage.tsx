@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Modal, Pagination, EmptyState } from '@/shared/components/ui'
 import { IconClock } from '@/shared/components/icons'
 import { useDebounce } from '@/shared/hooks'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import {
   useCreatePending,
   useDeletePending,
@@ -21,6 +22,7 @@ const initialFilters: PendingFilters = {
 }
 
 export function PendingPage() {
+  const isAdmin = useIsAdmin()
   const [filters, setFilters] = useState<PendingFilters>(initialFilters)
   const [editingPending, setEditingPending] = useState<Pendencia | null>(null)
   const [deletingPending, setDeletingPending] = useState<Pendencia | null>(null)
@@ -75,7 +77,9 @@ export function PendingPage() {
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Pendências</h2>
         <p className="text-sm text-muted-foreground">
-          Controle valores pendentes e recebidos por dia de referência.
+          {isAdmin
+            ? 'Controle valores pendentes de clientes e repasses aos motoboys.'
+            : 'Registre quando o administrador ainda não repassou o valor das suas entregas.'}
         </p>
       </div>
 

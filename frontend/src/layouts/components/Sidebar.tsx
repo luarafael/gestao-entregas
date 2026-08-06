@@ -7,6 +7,7 @@ import {
   IconReceipt,
   IconChart,
   IconRoute,
+  IconTrending,
 } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
@@ -24,8 +25,11 @@ const navItems: Array<{
   roles: UserRole[]
 }> = [
   { to: '/', label: 'Dashboard', icon: IconHome, roles: ['ADMIN'] },
+  { to: '/meu-dia', label: 'Meu dia', icon: IconTrending, roles: ['MOTOBOY'] },
+  { to: '/minha-prestacao', label: 'Minha prestação', icon: IconReceipt, roles: ['MOTOBOY'] },
   { to: '/entregas', label: 'Entregas', icon: IconPackage, roles: ['ADMIN', 'MOTOBOY'] },
-  { to: '/pendencias', label: 'Pendências', icon: IconClock, roles: ['ADMIN'] },
+  { to: '/pendencias', label: 'Pendências', icon: IconClock, roles: ['ADMIN', 'MOTOBOY'] },
+  { to: '/aprovacoes', label: 'Aprovações', icon: IconReceipt, roles: ['ADMIN'] },
   { to: '/prestacao', label: 'Prestação', icon: IconReceipt, roles: ['ADMIN'] },
   { to: '/relatorios', label: 'Relatórios', icon: IconChart, roles: ['ADMIN'] },
   {

@@ -17,22 +17,30 @@ enum StatusPendencia {
   RECEBIDO
 }
 
+enum TipoPendencia {
+  CLIENTE
+  REPASSE_MOTOBOY
+}
+
 model Entrega {
-  id           String        @id @default(cuid())
-  data         DateTime      @db.Date
-  horario      DateTime
-  nomeCliente  String?
-  endereco     String
-  bairro       String
-  cidade       String?
-  observacao   String?
-  valorEntrega Decimal       @db.Decimal(10, 2)
-  pagoPeloCliente Boolean    @default(false)
-  status       StatusEntrega @default(ENTREGUE)
-  criadoEm     DateTime      @default(now())
+  id              String        @id @default(cuid())
+  data            DateTime      @db.Date
+  horario         DateTime
+  nomeCliente     String?
+  endereco        String
+  bairro          String
+  cidade          String?
+  observacao      String?
+  valorEntrega    Decimal       @db.Decimal(10, 2)
+  pagoPeloCliente Boolean       @default(false)
+  status          StatusEntrega @default(ENTREGUE)
+  motoboyId       String?       @map("motoboy_id")
+  motoboy         Usuario?      @relation(fields: [motoboyId], references: [id], onDelete: SetNull)
+  criadoEm        DateTime      @default(now())
 
   @@index([data])
   @@index([bairro])
+  @@index([motoboyId])
   @@map("entregas")
 }
 
@@ -42,10 +50,15 @@ model Pendencia {
   valor          Decimal         @db.Decimal(10, 2)
   referenteAoDia DateTime        @db.Date
   status         StatusPendencia @default(PENDENTE)
+  tipo           TipoPendencia   @default(CLIENTE)
+  motoboyId      String?         @map("motoboy_id")
+  motoboy        Usuario?        @relation(fields: [motoboyId], references: [id], onDelete: SetNull)
   criadoEm       DateTime        @default(now())
 
   @@index([referenteAoDia])
   @@index([status])
+  @@index([motoboyId])
+  @@index([tipo])
   @@map("pendencias")
 }
 
@@ -60,6 +73,34 @@ model PrestacaoContas {
   criadoEm        DateTime @default(now())
 
   @@map("prestacoes_contas")
+}
+
+enum StatusPrestacaoMotoboy {
+  ENVIADA
+  APROVADA
+  REJEITADA
+}
+
+model PrestacaoMotoboy {
+  id              String                  @id @default(cuid())
+  motoboyId       String                  @map("motoboy_id")
+  motoboy         Usuario                 @relation(fields: [motoboyId], references: [id], onDelete: Cascade)
+  data            DateTime                @db.Date
+  totalEntregas   Int
+  valorTotal      Decimal                 @db.Decimal(10, 2)
+  valorPendencias Decimal                 @db.Decimal(10, 2)
+  valorFinal      Decimal                 @db.Decimal(10, 2)
+  observacoes     String?
+  status          StatusPrestacaoMotoboy  @default(ENVIADA)
+  motivoRejeicao  String?                 @map("motivo_rejeicao")
+  aprovadaEm      DateTime?               @map("aprovada_em")
+  rejeitadaEm     DateTime?               @map("rejeitada_em")
+  criadoEm        DateTime                @default(now()) @map("criado_em")
+
+  @@unique([motoboyId, data])
+  @@index([status])
+  @@index([data])
+  @@map("prestacoes_motoboy")
 }
 
 enum PrioridadeParada {
@@ -151,6 +192,9 @@ model Usuario {
   ativo        Boolean     @default(true)
   criadoEm     DateTime    @default(now()) @map("criado_em")
   atualizadoEm DateTime    @updatedAt @map("atualizado_em")
+  entregas           Entrega[]
+  pendencias         Pendencia[]
+  prestacoesMotoboy  PrestacaoMotoboy[]
 
   @@map("usuarios")
 }

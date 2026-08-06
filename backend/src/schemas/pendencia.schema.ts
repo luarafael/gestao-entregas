@@ -14,6 +14,7 @@ export const listPendenciasSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
   status: z.enum(['PENDENTE', 'RECEBIDO']).optional(),
+  tipo: z.enum(['CLIENTE', 'REPASSE_MOTOBOY']).optional(),
 })
 
 export type CreatePendenciaInput = z.infer<typeof createPendenciaSchema>

@@ -12,15 +12,17 @@ export interface ListEntregasFilters {
   referenceDate?: string
   sortBy: 'horario' | 'nomeCliente' | 'bairro' | 'valorEntrega'
   sortOrder: 'asc' | 'desc'
+  motoboyId?: string
 }
 
 export class EntregaRepository {
-  async create(data: CreateEntregaInput) {
+  async create(data: CreateEntregaInput, motoboyId?: string) {
     const now = new Date()
 
     return prisma.entrega.create({
       data: {
         ...data,
+        motoboyId,
         data: toUtcDateOnlyFromBusinessTz(now),
         horario: now,
       },
@@ -40,6 +42,10 @@ export class EntregaRepository {
       data: { gte: start, lte: end },
     }
 
+    if (filters.motoboyId) {
+      where.motoboyId = filters.motoboyId
+    }
+
     if (filters.search) {
       where.OR = [
         { nomeCliente: { contains: filters.search, mode: 'insensitive' } },
@@ -55,6 +61,9 @@ export class EntregaRepository {
         skip,
         take: filters.limit,
         orderBy: { [filters.sortBy]: filters.sortOrder },
+        include: {
+          motoboy: { select: { id: true, nome: true } },
+        },
       }),
       prisma.entrega.count({ where }),
     ])
@@ -62,15 +71,19 @@ export class EntregaRepository {
     return { data, total }
   }
 
-  async findByDate(date: Date) {
+  async findByDate(date: Date, motoboyId?: string) {
     const day = toUtcDateOnly(formatDateOnlyISO(date))
 
     return prisma.entrega.findMany({
       where: {
         data: day,
         status: 'ENTREGUE',
+        ...(motoboyId ? { motoboyId } : {}),
       },
       orderBy: { horario: 'asc' },
+      include: {
+        motoboy: { select: { id: true, nome: true } },
+      },
     })
   }
 
@@ -82,11 +95,12 @@ export class EntregaRepository {
     return prisma.entrega.delete({ where: { id } })
   }
 
-  async getStatsByDate(date: Date) {
+  async getStatsByDate(date: Date, motoboyId?: string) {
     const day = toUtcDateOnly(formatDateOnlyISO(date))
-    const baseWhere = {
+    const baseWhere: Prisma.EntregaWhereInput = {
       data: day,
       status: 'ENTREGUE' as StatusEntrega,
+      ...(motoboyId ? { motoboyId } : {}),
     }
 
     const [total, billable, paidByClient] = await Promise.all([

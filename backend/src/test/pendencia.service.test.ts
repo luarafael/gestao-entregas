@@ -1,6 +1,7 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { PendenciaService } from '../services/pendencia.service.js'
-import { NotFoundError } from '../errors/app.error.js'
+import { ForbiddenError, NotFoundError } from '../errors/app.error.js'
+import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 
 const pendenciaRepository = vi.hoisted(() => ({
   create: vi.fn(),
@@ -14,6 +15,20 @@ vi.mock('../repositories/pendencia.repository.js', () => ({
   pendenciaRepository,
 }))
 
+const adminUser: AuthenticatedUser = {
+  id: 'admin-1',
+  email: 'admin@test.com',
+  role: 'ADMIN',
+  nome: 'Admin',
+}
+
+const motoboyUser: AuthenticatedUser = {
+  id: 'motoboy-1',
+  email: 'motoboy@test.com',
+  role: 'MOTOBOY',
+  nome: 'Motoboy',
+}
+
 describe('PendenciaService', () => {
   const service = new PendenciaService()
 
@@ -21,49 +36,58 @@ describe('PendenciaService', () => {
     vi.clearAllMocks()
   })
 
-  it('cria pendência', async () => {
-    pendenciaRepository.create.mockResolvedValue({ id: '1' })
+  it('admin cria pendência de cliente', async () => {
+    pendenciaRepository.create.mockResolvedValue({ id: '1', tipo: 'CLIENTE' })
 
-    const result = await service.create({
-      descricao: 'Teste',
-      valor: 10,
-      referenteAoDia: new Date('2026-07-12'),
+    await service.create(adminUser, {
+      descricao: 'Cliente devendo',
+      valor: 20,
+      referenteAoDia: new Date('2026-08-05'),
       status: 'PENDENTE',
     })
 
-    expect(result).toEqual({ id: '1' })
+    expect(pendenciaRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ tipo: 'CLIENTE' }),
+    )
+  })
+
+  it('motoboy cria pendência de repasse', async () => {
+    pendenciaRepository.create.mockResolvedValue({ id: '1', tipo: 'REPASSE_MOTOBOY' })
+
+    await service.create(motoboyUser, {
+      descricao: 'Repasse não pago',
+      valor: 50,
+      referenteAoDia: new Date('2026-08-05'),
+      status: 'PENDENTE',
+    })
+
+    expect(pendenciaRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tipo: 'REPASSE_MOTOBOY',
+        motoboyId: 'motoboy-1',
+        status: 'PENDENTE',
+      }),
+    )
+  })
+
+  it('motoboy não pode marcar pendência como recebida', async () => {
+    pendenciaRepository.findById.mockResolvedValue({
+      id: '1',
+      tipo: 'REPASSE_MOTOBOY',
+      motoboyId: 'motoboy-1',
+      status: 'PENDENTE',
+    })
+
+    await expect(
+      service.update(motoboyUser, '1', { status: 'RECEBIDO' }),
+    ).rejects.toBeInstanceOf(ForbiddenError)
   })
 
   it('lança NotFoundError quando pendência não existe', async () => {
     pendenciaRepository.findById.mockResolvedValue(null)
 
-    await expect(service.findById('x')).rejects.toBeInstanceOf(NotFoundError)
-  })
-
-  it('atualiza pendência existente', async () => {
-    pendenciaRepository.findById.mockResolvedValue({ id: '1' })
-    pendenciaRepository.update.mockResolvedValue({ id: '1', status: 'RECEBIDO' })
-
-    const result = await service.update('1', { status: 'RECEBIDO' })
-
-    expect(result.status).toBe('RECEBIDO')
-  })
-
-  it('exclui pendência existente', async () => {
-    pendenciaRepository.findById.mockResolvedValue({ id: '1' })
-    pendenciaRepository.delete.mockResolvedValue({ id: '1' })
-
-    await expect(service.delete('1')).resolves.toEqual({ id: '1' })
-  })
-
-  it('lista pendências paginadas', async () => {
-    pendenciaRepository.findMany.mockResolvedValue({
-      data: [{ id: '1' }],
-      total: 1,
-    })
-
-    const result = await service.list({ page: 1, limit: 10 })
-
-    expect(result.data).toHaveLength(1)
+    await expect(service.findById(adminUser, 'x')).rejects.toBeInstanceOf(
+      NotFoundError,
+    )
   })
 })

@@ -14,6 +14,24 @@ const LoginPage = lazy(() =>
   })),
 )
 
+const MeuDiaPage = lazy(() =>
+  import('@/features/motoboy/pages/MeuDiaPage').then((module) => ({
+    default: module.MeuDiaPage,
+  })),
+)
+
+const MinhaPrestacaoPage = lazy(() =>
+  import('@/features/motoboy/pages/MinhaPrestacaoPage').then((module) => ({
+    default: module.MinhaPrestacaoPage,
+  })),
+)
+
+const AprovacoesPage = lazy(() =>
+  import('@/features/aprovacoes/pages/AprovacoesPage').then((module) => ({
+    default: module.AprovacoesPage,
+  })),
+)
+
 const DashboardPage = lazy(() =>
   import('@/features/dashboard/pages/DashboardPage').then((module) => ({
     default: module.DashboardPage,
@@ -69,6 +87,9 @@ const routes = [
             element: <AppLayout />,
             children: [
               { index: true, element: <DashboardPage /> },
+              { path: 'meu-dia', element: <MeuDiaPage /> },
+              { path: 'minha-prestacao', element: <MinhaPrestacaoPage /> },
+              { path: 'aprovacoes', element: <AprovacoesPage /> },
               { path: 'entregas', element: <DeliveriesPage /> },
               { path: 'pendencias', element: <PendingPage /> },
               { path: 'prestacao', element: <PrestacaoPage /> },

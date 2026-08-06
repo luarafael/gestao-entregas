@@ -20,7 +20,10 @@ pendenciaRoutes.get(
   '/',
   validateQuery(listPendenciasSchema),
   asyncHandler(async (req, res) => {
-    const result = await pendenciaService.list(getValidatedQuery<ListPendenciasInput>(req))
+    const result = await pendenciaService.list(
+      req.user!,
+      getValidatedQuery<ListPendenciasInput>(req),
+    )
     res.json(result)
   }),
 )
@@ -28,7 +31,10 @@ pendenciaRoutes.get(
 pendenciaRoutes.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const pendencia = await pendenciaService.findById(getRouteParam(req, 'id'))
+    const pendencia = await pendenciaService.findById(
+      req.user!,
+      getRouteParam(req, 'id'),
+    )
     res.json(pendencia)
   }),
 )
@@ -37,7 +43,7 @@ pendenciaRoutes.post(
   '/',
   validateBody(createPendenciaSchema),
   asyncHandler(async (req, res) => {
-    const pendencia = await pendenciaService.create(req.body)
+    const pendencia = await pendenciaService.create(req.user!, req.body)
     res.status(201).json(pendencia)
   }),
 )
@@ -46,7 +52,11 @@ pendenciaRoutes.put(
   '/:id',
   validateBody(updatePendenciaSchema),
   asyncHandler(async (req, res) => {
-    const pendencia = await pendenciaService.update(getRouteParam(req, 'id'), req.body)
+    const pendencia = await pendenciaService.update(
+      req.user!,
+      getRouteParam(req, 'id'),
+      req.body,
+    )
     res.json(pendencia)
   }),
 )
@@ -54,7 +64,7 @@ pendenciaRoutes.put(
 pendenciaRoutes.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    await pendenciaService.delete(getRouteParam(req, 'id'))
+    await pendenciaService.delete(req.user!, getRouteParam(req, 'id'))
     res.status(204).send()
   }),
 )
