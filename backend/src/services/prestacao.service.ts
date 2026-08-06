@@ -79,14 +79,13 @@ export class PrestacaoService {
       valorPagasPeloCliente: entregaStats.valorPagasPeloCliente,
       valorPendencias,
       valorFinal,
-      valorRepasseMotoboys: motoboy.valorRepasseMotoboys,
       valorLiquido,
       pendencias,
       ...motoboy,
     }
   }
 
-  private async assertCanGenerate(date: Date, pendentesAprovacao: number) {
+  private assertCanGenerate(pendentesAprovacao: number) {
     if (pendentesAprovacao > 0) {
       throw new ValidationError(
         `Existem ${pendentesAprovacao} prestação(ões) de motoboy aguardando aprovação para esta data`,
@@ -103,7 +102,7 @@ export class PrestacaoService {
     }
 
     const totals = await this.calculateTotals(date)
-    await this.assertCanGenerate(date, totals.pendentesAprovacao)
+    await this.assertCanGenerate(totals.pendentesAprovacao)
 
     const entregas = await entregaRepository.findByDate(date)
 
@@ -172,10 +171,7 @@ export class PrestacaoService {
 
     if (input.recalcular) {
       const totals = await this.calculateTotals(this.resolveStoredDate(prestacao.data))
-      await this.assertCanGenerate(
-        this.resolveStoredDate(prestacao.data),
-        totals.pendentesAprovacao,
-      )
+      await this.assertCanGenerate(totals.pendentesAprovacao)
 
       return prestacaoRepository.update(id, {
         totalEntregas: totals.totalEntregas,
