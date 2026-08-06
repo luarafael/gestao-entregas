@@ -305,7 +305,7 @@ export function PrestacaoPage() {
                     value={formatCurrency(preview?.valorTotal ?? 0)}
                   />
                   <PreviewItem
-                    label="Pendências do dia"
+                    label="Pendências em aberto"
                     value={String(preview?.totalPendencias ?? 0)}
                   />
                   <PreviewItem

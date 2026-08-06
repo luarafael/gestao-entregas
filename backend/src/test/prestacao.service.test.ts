@@ -18,6 +18,7 @@ const entregaRepository = vi.hoisted(() => ({
 
 const pendenciaRepository = vi.hoisted(() => ({
   findPendingByDate: vi.fn(),
+  findPendingCliente: vi.fn(),
 }))
 
 const prestacaoMotoboyRepository = vi.hoisted(() => ({
@@ -63,7 +64,7 @@ describe('PrestacaoService', () => {
         valorEntrega: 25,
       },
     ])
-    pendenciaRepository.findPendingByDate.mockResolvedValue([
+    pendenciaRepository.findPendingCliente.mockResolvedValue([
       {
         descricao: 'Pendência',
         valor: 10,
@@ -124,7 +125,7 @@ describe('PrestacaoService', () => {
       valorFinal: 25,
     })
     entregaRepository.findByDate.mockResolvedValue([])
-    pendenciaRepository.findPendingByDate.mockResolvedValue([])
+    pendenciaRepository.findPendingCliente.mockResolvedValue([])
 
     const text = await service.getWhatsAppText('1')
 
@@ -165,7 +166,7 @@ describe('PrestacaoService', () => {
       entregasPagasPeloCliente: 0,
       valorPagasPeloCliente: 0,
     })
-    pendenciaRepository.findPendingByDate.mockResolvedValue([
+    pendenciaRepository.findPendingCliente.mockResolvedValue([
       { valor: 25 },
     ])
 
@@ -190,7 +191,7 @@ describe('PrestacaoService', () => {
       entregasPagasPeloCliente: 0,
       valorPagasPeloCliente: 0,
     })
-    pendenciaRepository.findPendingByDate.mockResolvedValue([
+    pendenciaRepository.findPendingCliente.mockResolvedValue([
       { valor: 15 },
     ])
     prestacaoRepository.update.mockResolvedValue({

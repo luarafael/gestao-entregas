@@ -44,7 +44,7 @@ export function exportPrestacaoPdf(data: PrestacaoPdfInput) {
   y = addKeyValueRow(
     doc,
     y,
-    'Pendências do dia',
+    'Pendências em aberto',
     String(data.totalPendencias ?? 0),
   )
   y = addKeyValueRow(

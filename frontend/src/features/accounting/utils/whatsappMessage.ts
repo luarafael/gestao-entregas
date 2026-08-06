@@ -32,7 +32,7 @@ export function formatDailyReportSummary(report: DailyReportSummary): string {
   }
 
   lines.push(
-    `${WA.hourglass} *Pendências do dia:* ${report.totalPendencias ?? 0}`,
+    `${WA.hourglass} *Pendências em aberto:* ${report.totalPendencias ?? 0}`,
     `${WA.warning} *Valor das pendências:* ${formatCurrency(report.valorPendencias)}`,
     `${WA.check} *Valor final (bruto):* ${formatCurrency(report.valorFinal)}`,
   )

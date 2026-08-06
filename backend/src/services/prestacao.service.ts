@@ -60,7 +60,7 @@ export class PrestacaoService {
 
     const [entregaStats, pendencias, motoboy] = await Promise.all([
       entregaRepository.getStatsByDate(day),
-      pendenciaRepository.findPendingByDate(day),
+      pendenciaRepository.findPendingCliente(),
       this.getMotoboyConsolidation(day),
     ])
 
@@ -205,7 +205,7 @@ export class PrestacaoService {
 
     const [entregas, pendencias, motoboy] = await Promise.all([
       entregaRepository.findByDate(date),
-      pendenciaRepository.findPendingByDate(date),
+      pendenciaRepository.findPendingCliente(),
       prestacaoMotoboyRepository.findByDate(date, 'APROVADA'),
     ])
 

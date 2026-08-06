@@ -85,6 +85,16 @@ export class PendenciaRepository {
     })
   }
 
+  async findPendingCliente() {
+    return prisma.pendencia.findMany({
+      where: {
+        status: 'PENDENTE',
+        tipo: 'CLIENTE',
+      },
+      orderBy: [{ referenteAoDia: 'asc' }, { criadoEm: 'asc' }],
+    })
+  }
+
   async findPendingRepasseByMotoboy(motoboyId: string) {
     const result = await prisma.pendencia.aggregate({
       where: {
