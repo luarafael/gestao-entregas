@@ -65,6 +65,20 @@ export class AuthService {
       role: 'ADMIN',
     })
   }
+
+  async ensureMotoboyUser(params: {
+    nome: string
+    email: string
+    password: string
+  }) {
+    const senhaHash = await hashPassword(params.password)
+    return usuarioRepository.upsertMotoboy({
+      nome: params.nome,
+      email: params.email,
+      senhaHash,
+      role: 'MOTOBOY',
+    })
+  }
 }
 
 export const authService = new AuthService()

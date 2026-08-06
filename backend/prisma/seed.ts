@@ -1,8 +1,8 @@
 import 'dotenv/config'
 import { env } from '../src/config/env.js'
 import { ensureAdminUser } from '../src/bootstrap/ensure-admin.js'
+import { authService } from '../src/services/auth.service.js'
 import { prisma } from '../src/lib/prisma.js'
-import { hashPassword } from '../src/utils/password.utils.js'
 import { toUtcDateOnlyFromBusinessTz } from '../src/utils/date.utils.js'
 
 async function main() {
@@ -13,23 +13,16 @@ async function main() {
     return
   }
 
-  const motoboyPassword = await hashPassword('motoboy123')
-  await prisma.usuario.upsert({
-    where: { email: 'motoboy@sistema.local' },
-    update: {
-      nome: 'Motoboy Demo',
-      senhaHash: motoboyPassword,
-      role: 'MOTOBOY',
-      ativo: true,
-    },
-    create: {
-      nome: 'Motoboy Demo',
-      email: 'motoboy@sistema.local',
-      senhaHash: motoboyPassword,
-      role: 'MOTOBOY',
-    },
+  const motoboyEmail = env.MOTOBOY_EMAIL || 'motoboy@sistema.local'
+  const motoboyPassword = env.MOTOBOY_PASSWORD || 'motoboy123'
+  const motoboyName = env.MOTOBOY_NAME || 'Motoboy Demo'
+
+  await authService.ensureMotoboyUser({
+    nome: motoboyName,
+    email: motoboyEmail,
+    password: motoboyPassword,
   })
-  console.log('Usuário motoboy garantido: motoboy@sistema.local')
+  console.log(`Usuário motoboy garantido: ${motoboyEmail}`)
 
   const today = toUtcDateOnlyFromBusinessTz(new Date())
   const yesterday = new Date(today)

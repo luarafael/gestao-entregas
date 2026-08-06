@@ -163,6 +163,9 @@ Antes do primeiro deploy com autenticação, configure no **Railway** (serviço 
 | `ADMIN_EMAIL` | Sim | E-mail do administrador inicial |
 | `ADMIN_PASSWORD` | Sim | Senha forte do admin (evite `admin123` em produção) |
 | `ADMIN_NAME` | Não | Nome exibido do admin |
+| `MOTOBOY_EMAIL` | Não | E-mail do motoboy (criado no deploy se `MOTOBOY_PASSWORD` também estiver definido) |
+| `MOTOBOY_PASSWORD` | Não | Senha do motoboy |
+| `MOTOBOY_NAME` | Não | Nome exibido do motoboy |
 | `FRONTEND_URL` | Sim | URL do frontend na Vercel (CORS) |
 | `DATABASE_URL` | Sim | Conexão PostgreSQL (Neon) |
 
@@ -176,9 +179,10 @@ No deploy, o container executa automaticamente:
 
 1. `prisma migrate deploy` — aplica migrations
 2. `ensure-admin` — cria/atualiza o usuário admin
-3. Inicia a API
+3. `ensure-motoboy` — cria/atualiza o motoboy (se `MOTOBOY_EMAIL` e `MOTOBOY_PASSWORD` estiverem definidos)
+4. Inicia a API
 
-Após o deploy, acesse o frontend e faça login com `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+Após o deploy, acesse o frontend e faça login com `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Para testar o fluxo motoboy, use `MOTOBOY_EMAIL` / `MOTOBOY_PASSWORD` (mesma URL do app).
 
 **Runbook completo para novo cliente:** [docs/operacao/deploy-cliente.md](docs/operacao/deploy-cliente.md)  
 **Backup e recuperação:** [docs/operacao/backup.md](docs/operacao/backup.md)  

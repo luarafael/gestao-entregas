@@ -49,4 +49,31 @@ export const usuarioRepository = {
       },
     })
   },
+
+  async upsertMotoboy(input: CreateUsuarioInput) {
+    const email = input.email.toLowerCase().trim()
+    const existing = await prisma.usuario.findUnique({ where: { email } })
+
+    if (existing?.role === 'ADMIN') {
+      throw new Error(
+        `Não foi possível criar motoboy: o e-mail ${email} já pertence a um administrador`,
+      )
+    }
+
+    return prisma.usuario.upsert({
+      where: { email },
+      update: {
+        nome: input.nome.trim(),
+        senhaHash: input.senhaHash,
+        role: 'MOTOBOY',
+        ativo: true,
+      },
+      create: {
+        nome: input.nome.trim(),
+        email,
+        senhaHash: input.senhaHash,
+        role: 'MOTOBOY',
+      },
+    })
+  },
 }

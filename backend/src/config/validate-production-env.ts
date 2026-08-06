@@ -27,3 +27,19 @@ export function validateProductionEnv(config: {
     )
   }
 }
+
+export function warnWeakMotoboyPassword(config: {
+  NODE_ENV: string
+  MOTOBOY_PASSWORD: string
+  MOTOBOY_EMAIL: string
+}) {
+  if (config.NODE_ENV !== 'production' || !config.MOTOBOY_EMAIL) {
+    return
+  }
+
+  if (config.MOTOBOY_PASSWORD === 'motoboy123') {
+    console.warn(
+      'AVISO: MOTOBOY_PASSWORD padrão em produção. Altere MOTOBOY_PASSWORD no Railway.',
+    )
+  }
+}

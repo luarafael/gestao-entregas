@@ -41,6 +41,9 @@ Implantação **single-tenant**: cada cliente recebe instâncias próprias de **
 | `ADMIN_EMAIL` | E-mail do administrador do cliente |
 | `ADMIN_PASSWORD` | Senha temporária forte |
 | `ADMIN_NAME` | Nome exibido do admin |
+| `MOTOBOY_EMAIL` | E-mail do motoboy de teste/homologação (opcional) |
+| `MOTOBOY_PASSWORD` | Senha do motoboy (opcional) |
+| `MOTOBOY_NAME` | Nome exibido do motoboy (opcional) |
 | `GOOGLE_MAPS_API_KEY` | Opcional |
 
 Gerar `JWT_SECRET`:
@@ -52,6 +55,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 4. Aguardar deploy. O container executa automaticamente:
    - `prisma migrate deploy`
    - `ensure-admin` (cria/atualiza o admin)
+   - `ensure-motoboy` (cria/atualiza o motoboy, se `MOTOBOY_EMAIL` e `MOTOBOY_PASSWORD` estiverem definidos)
    - Inicia a API
 
 5. Validar: `GET https://SUA-API.up.railway.app/api/health` → `{ "status": "ok" }`
@@ -82,6 +86,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
 - [ ] `GET /api/health` retorna OK
 - [ ] Login com `ADMIN_EMAIL` / `ADMIN_PASSWORD` funciona
+- [ ] Login com `MOTOBOY_EMAIL` / `MOTOBOY_PASSWORD` funciona (se configurado)
 - [ ] Dashboard carrega após login
 - [ ] Cadastro de entrega funciona
 - [ ] Logout funciona
