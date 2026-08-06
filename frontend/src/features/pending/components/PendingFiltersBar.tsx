@@ -1,5 +1,10 @@
 import { Input } from '@/shared/components/ui'
+import {
+  MotoboySelect,
+  type MotoboySelectValue,
+} from '@/shared/components/MotoboySelect'
 import { cn } from '@/shared/utils/cn'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import {
   STATUS_OPTIONS,
   type PendingFilters,
@@ -10,14 +15,18 @@ interface PendingFiltersBarProps {
   filters: PendingFilters
   onSearchChange: (search: string) => void
   onStatusChange: (status?: PendingStatus) => void
+  onMotoboyChange: (motoboyId?: string) => void
 }
 
 export function PendingFiltersBar({
   filters,
   onSearchChange,
   onStatusChange,
+  onMotoboyChange,
 }: PendingFiltersBarProps) {
+  const isAdmin = useIsAdmin()
   const activeStatus = filters.status ?? 'ALL'
+  const motoboyValue: MotoboySelectValue = filters.motoboyId ?? 'all'
 
   return (
     <div className="space-y-4">
@@ -46,6 +55,17 @@ export function PendingFiltersBar({
           </button>
         ))}
       </div>
+
+      {isAdmin ? (
+        <MotoboySelect
+          id="filtro-motoboy-pendencias"
+          value={motoboyValue}
+          allowAll
+          onChange={(value) =>
+            onMotoboyChange(value === 'all' ? undefined : value)
+          }
+        />
+      ) : null}
     </div>
   )
 }

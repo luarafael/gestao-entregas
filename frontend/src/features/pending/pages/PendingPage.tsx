@@ -48,7 +48,9 @@ export function PendingPage() {
       ...partial,
       page:
         partial.page ??
-        (partial.search !== undefined || partial.status !== undefined
+        (partial.search !== undefined ||
+        partial.status !== undefined ||
+        partial.motoboyId !== undefined
           ? 1
           : current.page),
     }))
@@ -78,7 +80,7 @@ export function PendingPage() {
         <h2 className="text-2xl font-semibold tracking-tight">Pendências</h2>
         <p className="text-sm text-muted-foreground">
           {isAdmin
-            ? 'Controle valores pendentes de clientes e repasses aos motoboys.'
+            ? 'Cadastre pendências delegando ao motoboy e filtre o histórico por funcionário.'
             : 'Registre quando o administrador ainda não repassou o valor das suas entregas.'}
         </p>
       </div>
@@ -96,6 +98,7 @@ export function PendingPage() {
             filters={filters}
             onSearchChange={(search) => updateFilters({ search, page: 1 })}
             onStatusChange={(status) => updateFilters({ status, page: 1 })}
+            onMotoboyChange={(motoboyId) => updateFilters({ motoboyId, page: 1 })}
           />
 
           {isError ? (

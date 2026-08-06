@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Button,
@@ -9,6 +9,7 @@ import {
   CardTitle,
   Input,
 } from '@/shared/components/ui'
+import { MotoboySelect } from '@/shared/components/MotoboySelect'
 import {
   pendingFormSchema,
   toInputDate,
@@ -30,6 +31,7 @@ const defaultValues: PendingFormData = {
   valor: 0,
   referenteAoDia: getTodayInputDate(),
   status: 'PENDENTE',
+  motoboyId: '',
 }
 
 export function PendingForm({
@@ -43,6 +45,8 @@ export function PendingForm({
     register,
     handleSubmit,
     reset,
+    control,
+    setError,
     formState: { errors },
   } = useForm<PendingFormData>({
     resolver: zodResolver(pendingFormSchema),
@@ -56,14 +60,26 @@ export function PendingForm({
         valor: Number(editingPending.valor),
         referenteAoDia: toInputDate(editingPending.referenteAoDia),
         status: editingPending.status,
+        motoboyId: editingPending.motoboyId ?? '',
       })
     } else {
-      reset(defaultValues)
+      reset({ ...defaultValues, referenteAoDia: getTodayInputDate() })
     }
   }, [editingPending, reset])
 
   const handleFormSubmit = handleSubmit(async (data) => {
-    await onSubmit(data)
+    if (isAdmin && !data.motoboyId?.trim()) {
+      setError('motoboyId', {
+        type: 'manual',
+        message: 'Selecione o motoboy responsável',
+      })
+      return
+    }
+
+    await onSubmit({
+      ...data,
+      motoboyId: isAdmin ? data.motoboyId : undefined,
+    })
     reset({ ...defaultValues, referenteAoDia: getTodayInputDate() })
   })
 
@@ -80,6 +96,24 @@ export function PendingForm({
       </CardHeader>
       <CardContent className="min-w-0">
         <form onSubmit={handleFormSubmit} className="min-w-0 space-y-4">
+          {isAdmin ? (
+            <Controller
+              name="motoboyId"
+              control={control}
+              render={({ field }) => (
+                <MotoboySelect
+                  id="pendencia-motoboy"
+                  label="Motoboy"
+                  layout="stack"
+                  allowAll={false}
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  error={errors.motoboyId?.message}
+                />
+              )}
+            />
+          ) : null}
+
           <Input
             label="Descrição"
             placeholder="Ex: Pagamento pendente do dia 12/07"

@@ -5,6 +5,7 @@ export const createPendenciaSchema = z.object({
   valor: z.coerce.number().positive('Valor deve ser maior que zero'),
   referenteAoDia: z.coerce.date(),
   status: z.enum(['PENDENTE', 'RECEBIDO']).default('PENDENTE'),
+  motoboyId: z.string().trim().min(1).optional(),
 })
 
 export const updatePendenciaSchema = createPendenciaSchema.partial()
@@ -15,6 +16,7 @@ export const listPendenciasSchema = z.object({
   search: z.string().optional(),
   status: z.enum(['PENDENTE', 'RECEBIDO']).optional(),
   tipo: z.enum(['CLIENTE', 'REPASSE_MOTOBOY']).optional(),
+  motoboyId: z.string().trim().min(1).optional(),
 })
 
 export type CreatePendenciaInput = z.infer<typeof createPendenciaSchema>

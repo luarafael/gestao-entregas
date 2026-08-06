@@ -17,6 +17,10 @@ function buildQuery(filters: PendingFilters): string {
     params.set('status', filters.status)
   }
 
+  if (filters.motoboyId) {
+    params.set('motoboyId', filters.motoboyId)
+  }
+
   return params.toString()
 }
 

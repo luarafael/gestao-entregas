@@ -41,6 +41,16 @@ export function PendingTable({
           cellClassName: 'font-medium',
           render: (item) => item.descricao,
         },
+        ...(isAdmin
+          ? [
+              {
+                key: 'motoboy',
+                header: 'Motoboy',
+                cellClassName: 'text-muted-foreground',
+                render: (item: Pendencia) => item.motoboy?.nome ?? '—',
+              },
+            ]
+          : []),
         {
           key: 'referente',
           header: 'Referente ao dia',

@@ -40,6 +40,7 @@ export interface Pendencia {
   status: 'PENDENTE' | 'RECEBIDO'
   tipo: 'CLIENTE' | 'REPASSE_MOTOBOY'
   motoboyId?: string | null
+  motoboy?: { id: string; nome: string } | null
   criadoEm: string
 }
 

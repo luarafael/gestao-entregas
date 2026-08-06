@@ -9,6 +9,7 @@ export const pendingFormSchema = z.object({
     .positive('Valor deve ser maior que zero'),
   referenteAoDia: z.string().min(1, 'Data de referência é obrigatória'),
   status: z.enum(['PENDENTE', 'RECEBIDO']),
+  motoboyId: z.string().trim().optional(),
 })
 
 export type PendingFormData = z.infer<typeof pendingFormSchema>
@@ -20,6 +21,7 @@ export interface PendingFilters {
   limit: number
   search: string
   status?: PendingStatus
+  motoboyId?: string
 }
 
 export const STATUS_OPTIONS: { value: PendingStatus | 'ALL'; label: string }[] = [
@@ -34,6 +36,7 @@ export function toApiPayload(data: PendingFormData) {
     valor: data.valor,
     referenteAoDia: data.referenteAoDia,
     status: data.status,
+    ...(data.motoboyId ? { motoboyId: data.motoboyId } : {}),
   }
 }
 

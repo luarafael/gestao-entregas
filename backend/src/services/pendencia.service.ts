@@ -1,4 +1,4 @@
-import { ForbiddenError, NotFoundError } from '../errors/app.error.js'
+import { ForbiddenError, NotFoundError, ValidationError } from '../errors/app.error.js'
 import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 import { pendenciaRepository } from '../repositories/pendencia.repository.js'
 import type {
@@ -12,9 +12,16 @@ import { buildPaginatedResult } from '../utils/pagination.utils.js'
 export class PendenciaService {
   async create(user: AuthenticatedUser, input: CreatePendenciaInput) {
     if (isAdminUser(user)) {
+      if (!input.motoboyId) {
+        throw new ValidationError(
+          'Selecione o motoboy responsável pela pendência',
+        )
+      }
+
       return pendenciaRepository.create({
         ...input,
         tipo: 'CLIENTE',
+        motoboyId: input.motoboyId,
       })
     }
 
@@ -64,6 +71,14 @@ export class PendenciaService {
       if (input.status) {
         throw new ForbiddenError('Somente o administrador pode marcar como recebido')
       }
+
+      if (input.motoboyId !== undefined) {
+        throw new ForbiddenError('Você não pode alterar o motoboy da pendência')
+      }
+    }
+
+    if (isAdminUser(user) && input.motoboyId === '') {
+      throw new ValidationError('Selecione o motoboy responsável pela pendência')
     }
 
     return pendenciaRepository.update(id, input)

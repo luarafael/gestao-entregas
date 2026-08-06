@@ -36,7 +36,7 @@ describe('PendenciaService', () => {
     vi.clearAllMocks()
   })
 
-  it('admin cria pendência de cliente', async () => {
+  it('admin cria pendência de cliente vinculada ao motoboy', async () => {
     pendenciaRepository.create.mockResolvedValue({ id: '1', tipo: 'CLIENTE' })
 
     await service.create(adminUser, {
@@ -44,11 +44,26 @@ describe('PendenciaService', () => {
       valor: 20,
       referenteAoDia: new Date('2026-08-05'),
       status: 'PENDENTE',
+      motoboyId: 'motoboy-1',
     })
 
     expect(pendenciaRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({ tipo: 'CLIENTE' }),
+      expect.objectContaining({
+        tipo: 'CLIENTE',
+        motoboyId: 'motoboy-1',
+      }),
     )
+  })
+
+  it('exige motoboyId quando admin cria pendência', async () => {
+    await expect(
+      service.create(adminUser, {
+        descricao: 'Cliente devendo',
+        valor: 20,
+        referenteAoDia: new Date('2026-08-05'),
+        status: 'PENDENTE',
+      }),
+    ).rejects.toThrow('Selecione o motoboy responsável pela pendência')
   })
 
   it('motoboy cria pendência de repasse', async () => {

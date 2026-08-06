@@ -31,11 +31,19 @@ export class PendenciaRepository {
         tipo: data.tipo ?? 'CLIENTE',
         motoboyId: data.motoboyId,
       },
+      include: {
+        motoboy: { select: { id: true, nome: true } },
+      },
     })
   }
 
   async findById(id: string) {
-    return prisma.pendencia.findUnique({ where: { id } })
+    return prisma.pendencia.findUnique({
+      where: { id },
+      include: {
+        motoboy: { select: { id: true, nome: true } },
+      },
+    })
   }
 
   async findMany(filters: ListPendenciasFilters) {
@@ -65,6 +73,9 @@ export class PendenciaRepository {
         skip,
         take: filters.limit,
         orderBy: { criadoEm: 'desc' },
+        include: {
+          motoboy: { select: { id: true, nome: true } },
+        },
       }),
       prisma.pendencia.count({ where }),
     ])
@@ -159,6 +170,9 @@ export class PendenciaRepository {
         ...(data.referenteAoDia
           ? { referenteAoDia: toUtcDateOnly(data.referenteAoDia) }
           : {}),
+      },
+      include: {
+        motoboy: { select: { id: true, nome: true } },
       },
     })
   }
