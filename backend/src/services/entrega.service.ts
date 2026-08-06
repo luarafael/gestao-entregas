@@ -7,6 +7,7 @@ import type {
   UpdateEntregaInput,
 } from '../schemas/entrega.schema.js'
 import { pendenciaRepository } from '../repositories/pendencia.repository.js'
+import { monitoramentoService } from './monitoramento.service.js'
 import { assertOwnsResource, isAdminUser, resolveMotoboyScope } from '../utils/auth-scope.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { formatDateOnlyISO, toUtcDateOnly, toUtcDateOnlyFromBusinessTz } from '../utils/date.utils.js'
@@ -113,55 +114,7 @@ export class EntregaService {
   }
 
   async getMonitoramento(reference?: Date | string) {
-    const day =
-      reference === undefined
-        ? toUtcDateOnlyFromBusinessTz()
-        : typeof reference === 'string'
-          ? toUtcDateOnly(reference)
-          : toUtcDateOnly(formatDateOnlyISO(reference))
-
-    const entregas = await entregaRepository.findRecentByDate(day, 100)
-
-    const gruposMap = new Map<
-      string,
-      {
-        motoboyId: string | null
-        motoboyNome: string
-        entregas: typeof entregas
-        totalEntregas: number
-        valorTotal: number
-      }
-    >()
-
-    for (const entrega of entregas) {
-      const key = entrega.motoboyId ?? 'sem-motoboy'
-      const existing = gruposMap.get(key) ?? {
-        motoboyId: entrega.motoboyId,
-        motoboyNome: entrega.motoboy?.nome ?? 'Sem motoboy',
-        entregas: [],
-        totalEntregas: 0,
-        valorTotal: 0,
-      }
-
-      existing.entregas.push(entrega)
-      existing.totalEntregas += 1
-      if (!entrega.pagoPeloCliente) {
-        existing.valorTotal += Number(entrega.valorEntrega)
-      }
-
-      gruposMap.set(key, existing)
-    }
-
-    const grupos = Array.from(gruposMap.values()).sort((a, b) =>
-      a.motoboyNome.localeCompare(b.motoboyNome),
-    )
-
-    return {
-      data: formatDateOnlyISO(day),
-      atualizadoEm: new Date().toISOString(),
-      totalEntregas: entregas.length,
-      grupos,
-    }
+    return monitoramentoService.getMonitoramento(reference)
   }
 }
 

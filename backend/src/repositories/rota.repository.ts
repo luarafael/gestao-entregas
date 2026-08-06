@@ -70,6 +70,14 @@ export class RotaRepository {
     })
   }
 
+  async findByDate(date: Date) {
+    return prisma.rotaPlanejada.findMany({
+      where: { data: date },
+      orderBy: { criadoEm: 'desc' },
+      include: { paradas: { orderBy: { ordem: 'asc' } } },
+    })
+  }
+
   async delete(id: string) {
     return prisma.rotaPlanejada.delete({ where: { id } })
   }

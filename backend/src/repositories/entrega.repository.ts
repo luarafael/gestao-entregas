@@ -103,6 +103,18 @@ export class EntregaRepository {
     })
   }
 
+  async findAllByDate(date: Date) {
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
+
+    return prisma.entrega.findMany({
+      where: { data: day },
+      orderBy: { horario: 'asc' },
+      include: {
+        motoboy: { select: { id: true, nome: true } },
+      },
+    })
+  }
+
   async update(id: string, data: UpdateEntregaInput) {
     return prisma.entrega.update({ where: { id }, data })
   }

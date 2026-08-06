@@ -7,6 +7,6 @@ export function useMonitoramento(data?: string) {
   return useQuery({
     queryKey: [MONITORAMENTO_QUERY_KEY, data ?? 'hoje'],
     queryFn: () => monitoramentoService.get(data),
-    refetchInterval: 12_000,
+    refetchInterval: 10_000,
   })
 }
