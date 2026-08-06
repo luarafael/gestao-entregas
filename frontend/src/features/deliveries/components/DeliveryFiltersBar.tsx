@@ -1,5 +1,10 @@
 import { Input } from '@/shared/components/ui'
+import {
+  MotoboySelect,
+  type MotoboySelectValue,
+} from '@/shared/components/MotoboySelect'
 import { cn } from '@/shared/utils/cn'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import {
   DATE_FILTER_OPTIONS,
   SORT_OPTIONS,
@@ -15,6 +20,7 @@ interface DeliveryFiltersBarProps {
   onFilterChange: (filter: DateFilter) => void
   onSortByChange: (sortBy: SortField) => void
   onSortOrderChange: (sortOrder: SortOrder) => void
+  onMotoboyChange: (motoboyId?: string) => void
 }
 
 export function DeliveryFiltersBar({
@@ -23,7 +29,11 @@ export function DeliveryFiltersBar({
   onFilterChange,
   onSortByChange,
   onSortOrderChange,
+  onMotoboyChange,
 }: DeliveryFiltersBarProps) {
+  const isAdmin = useIsAdmin()
+  const motoboyValue: MotoboySelectValue = filters.motoboyId ?? 'all'
+
   return (
     <div className="space-y-4">
       <Input
@@ -51,6 +61,17 @@ export function DeliveryFiltersBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        {isAdmin ? (
+          <MotoboySelect
+            id="filtro-motoboy-entregas"
+            value={motoboyValue}
+            allowAll
+            onChange={(value) =>
+              onMotoboyChange(value === 'all' ? undefined : value)
+            }
+          />
+        ) : null}
+
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           Ordenar por
           <select

@@ -63,6 +63,35 @@ describe('EntregaService', () => {
     expect(result).toEqual({ id: '1', motoboyId: 'motoboy-1' })
   })
 
+  it('exige motoboyId quando admin cria entrega', async () => {
+    await expect(
+      service.create(adminUser, {
+        endereco: 'Rua A',
+        bairro: 'Centro',
+        valorEntrega: 10,
+      }),
+    ).rejects.toThrow('Selecione o motoboy responsável pela entrega')
+  })
+
+  it('admin cria entrega para motoboy selecionado', async () => {
+    entregaRepository.create.mockResolvedValue({
+      id: '1',
+      motoboyId: 'motoboy-1',
+    })
+
+    await service.create(adminUser, {
+      endereco: 'Rua A',
+      bairro: 'Centro',
+      valorEntrega: 10,
+      motoboyId: 'motoboy-1',
+    })
+
+    expect(entregaRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ endereco: 'Rua A' }),
+      'motoboy-1',
+    )
+  })
+
   it('lança NotFoundError quando entrega não existe', async () => {
     entregaRepository.findById.mockResolvedValue(null)
 

@@ -11,6 +11,7 @@ export const deliveryFormSchema = z
       .positive('Valor deve ser maior que zero'),
     observacao: z.string().trim().optional(),
     pagoPeloCliente: z.boolean().optional(),
+    motoboyId: z.string().trim().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.pagoPeloCliente && !data.nomeCliente?.trim()) {
@@ -37,6 +38,7 @@ export interface DeliveryFilters {
   filter: DateFilter
   sortBy: SortField
   sortOrder: SortOrder
+  motoboyId?: string
 }
 
 export const DATE_FILTER_OPTIONS: { value: DateFilter; label: string }[] = [

@@ -48,7 +48,13 @@ export function DeliveriesPage() {
     setFilters((current) => ({
       ...current,
       ...partial,
-      page: partial.page ?? (partial.search !== undefined || partial.filter ? 1 : current.page),
+      page:
+        partial.page ??
+        (partial.search !== undefined ||
+        partial.filter !== undefined ||
+        partial.motoboyId !== undefined
+          ? 1
+          : current.page),
     }))
   }
 
@@ -103,7 +109,8 @@ export function DeliveriesPage() {
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Entregas</h2>
         <p className="text-sm text-muted-foreground">
-          Cadastre, edite e acompanhe todas as entregas do dia.
+          Cadastre, edite e acompanhe as entregas. Admin pode filtrar e atribuir
+          por motoboy.
         </p>
       </div>
 
@@ -122,6 +129,7 @@ export function DeliveriesPage() {
             onFilterChange={(filter) => updateFilters({ filter, page: 1 })}
             onSortByChange={(sortBy) => updateFilters({ sortBy, page: 1 })}
             onSortOrderChange={(sortOrder) => updateFilters({ sortOrder, page: 1 })}
+            onMotoboyChange={(motoboyId) => updateFilters({ motoboyId, page: 1 })}
           />
 
           {isError ? (

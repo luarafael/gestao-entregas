@@ -1,4 +1,4 @@
-import { ForbiddenError, NotFoundError } from '../errors/app.error.js'
+import { ForbiddenError, NotFoundError, ValidationError } from '../errors/app.error.js'
 import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 import { entregaRepository } from '../repositories/entrega.repository.js'
 import type {
@@ -14,8 +14,20 @@ import { formatDateOnlyISO, toUtcDateOnly, toUtcDateOnlyFromBusinessTz } from '.
 
 export class EntregaService {
   async create(user: AuthenticatedUser, input: CreateEntregaInput) {
-    const motoboyId = isAdminUser(user) ? undefined : user.id
-    return entregaRepository.create(input, motoboyId)
+    const { motoboyId: requestedMotoboyId, ...entregaData } = input
+
+    let motoboyId: string | undefined
+
+    if (isAdminUser(user)) {
+      if (!requestedMotoboyId) {
+        throw new ValidationError('Selecione o motoboy responsável pela entrega')
+      }
+      motoboyId = requestedMotoboyId
+    } else {
+      motoboyId = user.id
+    }
+
+    return entregaRepository.create(entregaData, motoboyId)
   }
 
   async findById(user: AuthenticatedUser, id: string) {
@@ -42,7 +54,19 @@ export class EntregaService {
   async update(user: AuthenticatedUser, id: string, input: UpdateEntregaInput) {
     const entrega = await this.findById(user, id)
     assertOwnsResource(user, entrega.motoboyId, 'Você não pode editar esta entrega')
-    return entregaRepository.update(id, input)
+
+    const { motoboyId: requestedMotoboyId, ...entregaData } = input
+
+    if (!isAdminUser(user) && requestedMotoboyId !== undefined) {
+      throw new ForbiddenError('Você não pode alterar o motoboy da entrega')
+    }
+
+    return entregaRepository.update(id, {
+      ...entregaData,
+      ...(isAdminUser(user) && requestedMotoboyId
+        ? { motoboyId: requestedMotoboyId }
+        : {}),
+    })
   }
 
   async delete(id: string) {

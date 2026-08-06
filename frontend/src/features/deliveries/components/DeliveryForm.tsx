@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Textarea } from '@/shared/components/ui'
+import { MotoboySelect } from '@/shared/components/MotoboySelect'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import {
   deliveryFormSchema,
   type DeliveryFormData,
@@ -23,6 +25,7 @@ const defaultValues: DeliveryFormData = {
   valorEntrega: 0,
   observacao: '',
   pagoPeloCliente: false,
+  motoboyId: '',
 }
 
 export function DeliveryForm({
@@ -31,10 +34,14 @@ export function DeliveryForm({
   onCancelEdit,
   isSubmitting,
 }: DeliveryFormProps) {
+  const isAdmin = useIsAdmin()
+
   const {
     register,
     handleSubmit,
     reset,
+    control,
+    setError,
     formState: { errors },
   } = useForm<DeliveryFormData>({
     resolver: zodResolver(deliveryFormSchema),
@@ -51,6 +58,7 @@ export function DeliveryForm({
         valorEntrega: Number(editingDelivery.valorEntrega),
         observacao: editingDelivery.observacao ?? '',
         pagoPeloCliente: editingDelivery.pagoPeloCliente,
+        motoboyId: editingDelivery.motoboyId ?? '',
       })
     } else {
       reset(defaultValues)
@@ -58,9 +66,18 @@ export function DeliveryForm({
   }, [editingDelivery, reset])
 
   const handleFormSubmit = handleSubmit(async (data) => {
+    if (isAdmin && !data.motoboyId?.trim()) {
+      setError('motoboyId', {
+        type: 'manual',
+        message: 'Selecione o motoboy responsável',
+      })
+      return
+    }
+
     await onSubmit({
       ...data,
       pagoPeloCliente: data.pagoPeloCliente ?? false,
+      motoboyId: isAdmin ? data.motoboyId : undefined,
     })
     reset(defaultValues)
   })
@@ -72,6 +89,24 @@ export function DeliveryForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleFormSubmit} className="space-y-4">
+          {isAdmin ? (
+            <Controller
+              name="motoboyId"
+              control={control}
+              render={({ field }) => (
+                <MotoboySelect
+                  id="entrega-motoboy"
+                  label="Motoboy"
+                  layout="stack"
+                  allowAll={false}
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  error={errors.motoboyId?.message}
+                />
+              )}
+            />
+          ) : null}
+
           <Input
             label="Nome do Cliente (opcional)"
             placeholder="Ex: João Silva"

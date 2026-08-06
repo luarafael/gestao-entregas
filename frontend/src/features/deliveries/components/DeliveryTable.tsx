@@ -21,6 +21,7 @@ export function DeliveryTable({
   onDelete,
 }: DeliveryTableProps) {
   const canDelete = useIsAdmin()
+  const isAdmin = canDelete
 
   return (
     <DataTable
@@ -41,6 +42,17 @@ export function DeliveryTable({
           cellClassName: 'text-muted-foreground',
           render: (delivery) => formatTimeBR(delivery.horario),
         },
+        ...(isAdmin
+          ? [
+              {
+                key: 'motoboy',
+                header: 'Motoboy',
+                cellClassName: 'text-muted-foreground',
+                render: (delivery: Entrega) =>
+                  delivery.motoboy?.nome ?? '—',
+              },
+            ]
+          : []),
         {
           key: 'cliente',
           header: 'Cliente',

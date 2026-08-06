@@ -16,7 +16,10 @@ export interface ListEntregasFilters {
 }
 
 export class EntregaRepository {
-  async create(data: CreateEntregaInput, motoboyId?: string) {
+  async create(
+    data: Omit<CreateEntregaInput, 'motoboyId'>,
+    motoboyId?: string,
+  ) {
     const now = new Date()
 
     return prisma.entrega.create({
@@ -25,6 +28,9 @@ export class EntregaRepository {
         motoboyId,
         data: toUtcDateOnlyFromBusinessTz(now),
         horario: now,
+      },
+      include: {
+        motoboy: { select: { id: true, nome: true } },
       },
     })
   }

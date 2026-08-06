@@ -20,7 +20,24 @@ function buildQuery(filters: DeliveryFilters): string {
     params.set('search', filters.search.trim())
   }
 
+  if (filters.motoboyId) {
+    params.set('motoboyId', filters.motoboyId)
+  }
+
   return params.toString()
+}
+
+function toApiPayload(data: DeliveryFormData) {
+  return {
+    nomeCliente: data.nomeCliente,
+    endereco: data.endereco,
+    bairro: data.bairro,
+    cidade: data.cidade,
+    valorEntrega: data.valorEntrega,
+    observacao: data.observacao,
+    pagoPeloCliente: data.pagoPeloCliente ?? false,
+    ...(data.motoboyId ? { motoboyId: data.motoboyId } : {}),
+  }
 }
 
 export const deliveryService = {
@@ -35,14 +52,14 @@ export const deliveryService = {
   create(data: DeliveryFormData) {
     return apiFetch<Entrega>('/api/entregas', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(toApiPayload(data)),
     })
   },
 
   update(id: string, data: DeliveryFormData) {
     return apiFetch<Entrega>(`/api/entregas/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(toApiPayload(data)),
     })
   },
 

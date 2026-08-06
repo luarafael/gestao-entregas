@@ -20,6 +20,7 @@ const entregaBaseSchema = z.object({
   valorEntrega: z.coerce.number().positive('Valor deve ser maior que zero'),
   observacao: z.string().trim().optional(),
   pagoPeloCliente: z.boolean().optional().default(false),
+  motoboyId: z.string().trim().min(1).optional(),
 })
 
 export const createEntregaSchema = entregaBaseSchema.superRefine((data, ctx) => {
