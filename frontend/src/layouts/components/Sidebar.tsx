@@ -7,7 +7,6 @@ import {
   IconReceipt,
   IconChart,
   IconRoute,
-  IconAppLogo,
 } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
 
@@ -28,9 +27,11 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <aside className="flex h-full flex-col border-r border-border/60 bg-card/40 backdrop-blur-xl">
       <div className="flex h-16 items-center gap-3 border-b border-border/60 px-5">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
-          <IconAppLogo className="size-5" />
-        </div>
+        <img
+          src="/app-logo.png"
+          alt="Sistema Rotas"
+          className="size-10 shrink-0 rounded-xl object-cover"
+        />
         <div>
           <p className="text-sm font-semibold tracking-tight">Sistema Rotas</p>
           <p className="text-xs text-muted-foreground">Gestão de entregas</p>
