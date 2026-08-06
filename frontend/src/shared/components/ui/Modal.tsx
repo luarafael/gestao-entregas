@@ -51,18 +51,24 @@ export function Modal({
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.2 }}
             className={cn(
-              'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2',
-              'rounded-2xl border border-border/60 bg-card p-6 shadow-2xl backdrop-blur-xl',
+              'fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden',
+              'rounded-2xl border border-border/60 bg-card shadow-2xl backdrop-blur-xl',
               className,
             )}
           >
-            <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-            {description ? (
-              <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+            <div className="shrink-0 px-6 pt-6">
+              <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+              {description ? (
+                <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+              ) : null}
+            </div>
+            {children ? (
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+                {children}
+              </div>
             ) : null}
-            {children ? <div className="mt-4">{children}</div> : null}
             {onConfirm ? (
-              <div className="mt-6 flex justify-end gap-2">
+              <div className="flex shrink-0 justify-end gap-2 border-t border-border/40 px-6 py-4">
                 <Button variant="ghost" onClick={onClose} disabled={isLoading}>
                   {cancelLabel}
                 </Button>
