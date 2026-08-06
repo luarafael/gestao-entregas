@@ -140,4 +140,10 @@ Repassar na mensalidade do contrato.
 
 ---
 
+## Documentos relacionados
+
+- [Backup e recuperação](./backup.md) — PITR Neon, `pg_dump` e procedimento de restore
+
+---
+
 *Última atualização: Agosto/2026*
