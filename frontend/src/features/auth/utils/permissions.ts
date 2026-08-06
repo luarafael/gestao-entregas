@@ -14,7 +14,12 @@ export function canAccessAdminArea(role: UserRole): boolean {
   return isAdmin(role)
 }
 
-export const ADMIN_ONLY_ROUTES = ['/prestacao', '/relatorios', '/aprovacoes'] as const
+export const ADMIN_ONLY_ROUTES = [
+  '/prestacao',
+  '/relatorios',
+  '/aprovacoes',
+  '/monitoramento',
+] as const
 
 export function canAccessRoute(role: UserRole, pathname: string): boolean {
   if (isAdmin(role)) {

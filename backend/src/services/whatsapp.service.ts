@@ -25,10 +25,20 @@ interface PendenciaSummary {
   referenteAoDia: Date | string
 }
 
+interface MotoboyPrestacaoSummary {
+  motoboyNome: string
+  totalEntregas: number
+  valorFinal: number
+}
+
 export function generateWhatsAppText(
-  prestacao: PrestacaoSummary,
+  prestacao: PrestacaoSummary & {
+    valorRepasseMotoboys?: number | { toString(): string }
+    valorLiquido?: number | { toString(): string }
+  },
   entregas: EntregaSummary[],
   pendencias: PendenciaSummary[],
+  prestacoesMotoboy: MotoboyPrestacaoSummary[] = [],
 ): string {
   const lines: string[] = [
     '---',
@@ -96,10 +106,41 @@ export function generateWhatsAppText(
     '',
     formatCurrency(Number(prestacao.valorPendencias)),
     '',
+  )
+
+  if (prestacoesMotoboy.length > 0) {
+    lines.push(`${WA.truck} *Repasse motoboys (aprovado):*`, '')
+    for (const item of prestacoesMotoboy) {
+      lines.push(
+        `• ${WA.user} ${item.motoboyNome} — ${item.totalEntregas} entrega(s) — ${formatCurrency(item.valorFinal)}`,
+      )
+    }
+    lines.push(
+      '',
+      `${WA.warning} *Total repasse motoboys:*`,
+      '',
+      formatCurrency(Number(prestacao.valorRepasseMotoboys ?? 0)),
+      '',
+    )
+  }
+
+  lines.push(
     `${WA.check} *Valor final:*`,
     '',
     formatCurrency(Number(prestacao.valorFinal)),
     '',
+  )
+
+  if (prestacoesMotoboy.length > 0 && prestacao.valorLiquido !== undefined) {
+    lines.push(
+      `${WA.check} *Valor líquido (após motoboys):*`,
+      '',
+      formatCurrency(Number(prestacao.valorLiquido)),
+      '',
+    )
+  }
+
+  lines.push(
     `${WA.thanks} Obrigado!`,
     '',
     '---',

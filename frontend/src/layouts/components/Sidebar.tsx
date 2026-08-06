@@ -8,6 +8,7 @@ import {
   IconChart,
   IconRoute,
   IconTrending,
+  IconEye,
 } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
@@ -30,6 +31,7 @@ const navItems: Array<{
   { to: '/entregas', label: 'Entregas', icon: IconPackage, roles: ['ADMIN', 'MOTOBOY'] },
   { to: '/pendencias', label: 'Pendências', icon: IconClock, roles: ['ADMIN', 'MOTOBOY'] },
   { to: '/aprovacoes', label: 'Aprovações', icon: IconReceipt, roles: ['ADMIN'] },
+  { to: '/monitoramento', label: 'Monitoramento', icon: IconEye, roles: ['ADMIN'] },
   { to: '/prestacao', label: 'Prestação', icon: IconReceipt, roles: ['ADMIN'] },
   { to: '/relatorios', label: 'Relatórios', icon: IconChart, roles: ['ADMIN'] },
   {

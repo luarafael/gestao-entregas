@@ -56,6 +56,8 @@ describe('usePrestacao', () => {
         valorTotal: '25',
         valorPendencias: '0',
         valorFinal: '25',
+        valorRepasseMotoboys: '0',
+        valorLiquido: '25',
         observacoes: null,
         criadoEm: '',
       },

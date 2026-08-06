@@ -31,6 +31,17 @@ entregaRoutes.get(
 )
 
 entregaRoutes.get(
+  '/monitoramento',
+  requireRole('ADMIN'),
+  validateQuery(dashboardStatsQuerySchema),
+  asyncHandler(async (req, res) => {
+    const { data } = getValidatedQuery<DashboardStatsQuery>(req)
+    const monitoramento = await entregaService.getMonitoramento(data)
+    res.json(monitoramento)
+  }),
+)
+
+entregaRoutes.get(
   '/meu-resumo',
   requireRole('MOTOBOY'),
   validateQuery(dashboardStatsQuerySchema),

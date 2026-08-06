@@ -1,6 +1,6 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { PrestacaoService } from '../services/prestacao.service.js'
-import { ConflictError, NotFoundError } from '../errors/app.error.js'
+import { ConflictError, NotFoundError, ValidationError } from '../errors/app.error.js'
 
 const prestacaoRepository = vi.hoisted(() => ({
   findByDate: vi.fn(),
@@ -20,8 +20,18 @@ const pendenciaRepository = vi.hoisted(() => ({
   findPendingByDate: vi.fn(),
 }))
 
+const prestacaoMotoboyRepository = vi.hoisted(() => ({
+  findByDate: vi.fn(),
+  countPendingByDate: vi.fn(),
+  linkApprovedToPrestacaoContas: vi.fn(),
+}))
+
 vi.mock('../repositories/prestacao.repository.js', () => ({
   prestacaoRepository,
+}))
+
+vi.mock('../repositories/prestacao-motoboy.repository.js', () => ({
+  prestacaoMotoboyRepository,
 }))
 
 vi.mock('../repositories/entrega.repository.js', () => ({
@@ -37,6 +47,11 @@ describe('PrestacaoService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    prestacaoMotoboyRepository.findByDate.mockResolvedValue([])
+    prestacaoMotoboyRepository.countPendingByDate.mockResolvedValue(0)
+    prestacaoMotoboyRepository.linkApprovedToPrestacaoContas.mockResolvedValue({
+      count: 0,
+    })
   })
 
   it('gera prestação do dia', async () => {
@@ -68,12 +83,23 @@ describe('PrestacaoService', () => {
       valorTotal: 25,
       valorPendencias: 10,
       valorFinal: 35,
+      valorRepasseMotoboys: 0,
+      valorLiquido: 35,
     })
 
     const result = await service.generate({ data: new Date('2026-07-31') })
 
     expect(result.prestacao.valorFinal).toBe(35)
     expect(result.whatsappText).toContain('Prestação de Contas')
+  })
+
+  it('impede gerar prestação com motoboys aguardando aprovação', async () => {
+    prestacaoRepository.findByDate.mockResolvedValue(null)
+    prestacaoMotoboyRepository.countPendingByDate.mockResolvedValue(2)
+
+    await expect(
+      service.generate({ data: new Date('2026-07-31') }),
+    ).rejects.toBeInstanceOf(ValidationError)
   })
 
   it('impede gerar prestação duplicada', async () => {

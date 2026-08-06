@@ -25,6 +25,7 @@ import {
 } from '../hooks/usePrestacao'
 import { prestacaoService } from '../services/prestacao.service'
 import { PrestacaoResultCard } from '../components/PrestacaoResultCard'
+import { PrestacaoMotoboyConsolidacao } from '../components/PrestacaoMotoboyConsolidacao'
 import { WhatsAppPreview } from '../components/WhatsAppPreview'
 import { PrestacaoHistory } from '../components/PrestacaoHistory'
 import { PrestacaoEditModal } from '../components/PrestacaoEditModal'
@@ -93,6 +94,8 @@ export function PrestacaoPage() {
   const historyItems = historyQuery.data?.data ?? []
   const historyMeta = historyQuery.data?.meta
   const hasNoDeliveries = preview && preview.totalEntregas === 0
+  const hasPendingMotoboyApprovals =
+    (preview?.pendentesAprovacaoMotoboy ?? 0) > 0
 
   const handleGenerate = handleSubmit(async (data) => {
     const result = await generateMutation.mutateAsync(data)
@@ -115,6 +118,8 @@ export function PrestacaoPage() {
       valorPagasPeloCliente: preview.valorPagasPeloCliente,
       valorPendencias: preview.valorPendencias,
       valorFinal: preview.valorFinal,
+      valorRepasseMotoboys: preview.valorRepasseMotoboys,
+      valorLiquido: preview.valorLiquido,
       totalPendencias: preview.totalPendencias,
     }
   }
@@ -125,6 +130,8 @@ export function PrestacaoPage() {
     valorTotal: Number(item.valorTotal),
     valorPendencias: Number(item.valorPendencias),
     valorFinal: Number(item.valorFinal),
+    valorRepasseMotoboys: Number(item.valorRepasseMotoboys),
+    valorLiquido: Number(item.valorLiquido),
     observacoes: item.observacoes,
   })
 
@@ -139,6 +146,8 @@ export function PrestacaoPage() {
       valorPagasPeloCliente: preview.valorPagasPeloCliente,
       valorPendencias: preview.valorPendencias,
       valorFinal: preview.valorFinal,
+      valorRepasseMotoboys: preview.valorRepasseMotoboys,
+      valorLiquido: preview.valorLiquido,
       totalPendencias: preview.totalPendencias,
       observacoes: observacoes.trim() || null,
     })
@@ -157,6 +166,8 @@ export function PrestacaoPage() {
       valorPagasPeloCliente: preview?.valorPagasPeloCliente,
       valorPendencias: Number(prestacao.valorPendencias),
       valorFinal: Number(prestacao.valorFinal),
+      valorRepasseMotoboys: Number(prestacao.valorRepasseMotoboys),
+      valorLiquido: Number(prestacao.valorLiquido),
       totalPendencias: preview?.totalPendencias,
       observacoes: prestacao.observacoes,
     })
@@ -284,7 +295,7 @@ export function PrestacaoPage() {
                 <p className="text-sm font-medium">
                   Prévia de {formatPrestacaoDate(selectedDate)}
                 </p>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <PreviewItem
                     label="Entregas"
                     value={String(preview?.totalEntregas ?? 0)}
@@ -298,11 +309,27 @@ export function PrestacaoPage() {
                     value={String(preview?.totalPendencias ?? 0)}
                   />
                   <PreviewItem
-                    label="Valor final estimado"
+                    label="Valor final (bruto)"
                     value={formatCurrency(preview?.valorFinal ?? 0)}
+                  />
+                  <PreviewItem
+                    label="Repasse motoboys"
+                    value={formatCurrency(preview?.valorRepasseMotoboys ?? 0)}
+                  />
+                  <PreviewItem
+                    label="Valor líquido"
+                    value={formatCurrency(preview?.valorLiquido ?? 0)}
                     highlight
                   />
                 </div>
+                {preview ? (
+                  <PrestacaoMotoboyConsolidacao
+                    prestacoes={preview.prestacoesMotoboy}
+                    valorRepasseMotoboys={preview.valorRepasseMotoboys}
+                    valorLiquido={preview.valorLiquido}
+                    pendentesAprovacao={preview.pendentesAprovacaoMotoboy}
+                  />
+                ) : null}
                 {preview?.entregasPagasPeloCliente ? (
                   <p className="text-sm text-muted-foreground">
                     {preview.entregasPagasPeloCliente} corrida(s) paga(s) pelo
@@ -342,9 +369,16 @@ export function PrestacaoPage() {
               size="lg"
               className="w-full sm:w-auto"
               isLoading={generateMutation.isPending}
+              disabled={hasPendingMotoboyApprovals}
             >
               Gerar Prestação do Dia
             </Button>
+            {hasPendingMotoboyApprovals ? (
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                Existem prestações de motoboy aguardando aprovação. Aprove-as
+                antes de fechar o dia.
+              </p>
+            ) : null}
           </form>
         </CardContent>
       </Card>

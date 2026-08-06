@@ -10,6 +10,8 @@ export interface DailyReportSummary {
   valorPagasPeloCliente?: number
   valorPendencias: number
   valorFinal: number
+  valorRepasseMotoboys?: number
+  valorLiquido?: number
   totalPendencias?: number
 }
 
@@ -32,9 +34,22 @@ export function formatDailyReportSummary(report: DailyReportSummary): string {
   lines.push(
     `${WA.hourglass} *Pendências do dia:* ${report.totalPendencias ?? 0}`,
     `${WA.warning} *Valor das pendências:* ${formatCurrency(report.valorPendencias)}`,
-    `${WA.check} *Valor final:* ${formatCurrency(report.valorFinal)}`,
-    '---',
+    `${WA.check} *Valor final (bruto):* ${formatCurrency(report.valorFinal)}`,
   )
+
+  if (report.valorRepasseMotoboys && report.valorRepasseMotoboys > 0) {
+    lines.push(
+      `${WA.truck} *Repasse motoboys:* ${formatCurrency(report.valorRepasseMotoboys)}`,
+    )
+  }
+
+  if (report.valorLiquido !== undefined) {
+    lines.push(
+      `${WA.bills} *Valor líquido:* ${formatCurrency(report.valorLiquido)}`,
+    )
+  }
+
+  lines.push('---')
 
   return lines.join('\n')
 }

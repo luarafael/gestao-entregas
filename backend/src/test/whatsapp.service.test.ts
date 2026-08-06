@@ -94,4 +94,21 @@ describe('generateWhatsAppText', () => {
     expect(text).toContain('pago pelo cliente')
     expect(text).toContain('Pagas pelo cliente (fora do total)')
   })
+
+  it('should include motoboy repasse and net value when provided', () => {
+    const text = generateWhatsAppText(
+      {
+        ...prestacao,
+        valorRepasseMotoboys: 40,
+        valorLiquido: 40,
+      },
+      entregas,
+      pendencias,
+      [{ motoboyNome: 'Carlos', totalEntregas: 2, valorFinal: 40 }],
+    )
+
+    expect(text).toContain('Repasse motoboys')
+    expect(text).toContain('Carlos')
+    expect(text).toContain('Valor líquido')
+  })
 })

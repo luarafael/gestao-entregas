@@ -63,14 +63,17 @@ model Pendencia {
 }
 
 model PrestacaoContas {
-  id              String   @id @default(cuid())
-  data            DateTime @unique @db.Date
-  totalEntregas   Int
-  valorTotal      Decimal  @db.Decimal(10, 2)
-  valorPendencias Decimal  @db.Decimal(10, 2)
-  valorFinal      Decimal  @db.Decimal(10, 2)
-  observacoes     String?
-  criadoEm        DateTime @default(now())
+  id                   String             @id @default(cuid())
+  data                 DateTime           @unique @db.Date
+  totalEntregas        Int
+  valorTotal           Decimal            @db.Decimal(10, 2)
+  valorPendencias      Decimal            @db.Decimal(10, 2)
+  valorFinal           Decimal            @db.Decimal(10, 2)
+  valorRepasseMotoboys Decimal            @default(0) @map("valor_repasse_motoboys") @db.Decimal(10, 2)
+  valorLiquido         Decimal            @default(0) @map("valor_liquido") @db.Decimal(10, 2)
+  observacoes          String?
+  criadoEm             DateTime           @default(now())
+  prestacoesMotoboy    PrestacaoMotoboy[]
 
   @@map("prestacoes_contas")
 }
@@ -94,8 +97,10 @@ model PrestacaoMotoboy {
   status          StatusPrestacaoMotoboy  @default(ENVIADA)
   motivoRejeicao  String?                 @map("motivo_rejeicao")
   aprovadaEm      DateTime?               @map("aprovada_em")
-  rejeitadaEm     DateTime?               @map("rejeitada_em")
-  criadoEm        DateTime                @default(now()) @map("criado_em")
+  rejeitadaEm         DateTime?               @map("rejeitada_em")
+  criadoEm            DateTime                @default(now()) @map("criado_em")
+  prestacaoContasId   String?                 @map("prestacao_contas_id")
+  prestacaoContas     PrestacaoContas?        @relation(fields: [prestacaoContasId], references: [id], onDelete: SetNull)
 
   @@unique([motoboyId, data])
   @@index([status])

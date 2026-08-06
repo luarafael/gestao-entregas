@@ -93,6 +93,38 @@ export class PrestacaoMotoboyRepository {
     return prisma.prestacaoMotoboy.count({ where: { status: 'ENVIADA' } })
   }
 
+  async findByDate(date: Date, status?: StatusPrestacaoMotoboy) {
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
+
+    return prisma.prestacaoMotoboy.findMany({
+      where: {
+        data: day,
+        ...(status ? { status } : {}),
+      },
+      orderBy: { motoboy: { nome: 'asc' } },
+      include: {
+        motoboy: { select: { id: true, nome: true, email: true } },
+      },
+    })
+  }
+
+  async countPendingByDate(date: Date) {
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
+
+    return prisma.prestacaoMotoboy.count({
+      where: { data: day, status: 'ENVIADA' },
+    })
+  }
+
+  async linkApprovedToPrestacaoContas(date: Date, prestacaoContasId: string) {
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
+
+    return prisma.prestacaoMotoboy.updateMany({
+      where: { data: day, status: 'APROVADA' },
+      data: { prestacaoContasId },
+    })
+  }
+
   async update(id: string, data: UpdatePrestacaoMotoboyData) {
     return prisma.prestacaoMotoboy.update({
       where: { id },

@@ -53,7 +53,25 @@ export function exportPrestacaoPdf(data: PrestacaoPdfInput) {
     'Valor das pendências',
     formatCurrency(data.valorPendencias),
   )
-  y = addKeyValueRow(doc, y, 'Valor final', formatCurrency(data.valorFinal))
+  y = addKeyValueRow(doc, y, 'Valor final (bruto)', formatCurrency(data.valorFinal))
+
+  if (data.valorRepasseMotoboys && data.valorRepasseMotoboys > 0) {
+    y = addKeyValueRow(
+      doc,
+      y,
+      'Repasse motoboys',
+      formatCurrency(data.valorRepasseMotoboys),
+    )
+  }
+
+  if (data.valorLiquido !== undefined) {
+    y = addKeyValueRow(
+      doc,
+      y,
+      'Valor líquido',
+      formatCurrency(data.valorLiquido),
+    )
+  }
 
   if (data.observacoes?.trim()) {
     y += 2

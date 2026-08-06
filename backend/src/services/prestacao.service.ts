@@ -1,6 +1,7 @@
-import { ConflictError, NotFoundError } from '../errors/app.error.js'
+import { ConflictError, NotFoundError, ValidationError } from '../errors/app.error.js'
 import { entregaRepository } from '../repositories/entrega.repository.js'
 import { pendenciaRepository } from '../repositories/pendencia.repository.js'
+import { prestacaoMotoboyRepository } from '../repositories/prestacao-motoboy.repository.js'
 import { prestacaoRepository } from '../repositories/prestacao.repository.js'
 import type {
   GeneratePrestacaoInput,
@@ -24,17 +25,43 @@ export class PrestacaoService {
     return toUtcDateOnly(input)
   }
 
-  /** Garante a mesma data gravada no banco (@db.Date), sem deslocamento de fuso */
   private resolveStoredDate(date: Date) {
     return toUtcDateOnly(formatDateOnlyISO(date))
+  }
+
+  private async getMotoboyConsolidation(date: Date) {
+    const [aprovadas, pendentesAprovacao] = await Promise.all([
+      prestacaoMotoboyRepository.findByDate(date, 'APROVADA'),
+      prestacaoMotoboyRepository.countPendingByDate(date),
+    ])
+
+    const valorRepasseMotoboys = aprovadas.reduce(
+      (sum, item) => sum + Number(item.valorFinal),
+      0,
+    )
+
+    return {
+      aprovadas,
+      pendentesAprovacao,
+      valorRepasseMotoboys,
+      prestacoesMotoboy: aprovadas.map((item) => ({
+        id: item.id,
+        motoboyId: item.motoboyId,
+        motoboyNome: item.motoboy.nome,
+        totalEntregas: item.totalEntregas,
+        valorFinal: Number(item.valorFinal),
+        status: item.status,
+      })),
+    }
   }
 
   private async calculateTotals(date: Date) {
     const day = toUtcDateOnly(formatDateOnlyISO(date))
 
-    const [entregaStats, pendencias] = await Promise.all([
+    const [entregaStats, pendencias, motoboy] = await Promise.all([
       entregaRepository.getStatsByDate(day),
       pendenciaRepository.findPendingByDate(day),
+      this.getMotoboyConsolidation(day),
     ])
 
     const valorPendencias = pendencias.reduce(
@@ -42,14 +69,28 @@ export class PrestacaoService {
       0,
     )
 
+    const valorFinal = entregaStats.valorTotal + valorPendencias
+    const valorLiquido = valorFinal - motoboy.valorRepasseMotoboys
+
     return {
       totalEntregas: entregaStats.totalEntregas,
       valorTotal: entregaStats.valorTotal,
       entregasPagasPeloCliente: entregaStats.entregasPagasPeloCliente,
       valorPagasPeloCliente: entregaStats.valorPagasPeloCliente,
       valorPendencias,
-      valorFinal: entregaStats.valorTotal + valorPendencias,
+      valorFinal,
+      valorRepasseMotoboys: motoboy.valorRepasseMotoboys,
+      valorLiquido,
       pendencias,
+      ...motoboy,
+    }
+  }
+
+  private async assertCanGenerate(date: Date, pendentesAprovacao: number) {
+    if (pendentesAprovacao > 0) {
+      throw new ValidationError(
+        `Existem ${pendentesAprovacao} prestação(ões) de motoboy aguardando aprovação para esta data`,
+      )
     }
   }
 
@@ -62,6 +103,8 @@ export class PrestacaoService {
     }
 
     const totals = await this.calculateTotals(date)
+    await this.assertCanGenerate(date, totals.pendentesAprovacao)
+
     const entregas = await entregaRepository.findByDate(date)
 
     const prestacao = await prestacaoRepository.create({
@@ -70,16 +113,30 @@ export class PrestacaoService {
       valorTotal: totals.valorTotal,
       valorPendencias: totals.valorPendencias,
       valorFinal: totals.valorFinal,
+      valorRepasseMotoboys: totals.valorRepasseMotoboys,
+      valorLiquido: totals.valorLiquido,
       observacoes: input.observacoes,
     })
+
+    await prestacaoMotoboyRepository.linkApprovedToPrestacaoContas(
+      date,
+      prestacao.id,
+    )
 
     const whatsappText = generateWhatsAppText(
       prestacao,
       entregas,
       totals.pendencias,
+      totals.prestacoesMotoboy,
     )
 
-    return { prestacao, entregas, pendencias: totals.pendencias, whatsappText }
+    return {
+      prestacao,
+      entregas,
+      pendencias: totals.pendencias,
+      prestacoesMotoboy: totals.prestacoesMotoboy,
+      whatsappText,
+    }
   }
 
   async preview(input?: GeneratePrestacaoInput) {
@@ -94,7 +151,11 @@ export class PrestacaoService {
       valorPagasPeloCliente: totals.valorPagasPeloCliente,
       valorPendencias: totals.valorPendencias,
       valorFinal: totals.valorFinal,
+      valorRepasseMotoboys: totals.valorRepasseMotoboys,
+      valorLiquido: totals.valorLiquido,
       totalPendencias: totals.pendencias.length,
+      pendentesAprovacaoMotoboy: totals.pendentesAprovacao,
+      prestacoesMotoboy: totals.prestacoesMotoboy,
     }
   }
 
@@ -111,12 +172,18 @@ export class PrestacaoService {
 
     if (input.recalcular) {
       const totals = await this.calculateTotals(this.resolveStoredDate(prestacao.data))
+      await this.assertCanGenerate(
+        this.resolveStoredDate(prestacao.data),
+        totals.pendentesAprovacao,
+      )
 
       return prestacaoRepository.update(id, {
         totalEntregas: totals.totalEntregas,
         valorTotal: totals.valorTotal,
         valorPendencias: totals.valorPendencias,
         valorFinal: totals.valorFinal,
+        valorRepasseMotoboys: totals.valorRepasseMotoboys,
+        valorLiquido: totals.valorLiquido,
         observacoes:
           input.observacoes === undefined
             ? prestacao.observacoes
@@ -140,12 +207,22 @@ export class PrestacaoService {
 
     const date = this.resolveStoredDate(prestacao.data)
 
-    const [entregas, pendencias] = await Promise.all([
+    const [entregas, pendencias, motoboy] = await Promise.all([
       entregaRepository.findByDate(date),
       pendenciaRepository.findPendingByDate(date),
+      prestacaoMotoboyRepository.findByDate(date, 'APROVADA'),
     ])
 
-    return generateWhatsAppText(prestacao, entregas, pendencias)
+    const prestacoesMotoboy = motoboy.map((item) => ({
+      id: item.id,
+      motoboyId: item.motoboyId,
+      motoboyNome: item.motoboy.nome,
+      totalEntregas: item.totalEntregas,
+      valorFinal: Number(item.valorFinal),
+      status: item.status,
+    }))
+
+    return generateWhatsAppText(prestacao, entregas, pendencias, prestacoesMotoboy)
   }
 
   async list(filters: ListPrestacoesInput) {

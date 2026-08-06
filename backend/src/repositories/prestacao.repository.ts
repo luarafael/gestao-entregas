@@ -7,6 +7,8 @@ export interface CreatePrestacaoData {
   valorTotal: number
   valorPendencias: number
   valorFinal: number
+  valorRepasseMotoboys?: number
+  valorLiquido?: number
   observacoes?: string
 }
 
@@ -15,6 +17,8 @@ export interface UpdatePrestacaoData {
   valorTotal?: number
   valorPendencias?: number
   valorFinal?: number
+  valorRepasseMotoboys?: number
+  valorLiquido?: number
   observacoes?: string | null
 }
 

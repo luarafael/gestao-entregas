@@ -7,14 +7,26 @@ export interface PrestacaoContas {
   valorTotal: string
   valorPendencias: string
   valorFinal: string
+  valorRepasseMotoboys: string
+  valorLiquido: string
   observacoes: string | null
   criadoEm: string
+}
+
+export interface PrestacaoMotoboyResumo {
+  id: string
+  motoboyId: string
+  motoboyNome: string
+  totalEntregas: number
+  valorFinal: number
+  status: 'ENVIADA' | 'APROVADA' | 'REJEITADA'
 }
 
 export interface GeneratePrestacaoResponse {
   prestacao: PrestacaoContas
   entregas: Entrega[]
   pendencias: Pendencia[]
+  prestacoesMotoboy?: PrestacaoMotoboyResumo[]
   whatsappText: string
 }
 
@@ -26,7 +38,11 @@ export interface PrestacaoPreview {
   valorPagasPeloCliente: number
   valorPendencias: number
   valorFinal: number
+  valorRepasseMotoboys: number
+  valorLiquido: number
   totalPendencias: number
+  pendentesAprovacaoMotoboy: number
+  prestacoesMotoboy: PrestacaoMotoboyResumo[]
 }
 
 export type { GeneratePrestacaoFormData, PrestacaoFilters } from '../schemas/prestacao.schema'

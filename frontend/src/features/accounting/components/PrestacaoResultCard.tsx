@@ -21,7 +21,7 @@ export function PrestacaoResultCard({ result }: PrestacaoResultCardProps) {
           <CardTitle>Resumo da prestação</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <SummaryItem
               label="Entregas"
               value={String(prestacao.totalEntregas)}
@@ -35,8 +35,16 @@ export function PrestacaoResultCard({ result }: PrestacaoResultCardProps) {
               value={formatCurrency(Number(prestacao.valorPendencias))}
             />
             <SummaryItem
-              label="Valor final"
+              label="Valor final (bruto)"
               value={formatCurrency(Number(prestacao.valorFinal))}
+            />
+            <SummaryItem
+              label="Repasse motoboys"
+              value={formatCurrency(Number(prestacao.valorRepasseMotoboys))}
+            />
+            <SummaryItem
+              label="Valor líquido"
+              value={formatCurrency(Number(prestacao.valorLiquido))}
               highlight
             />
           </div>

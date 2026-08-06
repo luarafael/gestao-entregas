@@ -87,6 +87,22 @@ export class EntregaRepository {
     })
   }
 
+  async findRecentByDate(date: Date, limit = 50) {
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
+
+    return prisma.entrega.findMany({
+      where: {
+        data: day,
+        status: 'ENTREGUE',
+      },
+      orderBy: { horario: 'desc' },
+      take: limit,
+      include: {
+        motoboy: { select: { id: true, nome: true } },
+      },
+    })
+  }
+
   async update(id: string, data: UpdateEntregaInput) {
     return prisma.entrega.update({ where: { id }, data })
   }

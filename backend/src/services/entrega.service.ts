@@ -111,6 +111,58 @@ export class EntregaService {
 
     return entregaRepository.findByDate(day, motoboyId)
   }
+
+  async getMonitoramento(reference?: Date | string) {
+    const day =
+      reference === undefined
+        ? toUtcDateOnlyFromBusinessTz()
+        : typeof reference === 'string'
+          ? toUtcDateOnly(reference)
+          : toUtcDateOnly(formatDateOnlyISO(reference))
+
+    const entregas = await entregaRepository.findRecentByDate(day, 100)
+
+    const gruposMap = new Map<
+      string,
+      {
+        motoboyId: string | null
+        motoboyNome: string
+        entregas: typeof entregas
+        totalEntregas: number
+        valorTotal: number
+      }
+    >()
+
+    for (const entrega of entregas) {
+      const key = entrega.motoboyId ?? 'sem-motoboy'
+      const existing = gruposMap.get(key) ?? {
+        motoboyId: entrega.motoboyId,
+        motoboyNome: entrega.motoboy?.nome ?? 'Sem motoboy',
+        entregas: [],
+        totalEntregas: 0,
+        valorTotal: 0,
+      }
+
+      existing.entregas.push(entrega)
+      existing.totalEntregas += 1
+      if (!entrega.pagoPeloCliente) {
+        existing.valorTotal += Number(entrega.valorEntrega)
+      }
+
+      gruposMap.set(key, existing)
+    }
+
+    const grupos = Array.from(gruposMap.values()).sort((a, b) =>
+      a.motoboyNome.localeCompare(b.motoboyNome),
+    )
+
+    return {
+      data: formatDateOnlyISO(day),
+      atualizadoEm: new Date().toISOString(),
+      totalEntregas: entregas.length,
+      grupos,
+    }
+  }
 }
 
 export const entregaService = new EntregaService()
