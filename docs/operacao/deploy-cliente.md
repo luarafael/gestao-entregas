@@ -96,7 +96,8 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 2. Pedir troca de senha no primeiro acesso (manual por enquanto — fluxo “esqueci senha” é P2).
 3. Criar usuários **Motoboy** se o plano incluir (via seed manual ou painel futuro).
 4. Configurar endereço de partida padrão no Planejador.
-5. Agendar treinamento (15–30 min) e follow-up em 7 e 30 dias.
+5. Enviar material de onboarding: [vídeo + guia rápido](./onboarding.md).
+6. Agendar treinamento (15–30 min) e follow-up em 7 e 30 dias.
 
 ---
 
@@ -143,6 +144,7 @@ Repassar na mensalidade do contrato.
 ## Documentos relacionados
 
 - [Backup e recuperação](./backup.md) — PITR Neon, `pg_dump` e procedimento de restore
+- [Onboarding](./onboarding.md) — roteiro do vídeo, guia rápido e checklist de entrega
 
 ---
 

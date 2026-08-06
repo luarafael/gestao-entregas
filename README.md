@@ -182,6 +182,7 @@ Após o deploy, acesse o frontend e faça login com `ADMIN_EMAIL` / `ADMIN_PASSW
 
 **Runbook completo para novo cliente:** [docs/operacao/deploy-cliente.md](docs/operacao/deploy-cliente.md)  
 **Backup e recuperação:** [docs/operacao/backup.md](docs/operacao/backup.md)  
+**Onboarding (vídeo + guia):** [docs/operacao/onboarding.md](docs/operacao/onboarding.md)  
 **Template de variáveis:** [.env.cliente.example](.env.cliente.example)
 
 ---
