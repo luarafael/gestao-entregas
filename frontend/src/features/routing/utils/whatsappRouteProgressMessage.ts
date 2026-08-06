@@ -5,6 +5,7 @@ import { formatUrgentLabel } from './urgentPriority'
 import { formatDistance, formatDuration } from './googleMapsUrl'
 import {
   computeExecutionStats,
+  getActiveStopsForRoute,
   getStopStatus,
   isAllStopsDelivered,
   isProblemStatus,
@@ -23,6 +24,7 @@ export interface RouteProgressWhatsAppInput {
   stops: PlannerStop[]
   distanciaRestante?: number
   tempoRestante?: number
+  atualizadoEm?: string
 }
 
 function groupByStatus(stops: PlannerStop[]) {
@@ -40,11 +42,17 @@ function groupByStatus(stops: PlannerStop[]) {
     groups[getStopStatus(stop)].push(stop)
   }
 
+  for (const key of Object.keys(groups) as StatusExecucao[]) {
+    groups[key].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
+  }
+
   return groups
 }
 
 function formatStopLine(stop: PlannerStop): string {
-  return stop.cliente?.trim() || stop.endereco
+  const ordem = stop.ordem ? `Parada ${String(stop.ordem).padStart(2, '0')} — ` : ''
+  const nome = stop.cliente?.trim() || 'Sem nome'
+  return `${ordem}${nome}`
 }
 
 function formatStopAddress(stop: PlannerStop): string {
@@ -57,9 +65,82 @@ function formatStopAddress(stop: PlannerStop): string {
   return stop.endereco
 }
 
-function formatDeliveredAt(stop: PlannerStop): string | null {
+function formatStatusTime(stop: PlannerStop): string | null {
   if (!stop.statusAtualizadoEm) return null
-  return `${formatDateBR(stop.statusAtualizadoEm)} às ${formatTimeBR(stop.statusAtualizadoEm)}`
+  return formatTimeBR(stop.statusAtualizadoEm)
+}
+
+function appendTrecho(lines: string[], stop: PlannerStop) {
+  if (stop.distancia != null && stop.tempo != null) {
+    lines.push(
+      `   ${WA.clock} Trecho: ${formatDistance(stop.distancia)} · ${formatDuration(stop.tempo)}`,
+    )
+  }
+}
+
+function appendValor(lines: string[], stop: PlannerStop) {
+  if (stop.valorEntrega != null && Number(stop.valorEntrega) > 0) {
+    lines.push(`   ${WA.money} ${formatCurrency(Number(stop.valorEntrega))}`)
+  }
+}
+
+function appendStopBase(lines: string[], stop: PlannerStop) {
+  lines.push(`• ${formatStopLine(stop)}`)
+  lines.push(`   ${formatStopAddress(stop)}`)
+  if (stop.telefone?.trim()) {
+    lines.push(`   📞 ${stop.telefone.trim()}`)
+  }
+}
+
+function appendEntregueDetails(lines: string[], stop: PlannerStop) {
+  appendStopBase(lines, stop)
+  const horario = formatStatusTime(stop)
+  if (horario) {
+    lines.push(`   ${WA.check} Entregue às ${horario}`)
+  } else {
+    lines.push(`   ${WA.check} Entregue`)
+  }
+  appendTrecho(lines, stop)
+  appendValor(lines, stop)
+  if (stop.observacao?.trim()) {
+    lines.push(`   ${WA.memo} ${stop.observacao.trim()}`)
+  }
+  lines.push('')
+}
+
+function appendEmRotaDetails(lines: string[], stop: PlannerStop) {
+  appendStopBase(lines, stop)
+  lines.push(`   🟦 Status: Em rota`)
+  const horario = formatStatusTime(stop)
+  if (horario) {
+    lines.push(`   ${WA.clock} Atualizado às ${horario}`)
+  }
+  appendTrecho(lines, stop)
+  appendValor(lines, stop)
+  lines.push('')
+}
+
+function appendPendenteDetails(lines: string[], stop: PlannerStop) {
+  appendStopBase(lines, stop)
+  if (stop.prioridade === 'URGENTE') {
+    lines.push(`   ⚠️ ${formatUrgentLabel(stop.ordemUrgencia)}`)
+  }
+  appendTrecho(lines, stop)
+  lines.push('')
+}
+
+function appendProblemaDetails(lines: string[], stop: PlannerStop) {
+  const status = getStopStatus(stop)
+  appendStopBase(lines, stop)
+  lines.push(`   ❌ ${STATUS_LABELS[status]}`)
+  const horario = formatStatusTime(stop)
+  if (horario) {
+    lines.push(`   ${WA.clock} Registrado às ${horario}`)
+  }
+  if (stop.statusObservacao?.trim()) {
+    lines.push(`   ${WA.memo} ${stop.statusObservacao.trim()}`)
+  }
+  lines.push('')
 }
 
 export function formatRouteCompletedWhatsAppText(
@@ -72,6 +153,9 @@ export function formatRouteCompletedWhatsAppText(
   const dataLabel = input.data
     ? formatDateBR(input.data)
     : formatDateBR(new Date().toISOString())
+  const atualizadoLabel = input.atualizadoEm
+    ? formatTimeBR(input.atualizadoEm)
+    : formatTimeBR(new Date().toISOString())
 
   const valorTotal = input.stops.reduce(
     (sum, stop) => sum + (stop.valorEntrega != null ? Number(stop.valorEntrega) : 0),
@@ -86,6 +170,7 @@ export function formatRouteCompletedWhatsAppText(
     `${WA.check} *Rota concluída*`,
     '',
     `📅 Data: ${dataLabel}`,
+    `🕐 Atualizado às ${atualizadoLabel}`,
   ]
 
   if (input.enderecoInicial?.trim()) {
@@ -111,41 +196,7 @@ export function formatRouteCompletedWhatsAppText(
   lines.push('', '━━━━━━━━━━━━━━', '', `✅ *Entregas realizadas*`, '')
 
   for (const stop of ordered) {
-    const ordem = stop.ordem ?? 0
-    const prioridade =
-      stop.prioridade === 'URGENTE'
-        ? ` — _${formatUrgentLabel(stop.ordemUrgencia)}_`
-        : ''
-
-    lines.push(`${ordem}. ${formatStopLine(stop)}${prioridade}`)
-    lines.push(`   ${formatStopAddress(stop)}`)
-
-    if (stop.telefone?.trim()) {
-      lines.push(`   📞 ${stop.telefone.trim()}`)
-    }
-
-    const entregueEm = formatDeliveredAt(stop)
-    if (entregueEm) {
-      lines.push(`   ${WA.check} Entregue em ${entregueEm}`)
-    } else {
-      lines.push(`   ${WA.check} Entregue`)
-    }
-
-    if (stop.distancia != null && stop.tempo != null) {
-      lines.push(
-        `   ${WA.clock} Trecho: ${formatDistance(stop.distancia)} · ${formatDuration(stop.tempo)}`,
-      )
-    }
-
-    if (stop.valorEntrega != null && Number(stop.valorEntrega) > 0) {
-      lines.push(`   ${WA.money} ${formatCurrency(Number(stop.valorEntrega))}`)
-    }
-
-    if (stop.observacao?.trim()) {
-      lines.push(`   ${WA.memo} ${stop.observacao.trim()}`)
-    }
-
-    lines.push('')
+    appendEntregueDetails(lines, stop)
   }
 
   lines.push(
@@ -171,49 +222,62 @@ export function formatRouteProgressWhatsAppText(
   const dataLabel = input.data
     ? formatDateBR(input.data)
     : formatDateBR(new Date().toISOString())
+  const atualizadoLabel = input.atualizadoEm
+    ? formatTimeBR(input.atualizadoEm)
+    : formatTimeBR(new Date().toISOString())
+
+  const activeStops = getActiveStopsForRoute(input.stops)
+  const activeMetrics = sumStopRouteMetrics(activeStops)
+  const completedStops = input.stops.filter(
+    (stop) => getStopStatus(stop) === 'ENTREGUE',
+  )
+  const completedMetrics = sumStopRouteMetrics(completedStops)
+
+  const distanciaRestante =
+    input.distanciaRestante ?? activeMetrics.distancia
+  const tempoRestante = input.tempoRestante ?? activeMetrics.tempo
 
   const lines: string[] = [
     `${WA.pin} *Andamento da Rota*`,
     '',
     `📅 Data: ${dataLabel}`,
+    `🕐 Atualizado às ${atualizadoLabel}`,
     '',
     `${WA.truck} Rota em execução`,
-    '',
-    '━━━━━━━━━━━━━━',
-    '',
-    `✅ *ENTREGUES*`,
-    '',
   ]
+
+  if (input.enderecoInicial?.trim()) {
+    lines.push('', `${WA.pin} *Partida:* ${input.enderecoInicial.trim()}`)
+  }
+
+  lines.push('', '━━━━━━━━━━━━━━', '', `✅ *ENTREGUES* (${groups.ENTREGUE.length})`, '')
 
   if (groups.ENTREGUE.length === 0) {
     lines.push('_(nenhuma ainda)_', '')
   } else {
     for (const stop of groups.ENTREGUE) {
-      lines.push(`✔ ${formatStopLine(stop)}`)
+      appendEntregueDetails(lines, stop)
     }
-    lines.push('')
   }
 
-  lines.push('━━━━━━━━━━━━━━', '', `🟦 *EM ROTA*`, '')
+  lines.push('━━━━━━━━━━━━━━', '', `🟦 *EM ROTA* (${groups.EM_ROTA.length})`, '')
 
   if (groups.EM_ROTA.length === 0) {
     lines.push('_(nenhuma)_', '')
   } else {
     for (const stop of groups.EM_ROTA) {
-      lines.push(`• ${formatStopLine(stop)}`)
+      appendEmRotaDetails(lines, stop)
     }
-    lines.push('')
   }
 
-  lines.push('━━━━━━━━━━━━━━', '', `⏳ *PENDENTES*`, '')
+  lines.push('━━━━━━━━━━━━━━', '', `⏳ *PENDENTES* (${groups.PENDENTE.length})`, '')
 
   if (groups.PENDENTE.length === 0) {
     lines.push('_(nenhuma)_', '')
   } else {
     for (const stop of groups.PENDENTE) {
-      lines.push(`• ${formatStopLine(stop)}`)
+      appendPendenteDetails(lines, stop)
     }
-    lines.push('')
   }
 
   const problemStops = input.stops.filter((stop) => {
@@ -221,20 +285,14 @@ export function formatRouteProgressWhatsAppText(
     return isProblemStatus(status) || status === 'CANCELADA'
   })
 
-  lines.push('━━━━━━━━━━━━━━', '', `❌ *PROBLEMAS*`, '')
+  lines.push('━━━━━━━━━━━━━━', '', `❌ *PROBLEMAS* (${problemStops.length})`, '')
 
   if (problemStops.length === 0) {
     lines.push('_(nenhum)_', '')
   } else {
     for (const stop of problemStops) {
-      const status = getStopStatus(stop)
-      lines.push(`• ${formatStopLine(stop)}`)
-      lines.push(`  ${STATUS_LABELS[status]}`)
-      if (stop.statusObservacao?.trim()) {
-        lines.push(`  ${stop.statusObservacao.trim()}`)
-      }
+      appendProblemaDetails(lines, stop)
     }
-    lines.push('')
   }
 
   lines.push(
@@ -249,12 +307,22 @@ export function formatRouteProgressWhatsAppText(
     `Percentual concluído: ${stats.percentual}%`,
   )
 
-  if (input.distanciaRestante != null && input.distanciaRestante > 0) {
-    lines.push(`Distância restante: ${formatDistance(input.distanciaRestante)}`)
+  if (completedMetrics.distancia > 0) {
+    lines.push(
+      `Distância concluída: ${formatDistance(completedMetrics.distancia)}`,
+    )
   }
 
-  if (input.tempoRestante != null && input.tempoRestante > 0) {
-    lines.push(`Tempo restante: ${formatDuration(input.tempoRestante)}`)
+  if (distanciaRestante > 0) {
+    lines.push(`Distância restante: ${formatDistance(distanciaRestante)}`)
+  }
+
+  if (completedMetrics.tempo > 0) {
+    lines.push(`Tempo concluído: ${formatDuration(completedMetrics.tempo)}`)
+  }
+
+  if (tempoRestante > 0) {
+    lines.push(`Tempo restante: ${formatDuration(tempoRestante)}`)
   }
 
   lines.push(

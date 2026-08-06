@@ -66,12 +66,38 @@ describe('whatsappRouteProgressMessage', () => {
     expect(text).not.toContain('*Andamento da Rota*')
   })
 
+  it('inclui horario e trecho nas entregas concluidas', () => {
+    const text = formatRouteProgressWhatsAppText({
+      stops: [
+        baseStop({
+          tempId: '1',
+          cliente: 'João',
+          statusExecucao: 'ENTREGUE',
+        }),
+        baseStop({
+          tempId: '2',
+          ordem: 2,
+          statusExecucao: 'PENDENTE',
+          cliente: 'Maria',
+        }),
+      ],
+      atualizadoEm: '2026-08-05T18:30:00.000Z',
+    })
+
+    expect(text).toContain('Entregue às')
+    expect(text).toContain('Trecho: 5.2 km')
+    expect(text).toContain('Atualizado às')
+    expect(text).toContain('Parada 01')
+  })
+
   it('formata resumo final com totais somados das paradas', () => {
     const text = formatRouteCompletedWhatsAppText({
       stops: [baseStop({ tempId: '1', cliente: 'João' })],
+      atualizadoEm: '2026-08-05T18:30:00.000Z',
     })
 
     expect(text).toContain('Distância total: 5.2 km')
     expect(text).toContain('Tempo total: 15 min')
+    expect(text).toContain('Atualizado às')
   })
 })

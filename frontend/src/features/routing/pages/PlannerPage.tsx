@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui'
-import { IconRoute, IconWhatsApp } from '@/shared/components/icons'
+import { IconRoute } from '@/shared/components/icons'
 import { toast } from '@/shared/stores/toast.store'
 import { WhatsAppPreview } from '@/features/accounting/components/WhatsAppPreview'
 import {
@@ -73,6 +73,9 @@ export function PlannerPage() {
   const [progressModalOpen, setProgressModalOpen] = useState(false)
   const [autoRecalc, setAutoRecalc] = useState(true)
   const [savedRotaId, setSavedRotaId] = useState<string | null>(null)
+  const [progressUpdatedAt, setProgressUpdatedAt] = useState<string>(
+    new Date().toISOString(),
+  )
   const [historicoExecucao, setHistoricoExecucao] = useState<
     ExecucaoHistoricoItem[]
   >([])
@@ -91,17 +94,26 @@ export function PlannerPage() {
   const progressWhatsappText = useMemo(() => {
     if (!result) return ''
     const metrics = sumStopRouteMetrics(displayStops)
+    const activeMetrics = sumStopRouteMetrics(
+      getActiveStopsForRoute(displayStops),
+    )
     return formatRouteProgressWhatsAppText({
       stops: displayStops,
       enderecoInicial: result.enderecoInicial,
       distanciaTotal: metrics.distancia || result.distanciaTotal,
       tempoTotal: metrics.tempo || result.tempoTotal,
       aproximada: result.aproximada,
-      distanciaRestante: result.distanciaTotal,
-      tempoRestante: result.tempoTotal,
+      distanciaRestante: activeMetrics.distancia || result.distanciaTotal,
+      tempoRestante: activeMetrics.tempo || result.tempoTotal,
       data: new Date().toISOString(),
+      atualizadoEm: progressUpdatedAt,
     })
-  }, [displayStops, result])
+  }, [displayStops, progressUpdatedAt, result])
+
+  const hasExecutionUpdates = useMemo(
+    () => displayStops.some((stop) => getStopStatus(stop) !== 'PENDENTE'),
+    [displayStops],
+  )
 
   const routeCompleted = useMemo(
     () => isAllStopsDelivered(displayStops),
@@ -299,6 +311,7 @@ export function PlannerPage() {
         finalMetrics.tempo || inactiveMetrics.tempo + optimized.tempoTotal,
       origem: optimized.origem ?? result?.origem ?? null,
     })
+    setProgressUpdatedAt(new Date().toISOString())
   }
 
   const handleStatusChange = async (
@@ -311,6 +324,7 @@ export function PlannerPage() {
       item.tempId === stop.tempId ? updated : item,
     )
     syncStops(nextStops)
+    setProgressUpdatedAt(new Date().toISOString())
     setHistoricoExecucao((current) => [
       ...current,
       buildHistoricoEntry(updated),
@@ -372,6 +386,11 @@ export function PlannerPage() {
     if (!whatsappText) return
     setSendPayload({ baseText: whatsappText })
     setSendModalOpen(true)
+  }
+
+  const handleCopyProgressWhatsApp = () => {
+    if (!progressWhatsappText) return
+    copyMutation.mutate(progressWhatsappText)
   }
 
   const handleSendProgressWhatsApp = () => {
@@ -458,6 +477,12 @@ export function PlannerPage() {
         .filter((stop) => stop.statusAtualizadoEm)
         .map((stop) => buildHistoricoEntry(stop)),
     )
+    const latestStatusUpdate = loaded
+      .map((stop) => stop.statusAtualizadoEm)
+      .filter((value): value is string => Boolean(value))
+      .sort()
+      .at(-1)
+    setProgressUpdatedAt(latestStatusUpdate ?? new Date().toISOString())
     setTab('planejar')
     toast('Rota carregada no planejador', 'success')
   }
@@ -632,8 +657,9 @@ export function PlannerPage() {
                 </Card>
               ) : null}
 
-              {result ? (
+              {result && !hasExecutionUpdates ? (
                 <WhatsAppPreview
+                  title="Rota planejada — WhatsApp"
                   text={whatsappText}
                   onCopy={handleCopyWhatsApp}
                   onSend={handleSendWhatsApp}
@@ -641,29 +667,18 @@ export function PlannerPage() {
                 />
               ) : null}
 
-              {executionMode ? (
-                <Card glass>
-                  <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
-                    <div>
-                      <p className="font-medium">
-                        {routeCompleted
-                          ? 'Rota concluída'
-                          : 'Andamento da rota'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {routeCompleted
-                          ? 'Compartilhe o resumo final com todas as entregas, km e tempos.'
-                          : 'Compartilhe o progresso das entregas em tempo real.'}
-                      </p>
-                    </div>
-                    <Button variant="secondary" onClick={handleSendProgressWhatsApp}>
-                      <IconWhatsApp className="mr-2 size-4" />
-                      {routeCompleted
-                        ? 'Compartilhar rota concluída'
-                        : 'Compartilhar andamento da rota'}
-                    </Button>
-                  </CardContent>
-                </Card>
+              {executionMode && hasExecutionUpdates ? (
+                <WhatsAppPreview
+                  title={
+                    routeCompleted
+                      ? 'Rota concluída — WhatsApp'
+                      : 'Andamento da rota — WhatsApp'
+                  }
+                  text={progressWhatsappText}
+                  onCopy={handleCopyProgressWhatsApp}
+                  onSend={handleSendProgressWhatsApp}
+                  isCopying={copyMutation.isPending}
+                />
               ) : null}
 
               <div className="flex flex-wrap gap-2">

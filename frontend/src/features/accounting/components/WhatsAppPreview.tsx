@@ -3,6 +3,7 @@ import { IconWhatsApp } from '@/shared/components/icons'
 
 interface WhatsAppPreviewProps {
   text: string
+  title?: string
   onCopy: () => void
   onSend: () => void
   isCopying?: boolean
@@ -10,6 +11,7 @@ interface WhatsAppPreviewProps {
 
 export function WhatsAppPreview({
   text,
+  title = 'Texto para WhatsApp',
   onCopy,
   onSend,
   isCopying = false,
@@ -17,7 +19,7 @@ export function WhatsAppPreview({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Texto para WhatsApp</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <textarea
