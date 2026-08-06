@@ -1,4 +1,5 @@
 import { config } from 'dotenv'
+import { validateProductionEnv } from './validate-production-env.js'
 
 config()
 
@@ -22,3 +23,5 @@ export const env = {
   ADMIN_PASSWORD: getEnv('ADMIN_PASSWORD', 'admin123'),
   ADMIN_NAME: getEnv('ADMIN_NAME', 'Administrador'),
 } as const
+
+validateProductionEnv(env)

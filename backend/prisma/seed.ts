@@ -1,16 +1,16 @@
 import 'dotenv/config'
 import { env } from '../src/config/env.js'
+import { ensureAdminUser } from '../src/bootstrap/ensure-admin.js'
 import { prisma } from '../src/lib/prisma.js'
-import { authService } from '../src/services/auth.service.js'
 import { toUtcDateOnlyFromBusinessTz } from '../src/utils/date.utils.js'
 
 async function main() {
-  await authService.ensureAdminUser({
-    nome: env.ADMIN_NAME,
-    email: env.ADMIN_EMAIL,
-    password: env.ADMIN_PASSWORD,
-  })
-  console.log(`Usuário admin garantido: ${env.ADMIN_EMAIL}`)
+  await ensureAdminUser()
+
+  if (env.NODE_ENV === 'production') {
+    console.log('Seed de desenvolvimento ignorado em produção.')
+    return
+  }
 
   const today = toUtcDateOnlyFromBusinessTz(new Date())
   const yesterday = new Date(today)

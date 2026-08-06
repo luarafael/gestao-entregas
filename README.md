@@ -153,6 +153,33 @@ npm run docker:prod
 
 No Railway, o `Dockerfile` na raiz do repo faz o build do backend. Na Vercel, configure `Root Directory` como `frontend` e `VITE_API_URL` apontando para a API.
 
+### Checklist de produção (Railway + Vercel)
+
+Antes do primeiro deploy com autenticação, configure no **Railway** (serviço da API):
+
+| Variável | Obrigatório | Descrição |
+|----------|-------------|-----------|
+| `JWT_SECRET` | Sim | Segredo forte com **mínimo 32 caracteres** (a API não sobe em produção com valor padrão) |
+| `ADMIN_EMAIL` | Sim | E-mail do administrador inicial |
+| `ADMIN_PASSWORD` | Sim | Senha forte do admin (evite `admin123` em produção) |
+| `ADMIN_NAME` | Não | Nome exibido do admin |
+| `FRONTEND_URL` | Sim | URL do frontend na Vercel (CORS) |
+| `DATABASE_URL` | Sim | Conexão PostgreSQL (Neon) |
+
+Gerar `JWT_SECRET`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+No deploy, o container executa automaticamente:
+
+1. `prisma migrate deploy` — aplica migrations
+2. `ensure-admin` — cria/atualiza o usuário admin
+3. Inicia a API
+
+Após o deploy, acesse o frontend e faça login com `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+
 ---
 
 ## API (resumo)
