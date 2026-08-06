@@ -8,10 +8,12 @@ import {
 } from '../middleware/index.js'
 import { requireRole } from '../middleware/auth.middleware.js'
 import {
+  listPendentesQuerySchema,
   listPrestacoesMotoboySchema,
   previewPrestacaoMotoboyQuerySchema,
   rejectPrestacaoMotoboySchema,
   submitPrestacaoMotoboySchema,
+  type ListPendentesQuery,
   type ListPrestacoesMotoboyInput,
   type PreviewPrestacaoMotoboyQuery,
 } from '../schemas/prestacao-motoboy.schema.js'
@@ -22,8 +24,13 @@ export const prestacaoMotoboyRoutes = Router()
 prestacaoMotoboyRoutes.get(
   '/pendentes',
   requireRole('ADMIN'),
+  validateQuery(listPendentesQuerySchema),
   asyncHandler(async (req, res) => {
-    const result = await prestacaoMotoboyService.listPending(req.user!)
+    const query = getValidatedQuery<ListPendentesQuery>(req)
+    const result = await prestacaoMotoboyService.listPending(
+      req.user!,
+      query.motoboyId,
+    )
     res.json(result)
   }),
 )

@@ -5,10 +5,12 @@ import { ApiError } from '@/shared/services/api'
 
 export const APROVACOES_QUERY_KEY = 'aprovacoes-motoboy'
 
-export function usePendingPrestacoesMotoboy() {
+export function usePendingPrestacoesMotoboy(motoboyId?: string) {
+  const scope = motoboyId ?? 'all'
+
   return useQuery({
-    queryKey: [APROVACOES_QUERY_KEY, 'pendentes'],
-    queryFn: () => aprovacoesService.listPending(),
+    queryKey: [APROVACOES_QUERY_KEY, 'pendentes', scope],
+    queryFn: () => aprovacoesService.listPending(motoboyId),
     refetchInterval: 15_000,
   })
 }

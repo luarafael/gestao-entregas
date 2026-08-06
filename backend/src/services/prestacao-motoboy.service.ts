@@ -167,7 +167,7 @@ export class PrestacaoMotoboyService {
     return buildPaginatedResult(data, total, filters.page, filters.limit)
   }
 
-  async listPending(user: AuthenticatedUser) {
+  async listPending(user: AuthenticatedUser, motoboyId?: string) {
     if (!isAdminUser(user)) {
       throw new ForbiddenError()
     }
@@ -176,6 +176,7 @@ export class PrestacaoMotoboyService {
       page: 1,
       limit: 50,
       status: 'ENVIADA',
+      motoboyId,
     })
 
     return { data, total }

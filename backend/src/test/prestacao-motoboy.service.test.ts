@@ -118,4 +118,27 @@ describe('PrestacaoMotoboyService', () => {
       'motoboy-1',
     )
   })
+
+  it('lista pendentes filtrando por motoboy', async () => {
+    prestacaoMotoboyRepository.findMany.mockResolvedValue({
+      data: [{ id: 'pm1' }],
+      total: 1,
+    })
+
+    const result = await service.listPending(adminUser, 'motoboy-1')
+
+    expect(prestacaoMotoboyRepository.findMany).toHaveBeenCalledWith({
+      page: 1,
+      limit: 50,
+      status: 'ENVIADA',
+      motoboyId: 'motoboy-1',
+    })
+    expect(result.total).toBe(1)
+  })
+
+  it('bloqueia motoboy de listar pendentes', async () => {
+    await expect(service.listPending(motoboyUser)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    )
+  })
 })

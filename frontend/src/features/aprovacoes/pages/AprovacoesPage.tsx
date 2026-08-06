@@ -9,6 +9,10 @@ import {
   Modal,
 } from '@/shared/components/ui'
 import { IconReceipt } from '@/shared/components/icons'
+import {
+  MotoboySelect,
+  type MotoboySelectValue,
+} from '@/shared/components/MotoboySelect'
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatPrestacaoMotoboyDate } from '@/features/motoboy/schemas/prestacaoMotoboy.schema'
 import type { PrestacaoMotoboy } from '@/features/motoboy/types/prestacaoMotoboy.types'
@@ -21,11 +25,15 @@ import { aprovacoesService } from '../services/aprovacoes.service'
 import { toast } from '@/shared/stores/toast.store'
 
 export function AprovacoesPage() {
+  const [motoboyFilter, setMotoboyFilter] =
+    useState<MotoboySelectValue>('all')
+  const motoboyId = motoboyFilter === 'all' ? undefined : motoboyFilter
+
   const [rejecting, setRejecting] = useState<PrestacaoMotoboy | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [previewText, setPreviewText] = useState<string | null>(null)
 
-  const pendingQuery = usePendingPrestacoesMotoboy()
+  const pendingQuery = usePendingPrestacoesMotoboy(motoboyId)
   const approveMutation = useApprovePrestacaoMotoboy()
   const rejectMutation = useRejectPrestacaoMotoboy()
 
@@ -52,13 +60,23 @@ export function AprovacoesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">
-          Aprovações de motoboy
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Revise e aprove as prestações enviadas pelos motoboys.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Aprovações de motoboy
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {motoboyId
+              ? 'Prestações pendentes do motoboy selecionado.'
+              : 'Todas as prestações aguardando aprovação.'}
+          </p>
+        </div>
+        <MotoboySelect
+          id="filtro-motoboy-aprovacoes"
+          value={motoboyFilter}
+          onChange={setMotoboyFilter}
+          allowAll
+        />
       </div>
 
       {pendingQuery.isLoading ? (
@@ -71,7 +89,11 @@ export function AprovacoesPage() {
         <EmptyState
           icon={<IconReceipt className="size-6" />}
           title="Nenhuma prestação pendente"
-          description="Quando um motoboy enviar a prestação do dia, ela aparecerá aqui."
+          description={
+            motoboyId
+              ? 'Este motoboy não tem prestações aguardando aprovação.'
+              : 'Quando um motoboy enviar a prestação do dia, ela aparecerá aqui.'
+          }
         />
       ) : (
         <div className="space-y-4">

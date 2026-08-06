@@ -2,9 +2,12 @@ import { apiFetch } from '@/shared/services/api'
 import type { PrestacaoMotoboy } from '@/features/motoboy/types/prestacaoMotoboy.types'
 
 export const aprovacoesService = {
-  listPending() {
+  listPending(motoboyId?: string) {
+    const query = motoboyId
+      ? `?motoboyId=${encodeURIComponent(motoboyId)}`
+      : ''
     return apiFetch<{ data: PrestacaoMotoboy[]; total: number }>(
-      '/api/prestacoes-motoboy/pendentes',
+      `/api/prestacoes-motoboy/pendentes${query}`,
     )
   },
 
