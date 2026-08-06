@@ -7,6 +7,7 @@ export const dashboardStatsQuerySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida')
     .optional()
     .transform((value) => (value ? toUtcDateOnly(value) : undefined)),
+  motoboyId: z.string().trim().min(1).optional(),
 })
 
 export type DashboardStatsQuery = z.infer<typeof dashboardStatsQuerySchema>

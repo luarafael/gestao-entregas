@@ -10,44 +10,70 @@ import {
   iterateUtcDays,
 } from '../utils/report.utils.js'
 
+type DayTotals = {
+  entregas: number
+  valor: number
+  valorEntregas: number
+  valorPendencias: number
+  temPrestacao: boolean
+}
+
+function toDayTotals(item: {
+  totalEntregas: number
+  valorTotal: unknown
+  valorPendencias: unknown
+  valorFinal: unknown
+}): DayTotals {
+  return {
+    entregas: item.totalEntregas,
+    valor: Number(item.valorFinal),
+    valorEntregas: Number(item.valorTotal),
+    valorPendencias: Number(item.valorPendencias),
+    temPrestacao: true,
+  }
+}
+
 export class ReportRepository {
-  async getPeriodDailyBreakdown(period: ReportPeriod, reference = new Date()) {
+  async getPeriodDailyBreakdown(
+    period: ReportPeriod,
+    reference = new Date(),
+    motoboyId?: string,
+  ) {
     const { start, end } = getUtcDateOnlyRange(period, reference)
 
-    const prestacoes = await prisma.prestacaoContas.findMany({
-      where: {
-        data: { gte: start, lte: end },
-      },
-      orderBy: { data: 'asc' },
-      select: {
-        data: true,
-        totalEntregas: true,
-        valorTotal: true,
-        valorPendencias: true,
-        valorFinal: true,
-      },
-    })
+    const prestacoes = motoboyId
+      ? await prisma.prestacaoMotoboy.findMany({
+          where: {
+            motoboyId,
+            data: { gte: start, lte: end },
+          },
+          orderBy: { data: 'asc' },
+          select: {
+            data: true,
+            totalEntregas: true,
+            valorTotal: true,
+            valorPendencias: true,
+            valorFinal: true,
+          },
+        })
+      : await prisma.prestacaoContas.findMany({
+          where: {
+            data: { gte: start, lte: end },
+          },
+          orderBy: { data: 'asc' },
+          select: {
+            data: true,
+            totalEntregas: true,
+            valorTotal: true,
+            valorPendencias: true,
+            valorFinal: true,
+          },
+        })
 
-    const totalsByDay = new Map<
-      string,
-      {
-        entregas: number
-        valor: number
-        valorEntregas: number
-        valorPendencias: number
-        temPrestacao: boolean
-      }
-    >()
+    const totalsByDay = new Map<string, DayTotals>()
 
     for (const prestacao of prestacoes) {
-      const key = formatDateOnlyISO(prestacao.data)
-      totalsByDay.set(key, {
-        entregas: prestacao.totalEntregas,
-        valor: Number(prestacao.valorFinal),
-        valorEntregas: Number(prestacao.valorTotal),
-        valorPendencias: Number(prestacao.valorPendencias),
-        temPrestacao: true,
-      })
+      totalsByDay.set(formatDateOnlyISO(prestacao.data), toDayTotals(prestacao))
     }
 
     return iterateUtcDays(start, end).map((date) => {
@@ -68,15 +94,18 @@ export class ReportRepository {
     period: ReportPeriod,
     limit: number,
     reference = new Date(),
+    motoboyId?: string,
   ) {
     const { start, end } = getUtcDateOnlyRange(period, reference)
+    const baseWhere = {
+      data: { gte: start, lte: end },
+      status: 'ENTREGUE' as StatusEntrega,
+      ...(motoboyId ? { motoboyId } : {}),
+    }
 
     const grouped = await prisma.entrega.groupBy({
       by: ['bairro'],
-      where: {
-        data: { gte: start, lte: end },
-        status: 'ENTREGUE' as StatusEntrega,
-      },
+      where: baseWhere,
       _count: { id: true },
       orderBy: {
         _count: { id: 'desc' },
@@ -87,8 +116,7 @@ export class ReportRepository {
     const groupedValor = await prisma.entrega.groupBy({
       by: ['bairro'],
       where: {
-        data: { gte: start, lte: end },
-        status: 'ENTREGUE' as StatusEntrega,
+        ...baseWhere,
         pagoPeloCliente: false,
       },
       _sum: { valorEntrega: true },
@@ -130,22 +158,41 @@ export class ReportRepository {
     }))
   }
 
-  async getPeriodSummary(period: ReportPeriod, reference = new Date()) {
+  async getPeriodSummary(
+    period: ReportPeriod,
+    reference = new Date(),
+    motoboyId?: string,
+  ) {
     const { start, end } = getUtcDateOnlyRange(period, reference)
 
     const [prestacoes, pendenciaStats] = await Promise.all([
-      prisma.prestacaoContas.findMany({
-        where: {
-          data: { gte: start, lte: end },
-        },
-        select: {
-          totalEntregas: true,
-          valorTotal: true,
-          valorFinal: true,
-        },
-      }),
+      motoboyId
+        ? prisma.prestacaoMotoboy.findMany({
+            where: {
+              motoboyId,
+              data: { gte: start, lte: end },
+            },
+            select: {
+              totalEntregas: true,
+              valorTotal: true,
+              valorFinal: true,
+            },
+          })
+        : prisma.prestacaoContas.findMany({
+            where: {
+              data: { gte: start, lte: end },
+            },
+            select: {
+              totalEntregas: true,
+              valorTotal: true,
+              valorFinal: true,
+            },
+          }),
       prisma.pendencia.aggregate({
-        where: { status: 'PENDENTE' },
+        where: {
+          status: 'PENDENTE',
+          ...(motoboyId ? { motoboyId } : {}),
+        },
         _count: { id: true },
         _sum: { valor: true },
       }),

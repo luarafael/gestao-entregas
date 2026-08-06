@@ -34,4 +34,13 @@ describe('report schemas', () => {
     expect(parsed.period).toBe('month')
     expect(parsed.limit).toBe(8)
   })
+
+  it('should parse optional motoboyId on summary query', () => {
+    const parsed = reportSummaryQuerySchema.parse({
+      period: 'week',
+      motoboyId: 'motoboy-1',
+    })
+
+    expect(parsed.motoboyId).toBe('motoboy-1')
+  })
 })

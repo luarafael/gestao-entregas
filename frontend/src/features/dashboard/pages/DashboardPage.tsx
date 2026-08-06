@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   IconAlert,
@@ -12,6 +12,10 @@ import {
   StatCardSkeleton,
   TableSkeleton,
 } from '@/shared/components/ui'
+import {
+  MotoboySelect,
+  type MotoboySelectValue,
+} from '@/shared/components/MotoboySelect'
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
 import type { Entrega } from '@/shared/types/api.types'
@@ -108,11 +112,15 @@ function DeliveriesTable({ deliveries }: { deliveries: Entrega[] }) {
 }
 
 export function DashboardPage() {
-  const statsQuery = useDashboardStats()
-  const deliveriesQuery = useTodayDeliveries()
-  const weekSummaryQuery = useReportSummary('week')
-  const dailyBreakdownQuery = usePeriodDailyBreakdown('week')
-  const neighborhoodQuery = useNeighborhoodReport('week', 5)
+  const [motoboyFilter, setMotoboyFilter] =
+    useState<MotoboySelectValue>('all')
+  const motoboyId = motoboyFilter === 'all' ? undefined : motoboyFilter
+
+  const statsQuery = useDashboardStats(motoboyId)
+  const deliveriesQuery = useTodayDeliveries(motoboyId)
+  const weekSummaryQuery = useReportSummary('week', motoboyId)
+  const dailyBreakdownQuery = usePeriodDailyBreakdown('week', motoboyId)
+  const neighborhoodQuery = useNeighborhoodReport('week', 5, motoboyId)
 
   const stats = statsQuery.data
   const weekSummary = weekSummaryQuery.data
@@ -123,13 +131,22 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <section>
-        <div className="mb-4">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Resumo do dia
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Acompanhe entregas, valores e pendências em tempo real.
-          </p>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Resumo do dia
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {motoboyId
+                ? 'Visão individual do motoboy selecionado.'
+                : 'Visão geral de todos os motoboys.'}
+            </p>
+          </div>
+          <MotoboySelect
+            value={motoboyFilter}
+            onChange={setMotoboyFilter}
+            allowAll
+          />
         </div>
 
         {isLoading ? (

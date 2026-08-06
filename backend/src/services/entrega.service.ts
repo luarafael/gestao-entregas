@@ -53,7 +53,7 @@ export class EntregaService {
     return entregaRepository.delete(id)
   }
 
-  async getDashboardStats(reference?: Date | string) {
+  async getDashboardStats(reference?: Date | string, motoboyId?: string) {
     const day =
       reference === undefined
         ? toUtcDateOnlyFromBusinessTz()
@@ -62,8 +62,8 @@ export class EntregaService {
           : toUtcDateOnly(formatDateOnlyISO(reference))
 
     const [entregaStats, pendenciaStats] = await Promise.all([
-      entregaRepository.getStatsByDate(day),
-      pendenciaRepository.getPendingTotal(),
+      entregaRepository.getStatsByDate(day, motoboyId),
+      pendenciaRepository.getPendingTotal(motoboyId),
     ])
 
     return {

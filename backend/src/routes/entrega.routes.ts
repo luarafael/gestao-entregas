@@ -24,8 +24,11 @@ entregaRoutes.get(
   requireRole('ADMIN'),
   validateQuery(dashboardStatsQuerySchema),
   asyncHandler(async (req, res) => {
-    const { data } = getValidatedQuery<DashboardStatsQuery>(req)
-    const stats = await entregaService.getDashboardStats(data)
+    const query = getValidatedQuery<DashboardStatsQuery>(req)
+    const stats = await entregaService.getDashboardStats(
+      query.data,
+      query.motoboyId,
+    )
     res.json(stats)
   }),
 )

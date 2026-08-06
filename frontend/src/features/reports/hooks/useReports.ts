@@ -8,32 +8,59 @@ import type {
   ReportSummary,
 } from '@/shared/types/api.types'
 
-export function useReportSummary(period: ReportPeriod) {
-  return useQuery({
-    queryKey: ['reports', 'summary', period],
-    queryFn: () =>
-      apiFetch<ReportSummary>(`/api/reports/summary?period=${period}`),
-    staleTime: 5 * 60_000,
-  })
+function withMotoboyParam(url: string, motoboyId?: string) {
+  if (!motoboyId) return url
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}motoboyId=${encodeURIComponent(motoboyId)}`
 }
 
-export function usePeriodDailyBreakdown(period: ReportPeriod) {
+export function useReportSummary(period: ReportPeriod, motoboyId?: string) {
+  const scope = motoboyId ?? 'all'
+
   return useQuery({
-    queryKey: ['reports', 'daily-breakdown', period],
+    queryKey: ['reports', 'summary', period, scope],
     queryFn: () =>
-      apiFetch<DailyTrendPoint[]>(
-        `/api/reports/daily-breakdown?period=${period}`,
+      apiFetch<ReportSummary>(
+        withMotoboyParam(`/api/reports/summary?period=${period}`, motoboyId),
       ),
     staleTime: 5 * 60_000,
   })
 }
 
-export function useNeighborhoodReport(period: ReportPeriod, limit = 5) {
+export function usePeriodDailyBreakdown(
+  period: ReportPeriod,
+  motoboyId?: string,
+) {
+  const scope = motoboyId ?? 'all'
+
   return useQuery({
-    queryKey: ['reports', 'by-neighborhood', period, limit],
+    queryKey: ['reports', 'daily-breakdown', period, scope],
+    queryFn: () =>
+      apiFetch<DailyTrendPoint[]>(
+        withMotoboyParam(
+          `/api/reports/daily-breakdown?period=${period}`,
+          motoboyId,
+        ),
+      ),
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useNeighborhoodReport(
+  period: ReportPeriod,
+  limit = 5,
+  motoboyId?: string,
+) {
+  const scope = motoboyId ?? 'all'
+
+  return useQuery({
+    queryKey: ['reports', 'by-neighborhood', period, limit, scope],
     queryFn: () =>
       apiFetch<NeighborhoodReportPoint[]>(
-        `/api/reports/by-neighborhood?period=${period}&limit=${limit}`,
+        withMotoboyParam(
+          `/api/reports/by-neighborhood?period=${period}&limit=${limit}`,
+          motoboyId,
+        ),
       ),
     staleTime: 5 * 60_000,
   })

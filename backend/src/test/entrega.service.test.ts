@@ -94,12 +94,38 @@ describe('EntregaService', () => {
 
     const stats = await service.getDashboardStats()
 
+    expect(entregaRepository.getStatsByDate).toHaveBeenCalledWith(
+      expect.any(Date),
+      undefined,
+    )
+    expect(pendenciaRepository.getPendingTotal).toHaveBeenCalledWith(undefined)
     expect(stats).toEqual({
       entregasHoje: 3,
       valorRecebidoHoje: 90,
       totalPendencias: 1,
       valorTotalDia: 110,
     })
+  })
+
+  it('retorna estatísticas do dashboard filtradas por motoboy', async () => {
+    entregaRepository.getStatsByDate.mockResolvedValue({
+      totalEntregas: 1,
+      valorTotal: 30,
+    })
+    pendenciaRepository.getPendingTotal.mockResolvedValue({
+      totalPendencias: 0,
+      valorPendencias: 0,
+    })
+
+    await service.getDashboardStats(undefined, 'motoboy-1')
+
+    expect(entregaRepository.getStatsByDate).toHaveBeenCalledWith(
+      expect.any(Date),
+      'motoboy-1',
+    )
+    expect(pendenciaRepository.getPendingTotal).toHaveBeenCalledWith(
+      'motoboy-1',
+    )
   })
 
   it('retorna resumo do motoboy', async () => {

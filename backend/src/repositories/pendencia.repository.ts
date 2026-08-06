@@ -134,9 +134,13 @@ export class PendenciaRepository {
     })
   }
 
-  async getPendingTotal() {
+  async getPendingTotal(motoboyId?: string) {
     const result = await prisma.pendencia.aggregate({
-      where: { status: 'PENDENTE', tipo: 'CLIENTE' },
+      where: {
+        status: 'PENDENTE',
+        tipo: 'CLIENTE',
+        ...(motoboyId ? { motoboyId } : {}),
+      },
       _count: { id: true },
       _sum: { valor: true },
     })

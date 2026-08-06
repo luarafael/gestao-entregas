@@ -2,8 +2,11 @@ import { z } from 'zod'
 
 export const reportPeriodSchema = z.enum(['week', 'month'])
 
+const optionalMotoboyId = z.string().trim().min(1).optional()
+
 export const reportSummaryQuerySchema = z.object({
   period: reportPeriodSchema.default('week'),
+  motoboyId: optionalMotoboyId,
 })
 
 export const reportDaysQuerySchema = z.object({
@@ -13,6 +16,7 @@ export const reportDaysQuerySchema = z.object({
 export const reportNeighborhoodQuerySchema = z.object({
   period: reportPeriodSchema.default('week'),
   limit: z.coerce.number().int().min(1).max(20).default(5),
+  motoboyId: optionalMotoboyId,
 })
 
 export type ReportPeriod = z.infer<typeof reportPeriodSchema>
@@ -22,6 +26,7 @@ export type ReportNeighborhoodQuery = z.infer<typeof reportNeighborhoodQuerySche
 
 export const reportDailyBreakdownQuerySchema = z.object({
   period: reportPeriodSchema.default('week'),
+  motoboyId: optionalMotoboyId,
 })
 
 export type ReportDailyBreakdownQuery = z.infer<

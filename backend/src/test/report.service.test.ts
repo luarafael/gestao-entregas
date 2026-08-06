@@ -24,7 +24,24 @@ describe('ReportService', () => {
 
     const result = await service.getSummary({ period: 'week' })
 
+    expect(reportRepository.getPeriodSummary).toHaveBeenCalledWith(
+      'week',
+      expect.any(Date),
+      undefined,
+    )
     expect(result.totalEntregas).toBe(5)
+  })
+
+  it('delega resumo filtrado por motoboy', async () => {
+    reportRepository.getPeriodSummary.mockResolvedValue({ totalEntregas: 2 })
+
+    await service.getSummary({ period: 'week', motoboyId: 'm1' })
+
+    expect(reportRepository.getPeriodSummary).toHaveBeenCalledWith(
+      'week',
+      expect.any(Date),
+      'm1',
+    )
   })
 
   it('delega detalhamento diário do período', async () => {
@@ -45,6 +62,12 @@ describe('ReportService', () => {
       limit: 5,
     })
 
+    expect(reportRepository.getByNeighborhood).toHaveBeenCalledWith(
+      'month',
+      5,
+      expect.any(Date),
+      undefined,
+    )
     expect(result[0]?.bairro).toBe('Centro')
   })
 
