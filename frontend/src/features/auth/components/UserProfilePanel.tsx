@@ -10,11 +10,6 @@ interface UserProfilePanelProps {
   className?: string
 }
 
-const logoutButtonClassName = cn(
-  'border-danger bg-danger text-white shadow-sm shadow-danger/25',
-  'hover:border-danger hover:bg-danger/90 hover:shadow-md hover:shadow-danger/30',
-)
-
 export function UserProfilePanel({
   user,
   onLogout,
@@ -28,12 +23,7 @@ export function UserProfilePanel({
         <span className="max-w-40 truncate text-xs font-medium text-foreground">
           {user.nome}
         </span>
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={onLogout}
-          className={logoutButtonClassName}
-        >
+        <Button variant="dangerSolid" size="sm" onClick={onLogout}>
           Sair
         </Button>
       </div>
@@ -50,12 +40,7 @@ export function UserProfilePanel({
         </div>
       </div>
 
-      <Button
-        variant="danger"
-        size="sm"
-        onClick={onLogout}
-        className={cn('w-full', logoutButtonClassName)}
-      >
+      <Button variant="dangerSolid" size="sm" onClick={onLogout} className="w-full">
         Sair
       </Button>
     </div>
