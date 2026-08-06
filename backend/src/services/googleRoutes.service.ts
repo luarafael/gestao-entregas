@@ -1,34 +1,34 @@
 import { env } from '../config/env.js'
 import type { DistanceMatrix } from '../utils/route-optimizer.js'
+import {
+  buildGeocodeCandidates,
+  formatRoutingAddress,
+  resolveAddressParts,
+  toGeocodeRequest,
+  type GeocodeRequest,
+} from '../utils/geocoding.utils.js'
 
 export interface LatLng {
   lat: number
   lng: number
 }
 
-export interface GoogleOptimizeResult {
-  order: number[]
-  matrix: DistanceMatrix
-  polyline?: string
-  origin: LatLng
-  destinations: LatLng[]
-  usedGoogle: boolean
-}
-
 const ROUTES_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes'
 const MATRIX_URL =
   'https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix'
 const GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
+const PHOTON_URL = 'https://photon.komoot.io/api/'
+const FORTALEZA_BBOX = '-38.65,-3.88,-38.42,-3.68'
 
 function hasApiKey() {
   return Boolean(env.GOOGLE_MAPS_API_KEY?.trim())
 }
 
-async function geocodeAddress(address: string): Promise<LatLng | null> {
+async function geocodeAddress(candidate: string): Promise<LatLng | null> {
   if (!hasApiKey()) return null
 
   const url = new URL(GEOCODE_URL)
-  url.searchParams.set('address', address)
+  url.searchParams.set('address', candidate)
   url.searchParams.set('key', env.GOOGLE_MAPS_API_KEY)
   url.searchParams.set('region', 'br')
   url.searchParams.set('language', 'pt-BR')
@@ -41,15 +41,19 @@ async function geocodeAddress(address: string): Promise<LatLng | null> {
     results?: Array<{ geometry: { location: { lat: number; lng: number } } }>
   }
 
-  if (data.status !== 'OK' || !data.results?.[0]) return null
-  return data.results[0].geometry.location
+  if (data.status === 'OK' && data.results?.[0]) {
+    return data.results[0].geometry.location
+  }
+
+  return null
 }
 
-async function geocodeNominatim(address: string): Promise<LatLng | null> {
+async function geocodeNominatimFreeform(candidate: string): Promise<LatLng | null> {
   const url = new URL('https://nominatim.openstreetmap.org/search')
-  url.searchParams.set('q', address)
+  url.searchParams.set('q', candidate)
   url.searchParams.set('format', 'json')
   url.searchParams.set('limit', '1')
+  url.searchParams.set('countrycodes', 'br')
 
   const response = await fetch(url, {
     headers: { 'User-Agent': 'sistema-rotas/1.0' },
@@ -60,19 +64,108 @@ async function geocodeNominatim(address: string): Promise<LatLng | null> {
   const data = (await response.json()) as Array<{ lat: string; lon: string }>
   const first = data[0]
   if (!first) return null
+
   return { lat: Number(first.lat), lng: Number(first.lon) }
 }
 
-export async function geocode(address: string): Promise<LatLng | null> {
+async function geocodeNominatimStructured(
+  input: GeocodeRequest,
+): Promise<LatLng | null> {
+  const { street, bairro, cidade } = resolveAddressParts(input)
+  const url = new URL('https://nominatim.openstreetmap.org/search')
+  url.searchParams.set('format', 'json')
+  url.searchParams.set('limit', '1')
+  url.searchParams.set('countrycodes', 'br')
+  url.searchParams.set('country', 'Brasil')
+  url.searchParams.set('state', 'Ceará')
+  url.searchParams.set('city', cidade)
+  url.searchParams.set(
+    'street',
+    bairro ? `${street}, ${bairro}` : street,
+  )
+
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'sistema-rotas/1.0' },
+    signal: AbortSignal.timeout(12_000),
+  })
+  if (!response.ok) return null
+
+  const data = (await response.json()) as Array<{ lat: string; lon: string }>
+  const first = data[0]
+  if (!first) return null
+
+  return { lat: Number(first.lat), lng: Number(first.lon) }
+}
+
+async function geocodePhoton(candidate: string): Promise<LatLng | null> {
+  const url = new URL(PHOTON_URL)
+  url.searchParams.set('q', candidate)
+  url.searchParams.set('limit', '1')
+  url.searchParams.set('lang', 'pt')
+  url.searchParams.set('bbox', FORTALEZA_BBOX)
+
+  const response = await fetch(url, { signal: AbortSignal.timeout(12_000) })
+  if (!response.ok) return null
+
+  const data = (await response.json()) as {
+    features?: Array<{ geometry?: { coordinates?: [number, number] } }>
+  }
+
+  const coordinates = data.features?.[0]?.geometry?.coordinates
+  if (!coordinates) return null
+
+  return { lat: coordinates[1], lng: coordinates[0] }
+}
+
+export async function geocode(
+  value: string | GeocodeRequest,
+): Promise<LatLng | null> {
+  const input = toGeocodeRequest(value)
+
   try {
+    const candidates = buildGeocodeCandidates(input)
+
     if (hasApiKey()) {
-      const google = await geocodeAddress(address)
-      if (google) return google
+      for (const candidate of candidates) {
+        const google = await geocodeAddress(candidate)
+        if (google) return google
+      }
     }
-    return await geocodeNominatim(address)
+
+    for (const candidate of candidates) {
+      const nominatim = await geocodeNominatimFreeform(candidate)
+      if (nominatim) return nominatim
+    }
+
+    const structured = await geocodeNominatimStructured(input)
+    if (structured) return structured
+
+    for (const candidate of candidates) {
+      const photon = await geocodePhoton(candidate)
+      if (photon) return photon
+    }
+
+    return null
   } catch {
     return null
   }
+}
+
+const NOMINATIM_DELAY_MS = 350
+
+export async function geocodeMany(
+  values: Array<string | GeocodeRequest>,
+): Promise<Array<LatLng | null>> {
+  const results: Array<LatLng | null> = []
+
+  for (const value of values) {
+    results.push(await geocode(value))
+    if (!hasApiKey()) {
+      await new Promise((resolve) => setTimeout(resolve, NOMINATIM_DELAY_MS))
+    }
+  }
+
+  return results
 }
 
 function toWaypoint(address: string) {
@@ -81,11 +174,15 @@ function toWaypoint(address: string) {
 
 async function computeRouteMatrix(
   origin: string,
-  destinations: string[],
+  destinations: Array<string | GeocodeRequest>,
 ): Promise<DistanceMatrix | null> {
   if (!hasApiKey() || destinations.length === 0) return null
 
-  const origins = [origin, ...destinations]
+  const originAddress = origin
+  const stopAddresses = destinations.map((item) =>
+    formatRoutingAddress(toGeocodeRequest(item)),
+  )
+  const origins = [originAddress, ...stopAddresses]
   const body = {
     origins: origins.map((address) => ({ waypoint: toWaypoint(address) })),
     destinations: origins.map((address) => ({ waypoint: toWaypoint(address) })),
@@ -175,13 +272,7 @@ async function computeOptimizedRoute(
   if (!route) return null
 
   const intermediate = route.optimizedIntermediateWaypointIndex ?? []
-  // Map: intermediates are indices 0..n-2 of destinations[0..n-2], last dest fixed at end unless we rebuild.
-  // When optimizeWaypointOrder is true, Google returns order of intermediate waypoints only;
-  // destination stays last. We remap to destination indices 0..n-1.
-  const order: number[] = [
-    ...intermediate,
-    destinations.length - 1,
-  ]
+  const order: number[] = [...intermediate, destinations.length - 1]
 
   return {
     order,
@@ -192,6 +283,7 @@ async function computeOptimizedRoute(
 export const googleRoutesService = {
   hasApiKey,
   geocode,
+  geocodeMany,
   computeRouteMatrix,
   computeOptimizedRoute,
 }

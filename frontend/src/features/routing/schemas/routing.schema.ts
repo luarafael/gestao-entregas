@@ -5,6 +5,7 @@ export const prioridadeParadaSchema = z.enum(['NORMAL', 'URGENTE'])
 export const plannerStopSchema = z.object({
   cliente: z.string().trim().optional(),
   endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
+  bairro: z.string().trim().optional(),
   observacao: z.string().trim().optional(),
   prioridade: prioridadeParadaSchema,
 })

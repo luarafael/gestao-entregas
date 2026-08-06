@@ -74,13 +74,7 @@ export function ImportarEntregasModal({
         createPlannerStop({
           entregaId: delivery.id,
           cliente: delivery.nomeCliente,
-          endereco: [
-            delivery.endereco,
-            delivery.bairro,
-            delivery.cidade,
-          ]
-            .filter(Boolean)
-            .join(' - '),
+          endereco: delivery.endereco,
           bairro: delivery.bairro,
           observacao: delivery.observacao,
           valorEntrega: Number(delivery.valorEntrega),

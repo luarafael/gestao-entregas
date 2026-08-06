@@ -36,6 +36,7 @@ export function FormularioEntrega({
     defaultValues: {
       cliente: '',
       endereco: '',
+      bairro: '',
       observacao: '',
       prioridade: 'NORMAL',
     },
@@ -46,6 +47,7 @@ export function FormularioEntrega({
     reset({
       cliente: editing?.cliente ?? '',
       endereco: editing?.endereco ?? '',
+      bairro: editing?.bairro ?? '',
       observacao: editing?.observacao ?? '',
       prioridade: editing?.prioridade ?? 'NORMAL',
     })
@@ -74,9 +76,15 @@ export function FormularioEntrega({
         />
         <Input
           label="Endereço"
-          placeholder="Rua, número - bairro"
+          placeholder="Rua e número"
           error={errors.endereco?.message}
           {...register('endereco')}
+        />
+        <Input
+          label="Bairro"
+          placeholder="Ex: Centro, Meireles..."
+          error={errors.bairro?.message}
+          {...register('bairro')}
         />
         <Textarea
           label="Observação"

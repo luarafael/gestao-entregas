@@ -91,6 +91,16 @@ export function optimizeStopOrder(matrix: DistanceMatrix): number[] {
   return twoOptImprove(initial, matrix)
 }
 
+/** Matrix indices (1..n, depot=0) → parada array indices (0..n-1). */
+export function matrixOrderToParadaIndices(matrixOrder: number[]): number[] {
+  return matrixOrder.map((index) => index - 1)
+}
+
+/** Parada array indices (0..n-1) → matrix indices (1..n). */
+export function paradaIndicesToMatrixOrder(paradaOrder: number[]): number[] {
+  return paradaOrder.map((index) => index + 1)
+}
+
 export function haversineMeters(
   lat1: number,
   lon1: number,
@@ -147,6 +157,44 @@ export function summarizeRoute(
     distanciaTotal += distancia
     tempoTotal += tempo
     current = next
+  }
+
+  return { distanciaTotal, tempoTotal, legs }
+}
+
+function estimateLegMeters(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+): { distancia: number; tempo: number } {
+  const straight = haversineMeters(from.lat, from.lng, to.lat, to.lng)
+  const distancia = straight * 1.3
+  const tempo = Math.max(60, Math.round((distancia / 1000 / 30) * 3600))
+  return { distancia, tempo }
+}
+
+/** Fallback when some addresses could not be geocoded. */
+export function summarizeRouteFromCoords(
+  paradaOrder: number[],
+  origin: { lat: number; lng: number } | null,
+  coords: Array<{ lat: number; lng: number } | null>,
+): { distanciaTotal: number; tempoTotal: number; legs: Array<{ distancia: number; tempo: number }> } {
+  const legs: Array<{ distancia: number; tempo: number }> = []
+  let distanciaTotal = 0
+  let tempoTotal = 0
+  let previous = origin
+
+  for (const paradaIndex of paradaOrder) {
+    const next = coords[paradaIndex] ?? null
+    if (previous && next) {
+      const leg = estimateLegMeters(previous, next)
+      legs.push(leg)
+      distanciaTotal += leg.distancia
+      tempoTotal += leg.tempo
+      previous = next
+    } else {
+      legs.push({ distancia: 0, tempo: 0 })
+      if (next) previous = next
+    }
   }
 
   return { distanciaTotal, tempoTotal, legs }

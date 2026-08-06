@@ -63,6 +63,7 @@ export function PlannerPage() {
                 ...stop,
                 ...data,
                 cliente: data.cliente || null,
+                bairro: data.bairro || null,
                 observacao: data.observacao || null,
               }
             : stop,
@@ -75,6 +76,7 @@ export function PlannerPage() {
         createPlannerStop({
           cliente: data.cliente,
           endereco: data.endereco,
+          bairro: data.bairro,
           observacao: data.observacao,
           prioridade: data.prioridade,
         }),

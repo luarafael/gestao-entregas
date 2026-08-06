@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildHaversineMatrix,
+  matrixOrderToParadaIndices,
   nearestNeighborOrder,
   optimizeStopOrder,
+  paradaIndicesToMatrixOrder,
   summarizeRoute,
+  summarizeRouteFromCoords,
   twoOptImprove,
 } from '../utils/route-optimizer.js'
 
@@ -52,5 +55,33 @@ describe('route-optimizer', () => {
 
     expect(haversine.meters[0][1]).toBeGreaterThan(0)
     expect(haversine.seconds[0][1]).toBeGreaterThan(0)
+  })
+
+  it('converte índices da matriz para índices das paradas', () => {
+    const matrixOrder = optimizeStopOrder(matrix)
+    const paradaOrder = matrixOrderToParadaIndices(matrixOrder)
+    const summary = summarizeRoute(matrixOrder, matrix)
+
+    expect(paradaOrder.every((index) => index >= 0 && index < 3)).toBe(true)
+    expect(summary.distanciaTotal).toBeGreaterThan(0)
+    expect(summary.legs.every((leg) => leg.distancia > 0)).toBe(true)
+    expect(paradaIndicesToMatrixOrder(paradaOrder)).toEqual(matrixOrder)
+  })
+
+  it('calcula trechos parciais quando faltam coordenadas', () => {
+    const summary = summarizeRouteFromCoords(
+      [0, 1, 2],
+      { lat: -3.73, lng: -38.52 },
+      [
+        null,
+        { lat: -3.74, lng: -38.53 },
+        { lat: -3.75, lng: -38.54 },
+      ],
+    )
+
+    expect(summary.legs[0]?.distancia).toBe(0)
+    expect(summary.legs[1]?.distancia).toBeGreaterThan(0)
+    expect(summary.legs[2]?.distancia).toBeGreaterThan(0)
+    expect(summary.distanciaTotal).toBeGreaterThan(0)
   })
 })

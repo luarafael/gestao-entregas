@@ -4,6 +4,15 @@ function createTempId() {
   return `tmp_${Math.random().toString(36).slice(2, 10)}`
 }
 
+function splitEnderecoBairro(line: string): { endereco: string; bairro?: string } {
+  const trailingBairro = line.match(/^(.+?)\s+-\s+([^,-]+)$/)
+  if (!trailingBairro) return { endereco: line }
+  return {
+    endereco: trailingBairro[1]!.trim(),
+    bairro: trailingBairro[2]!.trim(),
+  }
+}
+
 /**
  * Interpreta blocos colados:
  * - "Nome\nEndereço"
@@ -28,9 +37,11 @@ export function parsePastedAddresses(raw: string): PlannerStop[] {
     if (lines.length === 0) continue
 
     if (lines.length === 1) {
+      const parsed = splitEnderecoBairro(lines[0]!)
       stops.push({
         tempId: createTempId(),
-        endereco: lines[0]!,
+        endereco: parsed.endereco,
+        bairro: parsed.bairro,
         prioridade: 'NORMAL' as PrioridadeParada,
       })
       continue
@@ -68,9 +79,11 @@ export function parsePastedAddresses(raw: string): PlannerStop[] {
       .filter(Boolean)
 
     for (const line of lines) {
+      const parsed = splitEnderecoBairro(line)
       stops.push({
         tempId: createTempId(),
-        endereco: line,
+        endereco: parsed.endereco,
+        bairro: parsed.bairro,
         prioridade: 'NORMAL',
       })
     }

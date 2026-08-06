@@ -8,11 +8,16 @@ import type {
 } from '../schemas/rota.schema.js'
 import {
   buildHaversineMatrix,
+  matrixOrderToParadaIndices,
   optimizeStopOrder,
+  paradaIndicesToMatrixOrder,
   summarizeRoute,
+  summarizeRouteFromCoords,
 } from '../utils/route-optimizer.js'
+import { formatRoutingAddress } from '../utils/geocoding.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { googleRoutesService } from './googleRoutes.service.js'
+import { osrmService } from './osrm.service.js'
 
 function buildSuggestions(params: {
   paradas: OptimizeRotaInput['paradas']
@@ -25,7 +30,7 @@ function buildSuggestions(params: {
 
   if (aproximada) {
     sugestoes.push(
-      'Rota aproximada: configure GOOGLE_MAPS_API_KEY para otimização com trânsito real.',
+      'Rota estimada em linha reta. Inclua bairro e cidade completos nos endereços para melhor precisão.',
     )
   }
 
@@ -58,12 +63,18 @@ function buildSuggestions(params: {
 
 export class RotaService {
   async optimize(input: OptimizeRotaInput) {
-    const addresses = input.paradas.map((parada) => parada.endereco)
+    const addresses = input.paradas.map((parada) => ({
+      endereco: parada.endereco,
+      bairro: parada.bairro,
+    }))
     let order: number[] = []
     let aproximada = true
     let polyline: string | undefined
     let matrix = null as ReturnType<typeof buildHaversineMatrix> | null
-    let coords: Array<{ lat: number; lng: number } | null> = []
+    let useCoordFallback = false
+
+    const originCoord = await googleRoutesService.geocode(input.enderecoInicial)
+    const coords = await googleRoutesService.geocodeMany(addresses)
 
     try {
       const googleMatrix = await googleRoutesService.computeRouteMatrix(
@@ -73,10 +84,12 @@ export class RotaService {
 
       if (googleMatrix) {
         matrix = googleMatrix
-        order = optimizeStopOrder(googleMatrix)
+        order = matrixOrderToParadaIndices(optimizeStopOrder(googleMatrix))
         aproximada = false
 
-        const orderedAddresses = order.map((index) => addresses[index]!)
+        const orderedAddresses = order.map((index) =>
+          formatRoutingAddress(addresses[index]!),
+        )
         const googleRoute = await googleRoutesService.computeOptimizedRoute(
           input.enderecoInicial,
           orderedAddresses,
@@ -87,21 +100,28 @@ export class RotaService {
       matrix = null
     }
 
-    const originCoord = await googleRoutesService.geocode(input.enderecoInicial)
-    coords = await Promise.all(
-      addresses.map((address) => googleRoutesService.geocode(address)),
-    )
-
     if (!matrix) {
       const points = [originCoord, ...coords]
       if (points.every((point) => point !== null)) {
-        matrix = buildHaversineMatrix(
-          points as Array<{ lat: number; lng: number }>,
-        )
-        order = optimizeStopOrder(matrix)
-        aproximada = true
+        const geocodedPoints = points as Array<{ lat: number; lng: number }>
+
+        try {
+          const osrmMatrix = await osrmService.computeRouteMatrix(geocodedPoints)
+          if (osrmMatrix) {
+            matrix = osrmMatrix
+            order = matrixOrderToParadaIndices(optimizeStopOrder(osrmMatrix))
+            aproximada = false
+          }
+        } catch {
+          matrix = null
+        }
+
+        if (!matrix) {
+          matrix = buildHaversineMatrix(geocodedPoints)
+          order = matrixOrderToParadaIndices(optimizeStopOrder(matrix))
+          aproximada = true
+        }
       } else {
-        // Sem coordenadas: ordem original (urgentes primeiro)
         order = input.paradas
           .map((_, index) => index)
           .sort((a, b) => {
@@ -109,15 +129,20 @@ export class RotaService {
             const pb = input.paradas[b]?.prioridade === 'URGENTE' ? 0 : 1
             return pa - pb
           })
-        matrix = {
-          meters: Array.from({ length: addresses.length + 1 }, () =>
-            Array(addresses.length + 1).fill(0),
-          ),
-          seconds: Array.from({ length: addresses.length + 1 }, () =>
-            Array(addresses.length + 1).fill(0),
-          ),
-        }
+        useCoordFallback = true
         aproximada = true
+      }
+    }
+
+    if (!polyline && originCoord) {
+      const routePoints = [
+        originCoord,
+        ...order
+          .map((index) => coords[index])
+          .filter((point): point is { lat: number; lng: number } => point !== null),
+      ]
+      if (routePoints.length >= 2) {
+        polyline = (await osrmService.computeRoutePolyline(routePoints)) ?? undefined
       }
     }
 
@@ -132,8 +157,9 @@ export class RotaService {
       // Mantém NN/2-opt; só sugere — não força reordenar se já otimizado por tempo
     }
 
-    const matrixOrder = order.map((index) => index + 1)
-    const summary = summarizeRoute(matrixOrder, matrix!)
+    const summary = useCoordFallback || !matrix
+      ? summarizeRouteFromCoords(order, originCoord, coords)
+      : summarizeRoute(paradaIndicesToMatrixOrder(order), matrix)
 
     const paradasOrdenadas = order.map((index, position) => {
       const parada = input.paradas[index]!
@@ -156,6 +182,19 @@ export class RotaService {
       aproximada,
       tempoTotal: summary.tempoTotal,
     })
+
+    if (!originCoord) {
+      sugestoes.push(
+        'Não foi possível localizar o endereço de partida no mapa. Verifique o endereço completo (bairro e cidade).',
+      )
+    }
+
+    const missingCoords = coords.filter((coord) => coord === null).length
+    if (missingCoords > 0) {
+      sugestoes.push(
+        `${missingCoords} entrega(s) não foram localizadas no mapa. Informe rua/número no endereço e o bairro no campo correspondente.`,
+      )
+    }
 
     return {
       enderecoInicial: input.enderecoInicial,
