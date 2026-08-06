@@ -27,7 +27,7 @@ export const usuarioRepository = {
         nome: input.nome.trim(),
         email: input.email.toLowerCase().trim(),
         senhaHash: input.senhaHash,
-        role: input.role ?? 'OPERADOR',
+        role: input.role ?? 'MOTOBOY',
       },
     })
   },

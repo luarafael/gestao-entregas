@@ -5,7 +5,7 @@ import { pendenciaRoutes } from './pendencia.routes.js'
 import { prestacaoRoutes } from './prestacao.routes.js'
 import { reportRoutes } from './report.routes.js'
 import { rotaRoutes } from './rota.routes.js'
-import { requireAuth } from '../middleware/auth.middleware.js'
+import { requireAuth, requireRole } from '../middleware/auth.middleware.js'
 
 export const apiRoutes = Router()
 
@@ -13,8 +13,8 @@ apiRoutes.use('/auth', authRoutes)
 
 apiRoutes.use(requireAuth)
 
+apiRoutes.use('/pendencias', requireRole('ADMIN'), pendenciaRoutes)
+apiRoutes.use('/prestacoes', requireRole('ADMIN'), prestacaoRoutes)
+apiRoutes.use('/reports', requireRole('ADMIN'), reportRoutes)
 apiRoutes.use('/entregas', entregaRoutes)
-apiRoutes.use('/pendencias', pendenciaRoutes)
-apiRoutes.use('/prestacoes', prestacaoRoutes)
-apiRoutes.use('/reports', reportRoutes)
 apiRoutes.use('/rotas', rotaRoutes)

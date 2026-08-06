@@ -19,6 +19,7 @@ import {
   formatRouteWhatsAppText,
 } from '../utils/whatsappRouteMessage'
 import type { RotaPlanejada } from '../schemas/routing.schema'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 
 interface HistoricoRotasProps {
   onLoadRoute: (rota: RotaPlanejada) => void
@@ -58,6 +59,7 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
   const historyQuery = useRouteHistory(page)
   const deleteMutation = useDeleteRoute()
   const duplicateMutation = useDuplicateRoute()
+  const canDelete = useIsAdmin()
 
   const items = historyQuery.data?.data ?? []
   const meta = historyQuery.data?.meta
@@ -140,14 +142,16 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
                       >
                         Duplicar
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        isLoading={deleteMutation.isPending}
-                        onClick={() => deleteMutation.mutate(rota.id)}
-                      >
-                        Excluir
-                      </Button>
+                      {canDelete ? (
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          isLoading={deleteMutation.isPending}
+                          onClick={() => deleteMutation.mutate(rota.id)}
+                        >
+                          Excluir
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                 </div>

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { requireRole } from '../middleware/auth.middleware.js'
 import {
   asyncHandler,
   getRouteParam,
@@ -63,6 +64,7 @@ rotaRoutes.get(
 
 rotaRoutes.put(
   '/config/endereco-partida',
+  requireRole('ADMIN'),
   validateBody(updateEnderecoPartidaSchema),
   asyncHandler(async (req, res) => {
     const result = await rotaService.setEnderecoPartidaPadrao(
@@ -141,6 +143,7 @@ rotaRoutes.post(
 
 rotaRoutes.delete(
   '/:id',
+  requireRole('ADMIN'),
   asyncHandler(async (req, res) => {
     await rotaService.delete(getRouteParam(req, 'id'))
     res.status(204).send()

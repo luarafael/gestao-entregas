@@ -1,6 +1,7 @@
 import { Button } from '@/shared/components/ui'
 import { cn } from '@/shared/utils/cn'
 import type { AuthUser } from '../schemas/auth.schema'
+import { getRoleLabel } from '../utils/permissions'
 import { UserAvatar } from './UserAvatar'
 
 interface UserProfilePanelProps {
@@ -37,6 +38,7 @@ export function UserProfilePanel({
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-foreground">{user.nome}</p>
           <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+          <p className="text-[11px] font-medium text-primary">{getRoleLabel(user.role)}</p>
         </div>
       </div>
 

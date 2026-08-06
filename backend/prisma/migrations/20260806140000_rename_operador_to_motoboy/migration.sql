@@ -1,0 +1,2 @@
+-- Renomeia perfil OPERADOR para MOTOBOY (Fase 2)
+ALTER TYPE "UsuarioRole" RENAME VALUE 'OPERADOR' TO 'MOTOBOY';

@@ -6,10 +6,12 @@ import {
   useEnderecoPartida,
   useUpdateEnderecoPartida,
 } from '../hooks/useRouting'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 
 export function EnderecoInicial() {
   const { data, isLoading } = useEnderecoPartida()
   const updateEndereco = useUpdateEnderecoPartida()
+  const canEdit = useIsAdmin()
   const enderecoInicial =
     data?.enderecoPartidaPadrao ?? DEFAULT_START_ADDRESS
   const [editing, setEditing] = useState(false)
@@ -79,16 +81,18 @@ export function EnderecoInicial() {
         ) : (
           <>
             <p className="text-sm text-foreground">{enderecoInicial}</p>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setDraft(enderecoInicial)
-                setEditing(true)
-              }}
-            >
-              Alterar endereço padrão
-            </Button>
+            {canEdit ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setDraft(enderecoInicial)
+                  setEditing(true)
+                }}
+              >
+                Alterar endereço padrão
+              </Button>
+            ) : null}
           </>
         )}
       </CardContent>

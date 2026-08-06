@@ -4,7 +4,7 @@ import { env } from '../config/env.js'
 export interface AuthTokenPayload {
   sub: string
   email: string
-  role: 'ADMIN' | 'OPERADOR'
+  role: 'ADMIN' | 'MOTOBOY'
   nome: string
 }
 

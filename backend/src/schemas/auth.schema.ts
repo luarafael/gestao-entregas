@@ -11,7 +11,7 @@ export const usuarioPublicSchema = z.object({
   id: z.string(),
   nome: z.string(),
   email: z.string().email(),
-  role: z.enum(['ADMIN', 'OPERADOR']),
+  role: z.enum(['ADMIN', 'MOTOBOY']),
 })
 
 export type UsuarioPublic = z.infer<typeof usuarioPublicSchema>

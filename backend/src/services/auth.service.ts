@@ -8,7 +8,7 @@ function toPublicUser(user: {
   id: string
   nome: string
   email: string
-  role: 'ADMIN' | 'OPERADOR'
+  role: 'ADMIN' | 'MOTOBOY'
 }) {
   return {
     id: user.id,

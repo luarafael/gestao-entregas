@@ -8,6 +8,14 @@ import {
 import { authService } from '../services/auth.service'
 import type { AuthUser } from '../schemas/auth.schema'
 
+function normalizeUser(user: AuthUser): AuthUser {
+  if ((user.role as string) === 'OPERADOR') {
+    return { ...user, role: 'MOTOBOY' }
+  }
+
+  return user
+}
+
 interface AuthState {
   user: AuthUser | null
   token: string | null
@@ -29,7 +37,7 @@ export const useAuthStore = create<AuthState>()(
 
       setSession: (token, user) => {
         setAccessToken(token)
-        set({ token, user })
+        set({ token, user: normalizeUser(user) })
       },
 
       clearSession: () => {
@@ -59,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const user = await authService.me()
-          set({ token, user })
+          set({ token, user: normalizeUser(user) })
           return true
         } catch {
           get().clearSession()

@@ -1,12 +1,22 @@
 import type { NextFunction, Request, Response } from 'express'
-import { UnauthorizedError } from '../errors/app.error.js'
+import { ForbiddenError, UnauthorizedError } from '../errors/app.error.js'
 import { verifyAuthToken, type AuthTokenPayload } from '../utils/jwt.utils.js'
+
+export type UserRole = AuthTokenPayload['role']
 
 export interface AuthenticatedUser {
   id: string
   email: string
-  role: AuthTokenPayload['role']
+  role: UserRole
   nome: string
+}
+
+function normalizeRole(role: string): UserRole {
+  if (role === 'OPERADOR') {
+    return 'MOTOBOY'
+  }
+
+  return role as UserRole
 }
 
 function extractBearerToken(req: Request): string | null {
@@ -26,7 +36,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
     req.user = {
       id: payload.sub,
       email: payload.email,
-      role: payload.role,
+      role: normalizeRole(payload.role),
       nome: payload.nome,
     }
     next()
@@ -39,7 +49,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
   }
 }
 
-export function requireRole(...roles: AuthenticatedUser['role'][]) {
+export function requireRole(...roles: UserRole[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
       next(new UnauthorizedError('Usuário não autenticado'))
@@ -47,7 +57,7 @@ export function requireRole(...roles: AuthenticatedUser['role'][]) {
     }
 
     if (!roles.includes(req.user.role)) {
-      next(new UnauthorizedError('Permissão insuficiente'))
+      next(new ForbiddenError())
       return
     }
 

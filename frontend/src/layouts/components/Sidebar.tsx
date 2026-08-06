@@ -11,18 +11,29 @@ import {
 import { cn } from '@/shared/utils/cn'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import { UserProfilePanel } from '@/features/auth/components/UserProfilePanel'
+import type { UserRole } from '@/features/auth/schemas/auth.schema'
 
 const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'Sistema Rotas'
 const APP_SUBTITLE =
   import.meta.env.VITE_APP_SUBTITLE ?? 'Gestão de entregas'
 
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: IconHome },
-  { to: '/entregas', label: 'Entregas', icon: IconPackage },
-  { to: '/pendencias', label: 'Pendências', icon: IconClock },
-  { to: '/prestacao', label: 'Prestação', icon: IconReceipt },
-  { to: '/relatorios', label: 'Relatórios', icon: IconChart },
-  { to: '/planejador', label: 'Planejador de Rotas', icon: IconRoute },
+const navItems: Array<{
+  to: string
+  label: string
+  icon: typeof IconHome
+  roles: UserRole[]
+}> = [
+  { to: '/', label: 'Dashboard', icon: IconHome, roles: ['ADMIN'] },
+  { to: '/entregas', label: 'Entregas', icon: IconPackage, roles: ['ADMIN', 'MOTOBOY'] },
+  { to: '/pendencias', label: 'Pendências', icon: IconClock, roles: ['ADMIN'] },
+  { to: '/prestacao', label: 'Prestação', icon: IconReceipt, roles: ['ADMIN'] },
+  { to: '/relatorios', label: 'Relatórios', icon: IconChart, roles: ['ADMIN'] },
+  {
+    to: '/planejador',
+    label: 'Planejador de Rotas',
+    icon: IconRoute,
+    roles: ['ADMIN', 'MOTOBOY'],
+  },
 ]
 
 interface SidebarProps {
@@ -39,6 +50,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
     onNavigate?.()
     navigate('/login', { replace: true })
   }
+
+  const visibleNavItems = navItems.filter((item) =>
+    user ? item.roles.includes(user.role) : false,
+  )
 
   return (
     <aside className="flex h-full flex-col border-r border-border/60 bg-card/40 backdrop-blur-xl">
@@ -57,7 +72,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </div>
 
       <nav className="flex-1 space-y-1 p-3">
-        {navItems.map((item) => (
+        {visibleNavItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

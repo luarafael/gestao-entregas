@@ -3,6 +3,7 @@ import { IconPackage } from '@/shared/components/icons'
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
 import type { Entrega } from '@/shared/types/api.types'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 
 interface DeliveryTableProps {
   deliveries: Entrega[]
@@ -19,6 +20,8 @@ export function DeliveryTable({
   onEdit,
   onDelete,
 }: DeliveryTableProps) {
+  const canDelete = useIsAdmin()
+
   return (
     <DataTable
       data={deliveries}
@@ -78,13 +81,15 @@ export function DeliveryTable({
               <Button variant="ghost" size="sm" onClick={() => onEdit(delivery)}>
                 Editar
               </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => onDelete(delivery)}
-              >
-                Excluir
-              </Button>
+              {canDelete ? (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => onDelete(delivery)}
+                >
+                  Excluir
+                </Button>
+              ) : null}
             </div>
           ),
         },

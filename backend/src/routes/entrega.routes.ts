@@ -6,6 +6,7 @@ import {
   validateBody,
   validateQuery,
 } from '../middleware/index.js'
+import { requireRole } from '../middleware/auth.middleware.js'
 import {
   createEntregaSchema,
   dashboardStatsQuerySchema,
@@ -20,6 +21,7 @@ export const entregaRoutes = Router()
 
 entregaRoutes.get(
   '/stats',
+  requireRole('ADMIN'),
   validateQuery(dashboardStatsQuerySchema),
   asyncHandler(async (req, res) => {
     const { data } = getValidatedQuery<DashboardStatsQuery>(req)
@@ -65,6 +67,7 @@ entregaRoutes.put(
 
 entregaRoutes.delete(
   '/:id',
+  requireRole('ADMIN'),
   asyncHandler(async (req, res) => {
     await entregaService.delete(getRouteParam(req, 'id'))
     res.status(204).send()
