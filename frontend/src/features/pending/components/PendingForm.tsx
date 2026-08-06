@@ -68,18 +68,18 @@ export function PendingForm({
   })
 
   return (
-    <Card glass className="h-fit">
+    <Card glass className="h-fit min-w-0 w-full max-w-full">
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="text-base leading-snug sm:text-lg">
           {editingPending
             ? 'Editar pendência'
             : isAdmin
               ? 'Nova pendência'
-              : 'Repasse pendente com o admin'}
+              : 'Repasse pendente'}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+      <CardContent className="min-w-0">
+        <form onSubmit={handleFormSubmit} className="min-w-0 space-y-4">
           <Input
             label="Descrição"
             placeholder="Ex: Pagamento pendente do dia 12/07"
@@ -100,6 +100,7 @@ export function PendingForm({
           <Input
             label="Referente ao dia"
             type="date"
+            className="min-w-0 max-w-full"
             error={errors.referenteAoDia?.message}
             {...register('referenteAoDia')}
           />
@@ -123,12 +124,21 @@ export function PendingForm({
             </div>
           ) : null}
 
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button type="submit" isLoading={isSubmitting} className="flex-1 sm:flex-none">
-              {editingPending ? 'Atualizar Pendência' : 'Salvar Pendência'}
+          <div className="flex flex-col items-stretch gap-2 pt-2 sm:flex-row sm:items-center">
+            <Button
+              type="submit"
+              isLoading={isSubmitting}
+              className="w-full sm:w-auto"
+            >
+              {editingPending ? 'Atualizar' : 'Salvar'}
             </Button>
             {editingPending ? (
-              <Button type="button" variant="ghost" onClick={onCancelEdit}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onCancelEdit}
+                className="w-full sm:w-auto"
+              >
                 Cancelar
               </Button>
             ) : null}

@@ -17,7 +17,7 @@ describe('PendingForm', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Salvar Pendência' }))
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
 
     expect(await screen.findByText('Descrição é obrigatória')).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()

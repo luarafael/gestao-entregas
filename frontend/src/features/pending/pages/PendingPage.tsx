@@ -73,7 +73,7 @@ export function PendingPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 max-w-full">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Pendências</h2>
         <p className="text-sm text-muted-foreground">
@@ -83,7 +83,7 @@ export function PendingPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <PendingForm
           editingPending={editingPending}
           onSubmit={handleSubmit}
@@ -91,7 +91,7 @@ export function PendingPage() {
           isSubmitting={createMutation.isPending || updateMutation.isPending}
         />
 
-        <div className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
+        <div className="min-w-0 space-y-4 overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-4 backdrop-blur-xl sm:p-5">
           <PendingFiltersBar
             filters={filters}
             onSearchChange={(search) => updateFilters({ search, page: 1 })}
