@@ -115,6 +115,20 @@ export function getStopStatus(stop: PlannerStop): StatusExecucao {
   return stop.statusExecucao ?? 'PENDENTE'
 }
 
+export function isAllStopsDelivered(stops: PlannerStop[]): boolean {
+  return stops.length > 0 && stops.every((stop) => getStopStatus(stop) === 'ENTREGUE')
+}
+
+export function sumStopRouteMetrics(stops: PlannerStop[]) {
+  return stops.reduce(
+    (acc, stop) => ({
+      distancia: acc.distancia + (stop.distancia ?? 0),
+      tempo: acc.tempo + (stop.tempo ?? 0),
+    }),
+    { distancia: 0, tempo: 0 },
+  )
+}
+
 export function computeExecutionStats(stops: PlannerStop[]) {
   const total = stops.length
   let pendentes = 0

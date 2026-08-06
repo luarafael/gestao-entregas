@@ -49,7 +49,9 @@ import {
   getNextStop,
   getStopStatus,
   isActiveRouteStop,
+  isAllStopsDelivered,
   mergeStopsWithStatus,
+  sumStopRouteMetrics,
   withDefaultStatus,
   type ExecucaoHistoricoItem,
 } from '../utils/executionStatus'
@@ -88,13 +90,23 @@ export function PlannerPage() {
 
   const progressWhatsappText = useMemo(() => {
     if (!result) return ''
+    const metrics = sumStopRouteMetrics(displayStops)
     return formatRouteProgressWhatsAppText({
       stops: displayStops,
+      enderecoInicial: result.enderecoInicial,
+      distanciaTotal: metrics.distancia || result.distanciaTotal,
+      tempoTotal: metrics.tempo || result.tempoTotal,
+      aproximada: result.aproximada,
       distanciaRestante: result.distanciaTotal,
       tempoRestante: result.tempoTotal,
       data: new Date().toISOString(),
     })
   }, [displayStops, result])
+
+  const routeCompleted = useMemo(
+    () => isAllStopsDelivered(displayStops),
+    [displayStops],
+  )
 
   const nextStop = useMemo(
     () => (result ? getNextStop(displayStops) : null),
@@ -583,14 +595,22 @@ export function PlannerPage() {
                 <Card glass>
                   <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
                     <div>
-                      <p className="font-medium">Andamento da rota</p>
+                      <p className="font-medium">
+                        {routeCompleted
+                          ? 'Rota concluída'
+                          : 'Andamento da rota'}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        Compartilhe o progresso das entregas em tempo real.
+                        {routeCompleted
+                          ? 'Compartilhe o resumo final com todas as entregas, km e tempos.'
+                          : 'Compartilhe o progresso das entregas em tempo real.'}
                       </p>
                     </div>
                     <Button variant="secondary" onClick={handleSendProgressWhatsApp}>
                       <IconWhatsApp className="mr-2 size-4" />
-                      Compartilhar andamento da rota
+                      {routeCompleted
+                        ? 'Compartilhar rota concluída'
+                        : 'Compartilhar andamento da rota'}
                     </Button>
                   </CardContent>
                 </Card>

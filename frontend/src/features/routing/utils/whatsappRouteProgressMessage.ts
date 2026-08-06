@@ -1,10 +1,14 @@
-import { formatDateBR } from '@/shared/utils/format'
+import { formatCurrency } from '@/shared/utils/cn'
+import { formatDateBR, formatTimeBR } from '@/shared/utils/format'
 import { WA } from '@/features/accounting/utils/whatsappEmoji'
+import { formatUrgentLabel } from './urgentPriority'
 import { formatDistance, formatDuration } from './googleMapsUrl'
 import {
   computeExecutionStats,
   getStopStatus,
+  isAllStopsDelivered,
   isProblemStatus,
+  sumStopRouteMetrics,
   STATUS_LABELS,
   type StatusExecucao,
 } from './executionStatus'
@@ -12,6 +16,10 @@ import type { PlannerStop } from '../schemas/routing.schema'
 
 export interface RouteProgressWhatsAppInput {
   data?: string
+  enderecoInicial?: string
+  distanciaTotal?: number
+  tempoTotal?: number
+  aproximada?: boolean
   stops: PlannerStop[]
   distanciaRestante?: number
   tempoRestante?: number
@@ -39,9 +47,125 @@ function formatStopLine(stop: PlannerStop): string {
   return stop.cliente?.trim() || stop.endereco
 }
 
+function formatStopAddress(stop: PlannerStop): string {
+  if (
+    stop.bairro &&
+    !stop.endereco.toLowerCase().includes(stop.bairro.toLowerCase())
+  ) {
+    return `${stop.endereco} — ${stop.bairro}`
+  }
+  return stop.endereco
+}
+
+function formatDeliveredAt(stop: PlannerStop): string | null {
+  if (!stop.statusAtualizadoEm) return null
+  return `${formatDateBR(stop.statusAtualizadoEm)} às ${formatTimeBR(stop.statusAtualizadoEm)}`
+}
+
+export function formatRouteCompletedWhatsAppText(
+  input: RouteProgressWhatsAppInput,
+): string {
+  const stats = computeExecutionStats(input.stops)
+  const metrics = sumStopRouteMetrics(input.stops)
+  const distanciaTotal = input.distanciaTotal ?? metrics.distancia
+  const tempoTotal = input.tempoTotal ?? metrics.tempo
+  const dataLabel = input.data
+    ? formatDateBR(input.data)
+    : formatDateBR(new Date().toISOString())
+
+  const valorTotal = input.stops.reduce(
+    (sum, stop) => sum + (stop.valorEntrega != null ? Number(stop.valorEntrega) : 0),
+    0,
+  )
+
+  const ordered = [...input.stops].sort(
+    (a, b) => (a.ordem ?? 0) - (b.ordem ?? 0),
+  )
+
+  const lines: string[] = [
+    `${WA.check} *Rota concluída*`,
+    '',
+    `📅 Data: ${dataLabel}`,
+  ]
+
+  if (input.enderecoInicial?.trim()) {
+    lines.push('', `${WA.pin} *Partida:*`, input.enderecoInicial.trim())
+  }
+
+  lines.push(
+    '',
+    '━━━━━━━━━━━━━━',
+    '',
+    `${WA.chart} *Resumo final*`,
+    '',
+    `${WA.package} Total de entregas: ${stats.total}`,
+    `${WA.check} Entregues: ${stats.entregues}`,
+    `${WA.chart} Distância total: ${formatDistance(distanciaTotal)}${input.aproximada ? ' _(aproximada)_' : ''}`,
+    `${WA.clock} Tempo total: ${formatDuration(tempoTotal)}`,
+  )
+
+  if (valorTotal > 0) {
+    lines.push(`${WA.money} Valor das entregas: ${formatCurrency(valorTotal)}`)
+  }
+
+  lines.push('', '━━━━━━━━━━━━━━', '', `✅ *Entregas realizadas*`, '')
+
+  for (const stop of ordered) {
+    const ordem = stop.ordem ?? 0
+    const prioridade =
+      stop.prioridade === 'URGENTE'
+        ? ` — _${formatUrgentLabel(stop.ordemUrgencia)}_`
+        : ''
+
+    lines.push(`${ordem}. ${formatStopLine(stop)}${prioridade}`)
+    lines.push(`   ${formatStopAddress(stop)}`)
+
+    if (stop.telefone?.trim()) {
+      lines.push(`   📞 ${stop.telefone.trim()}`)
+    }
+
+    const entregueEm = formatDeliveredAt(stop)
+    if (entregueEm) {
+      lines.push(`   ${WA.check} Entregue em ${entregueEm}`)
+    } else {
+      lines.push(`   ${WA.check} Entregue`)
+    }
+
+    if (stop.distancia != null && stop.tempo != null) {
+      lines.push(
+        `   ${WA.clock} Trecho: ${formatDistance(stop.distancia)} · ${formatDuration(stop.tempo)}`,
+      )
+    }
+
+    if (stop.valorEntrega != null && Number(stop.valorEntrega) > 0) {
+      lines.push(`   ${WA.money} ${formatCurrency(Number(stop.valorEntrega))}`)
+    }
+
+    if (stop.observacao?.trim()) {
+      lines.push(`   ${WA.memo} ${stop.observacao.trim()}`)
+    }
+
+    lines.push('')
+  }
+
+  lines.push(
+    '━━━━━━━━━━━━━━',
+    '',
+    `${WA.thanks} Todas as entregas foram concluídas com sucesso!`,
+    '',
+    'Mensagem gerada automaticamente pelo Planejador de Rotas.',
+  )
+
+  return lines.join('\n')
+}
+
 export function formatRouteProgressWhatsAppText(
   input: RouteProgressWhatsAppInput,
 ): string {
+  if (isAllStopsDelivered(input.stops)) {
+    return formatRouteCompletedWhatsAppText(input)
+  }
+
   const stats = computeExecutionStats(input.stops)
   const groups = groupByStatus(input.stops)
   const dataLabel = input.data

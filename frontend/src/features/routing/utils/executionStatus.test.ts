@@ -4,6 +4,7 @@ import {
   getNextStop,
   getActiveStopsForRoute,
   isProblemStatus,
+  isAllStopsDelivered,
 } from './executionStatus'
 import type { PlannerStop } from '../schemas/routing.schema'
 
@@ -58,5 +59,20 @@ describe('executionStatus', () => {
   it('identifica status de problema', () => {
     expect(isProblemStatus('CLIENTE_AUSENTE')).toBe(true)
     expect(isProblemStatus('ENTREGUE')).toBe(false)
+  })
+
+  it('identifica quando todas as paradas foram entregues', () => {
+    expect(
+      isAllStopsDelivered([
+        baseStop({ statusExecucao: 'ENTREGUE' }),
+        baseStop({ tempId: '2', statusExecucao: 'ENTREGUE' }),
+      ]),
+    ).toBe(true)
+    expect(
+      isAllStopsDelivered([
+        baseStop({ statusExecucao: 'ENTREGUE' }),
+        baseStop({ tempId: '2', statusExecucao: 'PENDENTE' }),
+      ]),
+    ).toBe(false)
   })
 })
