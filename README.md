@@ -180,6 +180,9 @@ No deploy, o container executa automaticamente:
 
 Após o deploy, acesse o frontend e faça login com `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
+**Runbook completo para novo cliente:** [docs/operacao/deploy-cliente.md](docs/operacao/deploy-cliente.md)  
+**Template de variáveis:** [.env.cliente.example](.env.cliente.example)
+
 ---
 
 ## API (resumo)
