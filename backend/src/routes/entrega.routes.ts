@@ -11,9 +11,11 @@ import {
   createEntregaSchema,
   dashboardStatsQuerySchema,
   listEntregasSchema,
+  monitoramentoQuerySchema,
   updateEntregaSchema,
   type DashboardStatsQuery,
   type ListEntregasInput,
+  type MonitoramentoQuery,
 } from '../schemas/entrega.schema.js'
 import { entregaService } from '../services/entrega.service.js'
 
@@ -36,10 +38,13 @@ entregaRoutes.get(
 entregaRoutes.get(
   '/monitoramento',
   requireRole('ADMIN'),
-  validateQuery(dashboardStatsQuerySchema),
+  validateQuery(monitoramentoQuerySchema),
   asyncHandler(async (req, res) => {
-    const { data } = getValidatedQuery<DashboardStatsQuery>(req)
-    const monitoramento = await entregaService.getMonitoramento(data)
+    const query = getValidatedQuery<MonitoramentoQuery>(req)
+    const monitoramento = await entregaService.getMonitoramento(
+      query.data,
+      query.motoboyId,
+    )
     res.json(monitoramento)
   }),
 )

@@ -12,6 +12,17 @@ export const dashboardStatsQuerySchema = z.object({
 
 export type DashboardStatsQuery = z.infer<typeof dashboardStatsQuerySchema>
 
+export const monitoramentoQuerySchema = z.object({
+  data: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida')
+    .optional()
+    .transform((value) => (value ? toUtcDateOnly(value) : undefined)),
+  motoboyId: z.string().trim().min(1, 'Selecione um motoboy'),
+})
+
+export type MonitoramentoQuery = z.infer<typeof monitoramentoQuerySchema>
+
 const entregaBaseSchema = z.object({
   nomeCliente: z.string().trim().optional(),
   endereco: z.string().trim().min(1, 'Endereço é obrigatório'),

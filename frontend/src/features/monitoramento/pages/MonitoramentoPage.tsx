@@ -6,6 +6,10 @@ import {
   StatCardSkeleton,
 } from '@/shared/components/ui'
 import { IconEye, IconRoute } from '@/shared/components/icons'
+import {
+  MotoboySelect,
+  type MotoboySelectValue,
+} from '@/shared/components/MotoboySelect'
 import { formatDateBR, formatTimeBR } from '@/shared/utils/format'
 import { getTodayInputDate } from '@/features/accounting/schemas/prestacao.schema'
 import { useMonitoramento } from '../hooks/useMonitoramento'
@@ -14,7 +18,10 @@ import { MonitoramentoHistoricoSection } from '../components/MonitoramentoHistor
 
 export function MonitoramentoPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayInputDate())
-  const monitoramentoQuery = useMonitoramento(selectedDate)
+  const [motoboyFilter, setMotoboyFilter] = useState<MotoboySelectValue>('')
+  const motoboyId = motoboyFilter || undefined
+
+  const monitoramentoQuery = useMonitoramento(selectedDate, motoboyId)
   const monitoramento = monitoramentoQuery.data
 
   const hasRotasAtivas = (monitoramento?.rotas.length ?? 0) > 0
@@ -29,22 +36,37 @@ export function MonitoramentoPage() {
             Monitoramento
           </h2>
           <p className="text-sm text-muted-foreground">
-            Acompanhe em tempo real apenas a rota em andamento. Rotas concluídas
-            vão para o histórico do dia.
+            Selecione um motoboy para acompanhar a corrida em tempo real. Sem
+            visão geral consolidada.
           </p>
         </div>
 
-        <div className="w-full sm:w-56">
-          <Input
-            label="Data"
-            type="date"
-            value={selectedDate}
-            onChange={(event) => setSelectedDate(event.target.value)}
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
+          <MotoboySelect
+            id="monitoramento-motoboy"
+            value={motoboyFilter}
+            onChange={setMotoboyFilter}
+            allowAll={false}
+            label="Motoboy"
           />
+          <div className="w-full sm:w-56">
+            <Input
+              label="Data"
+              type="date"
+              value={selectedDate}
+              onChange={(event) => setSelectedDate(event.target.value)}
+            />
+          </div>
         </div>
       </div>
 
-      {monitoramentoQuery.isLoading ? (
+      {!motoboyId ? (
+        <EmptyState
+          icon={<IconEye className="size-6" />}
+          title="Selecione um motoboy"
+          description="O monitoramento é individual. Escolha o funcionário para ver a rota em andamento."
+        />
+      ) : monitoramentoQuery.isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
             <StatCardSkeleton key={index} />
@@ -102,7 +124,7 @@ export function MonitoramentoPage() {
               title="Nenhuma rota em execução"
               description={
                 monitoramento?.data
-                  ? `Nenhuma corrida ativa em ${formatDateBR(monitoramento.data)}. Quando o motoboy iniciar uma rota, ela aparecerá aqui.`
+                  ? `Nenhuma corrida ativa deste motoboy em ${formatDateBR(monitoramento.data)}.`
                   : 'Nenhuma corrida ativa para a data selecionada.'
               }
             />
@@ -118,7 +140,7 @@ export function MonitoramentoPage() {
                 <EmptyState
                   icon={<IconRoute className="size-6" />}
                   title="Nenhuma corrida ativa agora"
-                  description="Todas as rotas do dia já foram concluídas. Veja o histórico abaixo."
+                  description="Todas as rotas deste motoboy no dia já foram concluídas. Veja o histórico abaixo."
                 />
               )}
 

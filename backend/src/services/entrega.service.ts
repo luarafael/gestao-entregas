@@ -137,8 +137,8 @@ export class EntregaService {
     return entregaRepository.findByDate(day, motoboyId)
   }
 
-  async getMonitoramento(reference?: Date | string) {
-    return monitoramentoService.getMonitoramento(reference)
+  async getMonitoramento(reference?: Date | string, motoboyId?: string) {
+    return monitoramentoService.getMonitoramento(reference, motoboyId)
   }
 }
 

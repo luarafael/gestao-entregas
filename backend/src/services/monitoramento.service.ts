@@ -194,7 +194,7 @@ export interface MonitoramentoRotaHistorico extends MonitoramentoRota {
 }
 
 export class MonitoramentoService {
-  async getMonitoramento(reference?: Date | string) {
+  async getMonitoramento(reference?: Date | string, motoboyId?: string) {
     const day =
       reference === undefined
         ? toUtcDateOnlyFromBusinessTz()
@@ -244,6 +244,10 @@ export class MonitoramentoService {
       })
 
       const rotaMonitoramento = buildMonitoramentoRota(rota, paradas, entregaMap)
+
+      if (motoboyId && rotaMonitoramento.motoboyId !== motoboyId) {
+        continue
+      }
 
       if (isRotaEmExecucao(paradas)) {
         rotasAtivas.push(rotaMonitoramento)

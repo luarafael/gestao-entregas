@@ -205,4 +205,90 @@ describe('MonitoramentoService', () => {
     expect(result.resumo.totalRotas).toBe(1)
     expect(result.resumo.rotasConcluidas).toBe(1)
   })
+
+  it('filtra monitoramento por motoboy', async () => {
+    rotaRepository.findByDate.mockResolvedValue([
+      {
+        id: 'rota-joao',
+        enderecoInicial: 'Depósito',
+        distanciaTotal: 1000,
+        tempoTotal: 300,
+        paradas: [
+          {
+            id: 'p1',
+            ordem: 1,
+            entregaId: 'e1',
+            cliente: 'A',
+            endereco: 'Rua A',
+            bairro: 'Centro',
+            telefone: null,
+            observacao: null,
+            distancia: 1000,
+            tempo: 300,
+          },
+        ],
+      },
+      {
+        id: 'rota-maria',
+        enderecoInicial: 'Depósito',
+        distanciaTotal: 2000,
+        tempoTotal: 600,
+        paradas: [
+          {
+            id: 'p2',
+            ordem: 1,
+            entregaId: 'e2',
+            cliente: 'B',
+            endereco: 'Rua B',
+            bairro: 'Jardim',
+            telefone: null,
+            observacao: null,
+            distancia: 2000,
+            tempo: 600,
+          },
+        ],
+      },
+    ])
+
+    rotaExecucaoRepository.findByRotaId.mockImplementation(async (rotaId: string) => {
+      if (rotaId === 'rota-joao') {
+        return [
+          {
+            paradaId: 'p1',
+            status: 'EM_ROTA',
+            observacao: null,
+            dataHoraStatus: new Date('2026-08-05T14:00:00Z'),
+          },
+        ]
+      }
+
+      return [
+        {
+          paradaId: 'p2',
+          status: 'EM_ROTA',
+          observacao: null,
+          dataHoraStatus: new Date('2026-08-05T14:00:00Z'),
+        },
+      ]
+    })
+
+    entregaRepository.findAllByDate.mockResolvedValue([
+      {
+        id: 'e1',
+        motoboyId: 'm1',
+        motoboy: { id: 'm1', nome: 'João' },
+      },
+      {
+        id: 'e2',
+        motoboyId: 'm2',
+        motoboy: { id: 'm2', nome: 'Maria' },
+      },
+    ])
+
+    const result = await service.getMonitoramento('2026-08-05', 'm1')
+
+    expect(result.rotas).toHaveLength(1)
+    expect(result.rotas[0]?.rotaId).toBe('rota-joao')
+    expect(result.rotas[0]?.motoboyNome).toBe('João')
+  })
 })
