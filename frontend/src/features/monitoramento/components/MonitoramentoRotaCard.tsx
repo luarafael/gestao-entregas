@@ -72,7 +72,7 @@ function ProximaParadaHighlight({
   const isEmRota = proxima.status === 'EM_ROTA'
 
   return (
-    <div className="rounded-2xl border border-blue-500/40 bg-gradient-to-br from-blue-500/15 to-blue-500/5 p-4">
+    <div className="rounded-2xl border border-blue-500/40 bg-linear-to-br from-blue-500/15 to-blue-500/5 p-4">
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-300">
         <IconMapPin className="size-3.5" />
         {isPlanejada
@@ -237,7 +237,7 @@ export function MonitoramentoRotaCard({ rota }: { rota: MonitoramentoRota }) {
         <div className="mt-4 space-y-2">
           <div className="h-2.5 overflow-hidden rounded-full bg-surface/60">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-500"
+              className="h-full rounded-full bg-linear-to-r from-emerald-600 to-emerald-400 transition-all duration-500"
               style={{ width: `${Math.max(rota.stats.percentual, 4)}%` }}
             />
           </div>
