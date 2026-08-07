@@ -13,6 +13,7 @@ import {
   type ReportSummaryQuery,
 } from '../schemas/report.schema.js'
 import { reportService } from '../services/report.service.js'
+import { resolveMotoboyScope } from '../utils/auth-scope.utils.js'
 
 export const reportRoutes = Router()
 
@@ -20,9 +21,11 @@ reportRoutes.get(
   '/summary',
   validateQuery(reportSummaryQuerySchema),
   asyncHandler(async (req, res) => {
-    const summary = await reportService.getSummary(
-      getValidatedQuery<ReportSummaryQuery>(req),
-    )
+    const query = getValidatedQuery<ReportSummaryQuery>(req)
+    const summary = await reportService.getSummary({
+      ...query,
+      motoboyId: resolveMotoboyScope(req.user!, query.motoboyId),
+    })
     res.json(summary)
   }),
 )
@@ -31,9 +34,11 @@ reportRoutes.get(
   '/daily-breakdown',
   validateQuery(reportDailyBreakdownQuerySchema),
   asyncHandler(async (req, res) => {
-    const breakdown = await reportService.getPeriodDailyBreakdown(
-      getValidatedQuery<ReportDailyBreakdownQuery>(req),
-    )
+    const query = getValidatedQuery<ReportDailyBreakdownQuery>(req)
+    const breakdown = await reportService.getPeriodDailyBreakdown({
+      ...query,
+      motoboyId: resolveMotoboyScope(req.user!, query.motoboyId),
+    })
     res.json(breakdown)
   }),
 )
@@ -42,9 +47,11 @@ reportRoutes.get(
   '/by-neighborhood',
   validateQuery(reportNeighborhoodQuerySchema),
   asyncHandler(async (req, res) => {
-    const data = await reportService.getByNeighborhood(
-      getValidatedQuery<ReportNeighborhoodQuery>(req),
-    )
+    const query = getValidatedQuery<ReportNeighborhoodQuery>(req)
+    const data = await reportService.getByNeighborhood({
+      ...query,
+      motoboyId: resolveMotoboyScope(req.user!, query.motoboyId),
+    })
     res.json(data)
   }),
 )
@@ -53,9 +60,11 @@ reportRoutes.get(
   '/prestacao-trend',
   validateQuery(reportSummaryQuerySchema),
   asyncHandler(async (req, res) => {
-    const trend = await reportService.getPrestacaoTrend(
-      getValidatedQuery<ReportSummaryQuery>(req),
-    )
+    const query = getValidatedQuery<ReportSummaryQuery>(req)
+    const trend = await reportService.getPrestacaoTrend({
+      ...query,
+      motoboyId: resolveMotoboyScope(req.user!, query.motoboyId),
+    })
     res.json(trend)
   }),
 )

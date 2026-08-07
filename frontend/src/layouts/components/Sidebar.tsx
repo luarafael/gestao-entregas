@@ -26,7 +26,7 @@ const navItems: Array<{
   icon: typeof IconHome
   roles: UserRole[]
 }> = [
-  { to: '/', label: 'Dashboard', icon: IconHome, roles: ['ADMIN'] },
+  { to: '/', label: 'Dashboard', icon: IconHome, roles: ['ADMIN', 'MOTOBOY'] },
   { to: '/meu-dia', label: 'Meu dia', icon: IconTrending, roles: ['MOTOBOY'] },
   { to: '/minha-prestacao', label: 'Minha prestação', icon: IconReceipt, roles: ['MOTOBOY'] },
   { to: '/motoboys', label: 'Motoboys', icon: IconUsers, roles: ['ADMIN'] },

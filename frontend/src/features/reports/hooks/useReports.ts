@@ -14,7 +14,11 @@ function withMotoboyParam(url: string, motoboyId?: string) {
   return `${url}${separator}motoboyId=${encodeURIComponent(motoboyId)}`
 }
 
-export function useReportSummary(period: ReportPeriod, motoboyId?: string) {
+export function useReportSummary(
+  period: ReportPeriod,
+  motoboyId?: string,
+  enabled = true,
+) {
   const scope = motoboyId ?? 'all'
 
   return useQuery({
@@ -23,6 +27,7 @@ export function useReportSummary(period: ReportPeriod, motoboyId?: string) {
       apiFetch<ReportSummary>(
         withMotoboyParam(`/api/reports/summary?period=${period}`, motoboyId),
       ),
+    enabled,
     staleTime: 5 * 60_000,
   })
 }
@@ -30,6 +35,7 @@ export function useReportSummary(period: ReportPeriod, motoboyId?: string) {
 export function usePeriodDailyBreakdown(
   period: ReportPeriod,
   motoboyId?: string,
+  enabled = true,
 ) {
   const scope = motoboyId ?? 'all'
 
@@ -42,6 +48,7 @@ export function usePeriodDailyBreakdown(
           motoboyId,
         ),
       ),
+    enabled,
     staleTime: 5 * 60_000,
   })
 }
@@ -50,6 +57,7 @@ export function useNeighborhoodReport(
   period: ReportPeriod,
   limit = 5,
   motoboyId?: string,
+  enabled = true,
 ) {
   const scope = motoboyId ?? 'all'
 
@@ -62,11 +70,16 @@ export function useNeighborhoodReport(
           motoboyId,
         ),
       ),
+    enabled,
     staleTime: 5 * 60_000,
   })
 }
 
-export function usePrestacaoTrend(period: ReportPeriod, motoboyId?: string) {
+export function usePrestacaoTrend(
+  period: ReportPeriod,
+  motoboyId?: string,
+  enabled = true,
+) {
   const scope = motoboyId ?? 'all'
 
   return useQuery({
@@ -78,6 +91,7 @@ export function usePrestacaoTrend(period: ReportPeriod, motoboyId?: string) {
           motoboyId,
         ),
       ),
+    enabled,
     staleTime: 5 * 60_000,
   })
 }

@@ -18,18 +18,19 @@ import {
   type MonitoramentoQuery,
 } from '../schemas/entrega.schema.js'
 import { entregaService } from '../services/entrega.service.js'
+import { resolveMotoboyScope } from '../utils/auth-scope.utils.js'
 
 export const entregaRoutes = Router()
 
 entregaRoutes.get(
   '/stats',
-  requireRole('ADMIN'),
+  requireRole('ADMIN', 'MOTOBOY'),
   validateQuery(dashboardStatsQuerySchema),
   asyncHandler(async (req, res) => {
     const query = getValidatedQuery<DashboardStatsQuery>(req)
     const stats = await entregaService.getDashboardStats(
       query.data,
-      query.motoboyId,
+      resolveMotoboyScope(req.user!, query.motoboyId),
     )
     res.json(stats)
   }),

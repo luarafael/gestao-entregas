@@ -19,6 +19,8 @@ import {
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
 import type { Entrega } from '@/shared/types/api.types'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
+import { useAuthStore } from '@/features/auth/stores/auth.store'
 import {
   useDashboardStats,
   useTodayDeliveries,
@@ -112,15 +114,33 @@ function DeliveriesTable({ deliveries }: { deliveries: Entrega[] }) {
 }
 
 export function DashboardPage() {
+  const isAdmin = useIsAdmin()
+  const userId = useAuthStore((state) => state.user?.id)
   const [motoboyFilter, setMotoboyFilter] =
     useState<MotoboySelectValue>('all')
-  const motoboyId = motoboyFilter === 'all' ? undefined : motoboyFilter
 
-  const statsQuery = useDashboardStats(motoboyId)
-  const deliveriesQuery = useTodayDeliveries(motoboyId)
-  const weekSummaryQuery = useReportSummary('week', motoboyId)
-  const dailyBreakdownQuery = usePeriodDailyBreakdown('week', motoboyId)
-  const neighborhoodQuery = useNeighborhoodReport('week', 5, motoboyId)
+  const motoboyId = isAdmin
+    ? motoboyFilter === 'all'
+      ? undefined
+      : motoboyFilter
+    : userId
+
+  const queriesEnabled = isAdmin || Boolean(userId)
+
+  const statsQuery = useDashboardStats(motoboyId, queriesEnabled)
+  const deliveriesQuery = useTodayDeliveries(motoboyId, queriesEnabled)
+  const weekSummaryQuery = useReportSummary('week', motoboyId, queriesEnabled)
+  const dailyBreakdownQuery = usePeriodDailyBreakdown(
+    'week',
+    motoboyId,
+    queriesEnabled,
+  )
+  const neighborhoodQuery = useNeighborhoodReport(
+    'week',
+    5,
+    motoboyId,
+    queriesEnabled,
+  )
 
   const stats = statsQuery.data
   const weekSummary = weekSummaryQuery.data
@@ -137,19 +157,23 @@ export function DashboardPage() {
               Resumo do dia
             </h2>
             <p className="text-sm text-muted-foreground">
-              {motoboyId
-                ? 'Visão individual do motoboy selecionado.'
-                : 'Visão geral de todos os motoboys.'}
+              {isAdmin
+                ? motoboyId
+                  ? 'Visão individual do motoboy selecionado.'
+                  : 'Visão geral de todos os motoboys.'
+                : 'Visão do seu dia e indicadores da semana.'}
             </p>
           </div>
-          <MotoboySelect
-            value={motoboyFilter}
-            onChange={setMotoboyFilter}
-            allowAll
-          />
+          {isAdmin ? (
+            <MotoboySelect
+              value={motoboyFilter}
+              onChange={setMotoboyFilter}
+              allowAll
+            />
+          ) : null}
         </div>
 
-        {isLoading ? (
+        {!queriesEnabled || isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
               <StatCardSkeleton key={index} />
@@ -203,12 +227,21 @@ export function DashboardPage() {
               {getPeriodLabel('week')}
             </p>
           </div>
-          <Link
-            to="/relatorios"
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            Ver relatórios
-          </Link>
+          {isAdmin ? (
+            <Link
+              to="/relatorios"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Ver relatórios
+            </Link>
+          ) : (
+            <Link
+              to="/meu-dia"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Ver meu dia
+            </Link>
+          )}
         </div>
 
         {weekSummaryQuery.isLoading ? (

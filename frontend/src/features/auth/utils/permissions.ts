@@ -27,13 +27,10 @@ export function canAccessRoute(role: UserRole, pathname: string): boolean {
     return true
   }
 
-  if (pathname === '/' || pathname === '') {
-    return false
-  }
-
   return !ADMIN_ONLY_ROUTES.some((route) => pathname.startsWith(route))
 }
 
 export function getDefaultHomePath(role: UserRole): string {
-  return isAdmin(role) ? '/' : '/meu-dia'
+  void role
+  return '/'
 }

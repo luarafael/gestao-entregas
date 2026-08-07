@@ -13,7 +13,7 @@ function withMotoboyParam(url: string, motoboyId?: string) {
   return `${url}${separator}motoboyId=${encodeURIComponent(motoboyId)}`
 }
 
-export function useDashboardStats(motoboyId?: string) {
+export function useDashboardStats(motoboyId?: string, enabled = true) {
   const today = getTodayInputDate()
   const scope = motoboyId ?? 'all'
 
@@ -23,11 +23,12 @@ export function useDashboardStats(motoboyId?: string) {
       apiFetch<DashboardStats>(
         withMotoboyParam(`/api/entregas/stats?data=${today}`, motoboyId),
       ),
+    enabled,
     staleTime: 30_000,
   })
 }
 
-export function useTodayDeliveries(motoboyId?: string) {
+export function useTodayDeliveries(motoboyId?: string, enabled = true) {
   const today = getTodayInputDate()
   const scope = motoboyId ?? 'all'
 
@@ -40,6 +41,7 @@ export function useTodayDeliveries(motoboyId?: string) {
           motoboyId,
         ),
       ),
+    enabled,
     staleTime: 30_000,
   })
 }
