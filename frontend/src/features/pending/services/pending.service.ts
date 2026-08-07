@@ -52,4 +52,18 @@ export const pendingService = {
   delete(id: string) {
     return apiFetch<void>(`/api/pendencias/${id}`, { method: 'DELETE' })
   },
+
+  getEventos(since: string) {
+    const params = new URLSearchParams({ since })
+    return apiFetch<{
+      eventos: Array<{
+        id: string
+        motoboyId: string | null
+        motoboyNome: string
+        descricao: string
+        valor: number
+        criadoEm: string
+      }>
+    }>(`/api/pendencias/eventos?${params.toString()}`)
+  },
 }

@@ -7,6 +7,7 @@ const pendenciaRepository = vi.hoisted(() => ({
   create: vi.fn(),
   findById: vi.fn(),
   findMany: vi.fn(),
+  findRecentRepasseSince: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
 }))
@@ -104,5 +105,33 @@ describe('PendenciaService', () => {
     await expect(service.findById(adminUser, 'x')).rejects.toBeInstanceOf(
       NotFoundError,
     )
+  })
+
+  it('lista eventos de repasse criados após a data informada', async () => {
+    const since = new Date('2026-08-06T12:00:00.000Z')
+    pendenciaRepository.findRecentRepasseSince.mockResolvedValue([
+      {
+        id: 'pend-1',
+        motoboyId: 'motoboy-1',
+        motoboy: { id: 'motoboy-1', nome: 'João' },
+        descricao: 'Repasse não pago',
+        valor: 50,
+        criadoEm: new Date('2026-08-06T13:00:00.000Z'),
+      },
+    ])
+
+    const eventos = await service.getEventosRepasse(since)
+
+    expect(pendenciaRepository.findRecentRepasseSince).toHaveBeenCalledWith(since)
+    expect(eventos).toEqual([
+      {
+        id: 'pend-1',
+        motoboyId: 'motoboy-1',
+        motoboyNome: 'João',
+        descricao: 'Repasse não pago',
+        valor: 50,
+        criadoEm: '2026-08-06T13:00:00.000Z',
+      },
+    ])
   })
 })

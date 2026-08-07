@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { requireRole } from '../middleware/auth.middleware.js'
 import {
   asyncHandler,
   getRouteParam,
@@ -9,8 +10,10 @@ import {
 import {
   createPendenciaSchema,
   listPendenciasSchema,
+  pendenciaEventosQuerySchema,
   updatePendenciaSchema,
   type ListPendenciasInput,
+  type PendenciaEventosQuery,
 } from '../schemas/pendencia.schema.js'
 import { pendenciaService } from '../services/pendencia.service.js'
 
@@ -25,6 +28,17 @@ pendenciaRoutes.get(
       getValidatedQuery<ListPendenciasInput>(req),
     )
     res.json(result)
+  }),
+)
+
+pendenciaRoutes.get(
+  '/eventos',
+  requireRole('ADMIN'),
+  validateQuery(pendenciaEventosQuerySchema),
+  asyncHandler(async (req, res) => {
+    const query = getValidatedQuery<PendenciaEventosQuery>(req)
+    const eventos = await pendenciaService.getEventosRepasse(new Date(query.since))
+    res.json({ eventos })
   }),
 )
 

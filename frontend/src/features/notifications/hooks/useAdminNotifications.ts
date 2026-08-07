@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { aprovacoesService } from '@/features/aprovacoes/services/aprovacoes.service'
 import { monitoramentoService } from '@/features/monitoramento/services/monitoramento.service'
+import { pendingService } from '@/features/pending/services/pending.service'
 import { useNotificationStore } from '@/shared/stores/notification.store'
 import { toast } from '@/shared/stores/toast.store'
 import { formatPrestacaoMotoboyDate } from '@/features/motoboy/schemas/prestacaoMotoboy.schema'
+import { formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
 
 const POLL_INTERVAL = 10_000
@@ -16,7 +18,9 @@ export function useAdminNotifications(enabled: boolean) {
   const readyRef = useRef(false)
   const knownPendingIdsRef = useRef<Set<string>>(new Set())
   const knownDeliveryIdsRef = useRef<Set<string>>(new Set())
+  const knownPendenciaIdsRef = useRef<Set<string>>(new Set())
   const sinceRef = useRef(new Date().toISOString())
+  const pendenciaSinceRef = useRef(new Date().toISOString())
 
   const pendingQuery = useQuery({
     queryKey: ['admin-notifications', 'pending'],
@@ -32,8 +36,22 @@ export function useAdminNotifications(enabled: boolean) {
     refetchInterval: POLL_INTERVAL,
   })
 
+  const pendenciaEventosQuery = useQuery({
+    queryKey: ['admin-notifications', 'pendencias'],
+    queryFn: () => pendingService.getEventos(pendenciaSinceRef.current),
+    enabled,
+    refetchInterval: POLL_INTERVAL,
+  })
+
   useEffect(() => {
-    if (!enabled || !pendingQuery.data || !eventosQuery.data) return
+    if (
+      !enabled ||
+      !pendingQuery.data ||
+      !eventosQuery.data ||
+      !pendenciaEventosQuery.data
+    ) {
+      return
+    }
 
     if (!readyRef.current) {
       knownPendingIdsRef.current = new Set(
@@ -41,6 +59,9 @@ export function useAdminNotifications(enabled: boolean) {
       )
       for (const evento of eventosQuery.data.eventos) {
         knownDeliveryIdsRef.current.add(evento.id)
+      }
+      for (const evento of pendenciaEventosQuery.data.eventos) {
+        knownPendenciaIdsRef.current.add(evento.id)
       }
       readyRef.current = true
       return
@@ -86,11 +107,33 @@ export function useAdminNotifications(enabled: boolean) {
         toast(message, 'success')
       }
     }
+
+    for (const evento of pendenciaEventosQuery.data.eventos) {
+      if (knownPendenciaIdsRef.current.has(evento.id)) continue
+
+      knownPendenciaIdsRef.current.add(evento.id)
+      if (evento.criadoEm > pendenciaSinceRef.current) {
+        pendenciaSinceRef.current = evento.criadoEm
+      }
+
+      const message = `${evento.motoboyNome} registrou pendência: ${evento.descricao} · ${formatCurrency(evento.valor)}`
+      addNotification({
+        type: 'pendencia',
+        title: 'Nova pendência do motoboy',
+        message: `${message} · ${formatTimeBR(evento.criadoEm)}`,
+        href: '/pendencias',
+      })
+
+      if (location.pathname !== '/pendencias') {
+        toast(message, 'info')
+      }
+    }
   }, [
     addNotification,
     enabled,
     eventosQuery.data,
     location.pathname,
+    pendenciaEventosQuery.data,
     pendingQuery.data,
   ])
 }

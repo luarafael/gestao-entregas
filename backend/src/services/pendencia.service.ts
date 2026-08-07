@@ -93,6 +93,19 @@ export class PendenciaService {
 
     return pendenciaRepository.delete(id)
   }
+
+  async getEventosRepasse(since: Date) {
+    const pendencias = await pendenciaRepository.findRecentRepasseSince(since)
+
+    return pendencias.map((pendencia) => ({
+      id: pendencia.id,
+      motoboyId: pendencia.motoboyId,
+      motoboyNome: pendencia.motoboy?.nome ?? 'Motoboy',
+      descricao: pendencia.descricao,
+      valor: Number(pendencia.valor),
+      criadoEm: pendencia.criadoEm.toISOString(),
+    }))
+  }
 }
 
 export const pendenciaService = new PendenciaService()

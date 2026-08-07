@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type NotificationType = 'approval' | 'delivery'
+export type NotificationType = 'approval' | 'delivery' | 'pendencia'
 
 export interface AppNotification {
   id: string

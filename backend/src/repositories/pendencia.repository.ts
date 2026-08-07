@@ -83,6 +83,19 @@ export class PendenciaRepository {
     return { data, total }
   }
 
+  async findRecentRepasseSince(since: Date) {
+    return prisma.pendencia.findMany({
+      where: {
+        criadoEm: { gt: since },
+        tipo: 'REPASSE_MOTOBOY',
+      },
+      orderBy: { criadoEm: 'asc' },
+      include: {
+        motoboy: { select: { id: true, nome: true } },
+      },
+    })
+  }
+
   async findPendingByDate(date: Date, tipo: TipoPendencia = 'CLIENTE') {
     const day = toUtcDateOnly(formatDateOnlyISO(date))
 

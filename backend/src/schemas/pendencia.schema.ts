@@ -19,6 +19,11 @@ export const listPendenciasSchema = z.object({
   motoboyId: z.string().trim().min(1).optional(),
 })
 
+export const pendenciaEventosQuerySchema = z.object({
+  since: z.string().datetime({ message: 'Data/hora inválida' }),
+})
+
 export type CreatePendenciaInput = z.infer<typeof createPendenciaSchema>
 export type UpdatePendenciaInput = z.infer<typeof updatePendenciaSchema>
 export type ListPendenciasInput = z.infer<typeof listPendenciasSchema>
+export type PendenciaEventosQuery = z.infer<typeof pendenciaEventosQuerySchema>
