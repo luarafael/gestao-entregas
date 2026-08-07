@@ -128,6 +128,23 @@ export function isRotaEmExecucao(paradas: MonitoramentoParada[]): boolean {
   return paradas.some((parada) => parada.status !== 'PENDENTE')
 }
 
+/** Rota salva/planejada ou em andamento — qualquer execução que ainda não terminou. */
+export function isRotaAtiva(paradas: MonitoramentoParada[]): boolean {
+  if (paradas.length === 0) return false
+  return !isRotaConcluida(paradas)
+}
+
+function rotaPertenceAoMotoboy(
+  paradas: MonitoramentoParada[],
+  entregaMap: Map<string, { motoboy?: { id: string; nome: string } | null }>,
+  motoboyId: string,
+): boolean {
+  return paradas.some((parada) => {
+    if (!parada.entregaId) return false
+    return entregaMap.get(parada.entregaId)?.motoboy?.id === motoboyId
+  })
+}
+
 function getConcluidaEm(paradas: MonitoramentoParada[]): string | null {
   const timestamps = paradas
     .map((parada) => parada.dataHoraStatus)
@@ -202,12 +219,27 @@ export class MonitoramentoService {
           ? toUtcDateOnly(reference)
           : toUtcDateOnly(formatDateOnlyISO(reference))
 
-    const [rotas, entregasDia] = await Promise.all([
-      rotaRepository.findByDate(day),
+    const rotas = await rotaRepository.findByDate(day)
+
+    const entregaIds = [
+      ...new Set(
+        rotas.flatMap((rota) =>
+          rota.paradas
+            .map((parada) => parada.entregaId)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ),
+    ]
+
+    const [entregasDia, entregasVinculadas] = await Promise.all([
       entregaRepository.findAllByDate(day),
+      entregaRepository.findByIds(entregaIds),
     ])
 
-    const entregaMap = new Map(entregasDia.map((entrega) => [entrega.id, entrega]))
+    const entregaMap = new Map<string, (typeof entregasDia)[number]>()
+    for (const entrega of [...entregasDia, ...entregasVinculadas]) {
+      entregaMap.set(entrega.id, entrega)
+    }
 
     const rotasAtivas: MonitoramentoRota[] = []
     const historico: MonitoramentoRotaHistorico[] = []
@@ -245,12 +277,10 @@ export class MonitoramentoService {
 
       const rotaMonitoramento = buildMonitoramentoRota(rota, paradas, entregaMap)
 
-      if (motoboyId && rotaMonitoramento.motoboyId !== motoboyId) {
-        continue
-      }
-
-      if (isRotaEmExecucao(paradas)) {
-        rotasAtivas.push(rotaMonitoramento)
+      if (
+        motoboyId &&
+        !rotaPertenceAoMotoboy(paradas, entregaMap, motoboyId)
+      ) {
         continue
       }
 
@@ -259,6 +289,11 @@ export class MonitoramentoService {
           ...rotaMonitoramento,
           concluidaEm: getConcluidaEm(paradas),
         })
+        continue
+      }
+
+      if (isRotaAtiva(paradas)) {
+        rotasAtivas.push(rotaMonitoramento)
       }
     }
 

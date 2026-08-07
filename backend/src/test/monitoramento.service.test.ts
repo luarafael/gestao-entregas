@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  isRotaAtiva,
   isRotaConcluida,
   isRotaEmExecucao,
   MonitoramentoService,
@@ -16,6 +17,7 @@ const rotaExecucaoRepository = vi.hoisted(() => ({
 
 const entregaRepository = vi.hoisted(() => ({
   findAllByDate: vi.fn(),
+  findByIds: vi.fn(),
 }))
 
 vi.mock('../repositories/rota.repository.js', () => ({
@@ -56,6 +58,7 @@ describe('MonitoramentoService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    entregaRepository.findByIds.mockResolvedValue([])
   })
 
   it('identifica rota em execução e concluída', () => {
@@ -67,6 +70,9 @@ describe('MonitoramentoService', () => {
     )
     expect(isRotaEmExecucao([parada('p1', 'PENDENTE'), parada('p2', 'PENDENTE')])).toBe(
       false,
+    )
+    expect(isRotaAtiva([parada('p1', 'PENDENTE'), parada('p2', 'PENDENTE')])).toBe(
+      true,
     )
   })
 
@@ -290,5 +296,68 @@ describe('MonitoramentoService', () => {
     expect(result.rotas).toHaveLength(1)
     expect(result.rotas[0]?.rotaId).toBe('rota-joao')
     expect(result.rotas[0]?.motoboyNome).toBe('João')
+  })
+
+  it('mostra rota salva após cálculo mesmo com paradas pendentes', async () => {
+    rotaRepository.findByDate.mockResolvedValue([
+      {
+        id: 'rota-planejada',
+        enderecoInicial: 'Depósito',
+        distanciaTotal: 3000,
+        tempoTotal: 900,
+        paradas: [
+          {
+            id: 'p1',
+            ordem: 1,
+            entregaId: 'e1',
+            cliente: 'Cliente',
+            endereco: 'Rua 1',
+            bairro: 'Centro',
+            telefone: null,
+            observacao: null,
+            distancia: 1500,
+            tempo: 450,
+          },
+          {
+            id: 'p2',
+            ordem: 2,
+            entregaId: 'e2',
+            cliente: 'Cliente 2',
+            endereco: 'Rua 2',
+            bairro: 'Jardim',
+            telefone: null,
+            observacao: null,
+            distancia: 1500,
+            tempo: 450,
+          },
+        ],
+      },
+    ])
+
+    rotaExecucaoRepository.findByRotaId.mockResolvedValue([
+      { paradaId: 'p1', status: 'PENDENTE', observacao: null, dataHoraStatus: null },
+      { paradaId: 'p2', status: 'PENDENTE', observacao: null, dataHoraStatus: null },
+    ])
+
+    entregaRepository.findAllByDate.mockResolvedValue([])
+    entregaRepository.findByIds.mockResolvedValue([
+      {
+        id: 'e1',
+        motoboyId: 'm1',
+        motoboy: { id: 'm1', nome: 'João' },
+      },
+      {
+        id: 'e2',
+        motoboyId: 'm1',
+        motoboy: { id: 'm1', nome: 'João' },
+      },
+    ])
+
+    const result = await service.getMonitoramento('2026-08-05', 'm1')
+
+    expect(result.rotas).toHaveLength(1)
+    expect(result.rotas[0]?.rotaId).toBe('rota-planejada')
+    expect(result.rotas[0]?.motoboyNome).toBe('João')
+    expect(result.rotas[0]?.stats.pendentes).toBe(2)
   })
 })

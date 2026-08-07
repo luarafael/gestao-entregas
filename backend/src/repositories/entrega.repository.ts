@@ -121,6 +121,17 @@ export class EntregaRepository {
     })
   }
 
+  async findByIds(ids: string[]) {
+    if (ids.length === 0) return []
+
+    return prisma.entrega.findMany({
+      where: { id: { in: ids } },
+      include: {
+        motoboy: { select: { id: true, nome: true } },
+      },
+    })
+  }
+
   async update(id: string, data: UpdateEntregaInput) {
     return prisma.entrega.update({ where: { id }, data })
   }

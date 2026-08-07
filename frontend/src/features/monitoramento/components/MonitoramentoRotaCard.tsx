@@ -95,6 +95,8 @@ function ParadaRow({ parada }: { parada: MonitoramentoParada }) {
 
 export function MonitoramentoRotaCard({ rota }: { rota: MonitoramentoRota }) {
   const proxima = rota.proximaParada
+  const isRotaPlanejada =
+    rota.stats.pendentes === rota.totalParadas && rota.totalParadas > 0
 
   return (
     <Card>
@@ -106,9 +108,16 @@ export function MonitoramentoRotaCard({ rota }: { rota: MonitoramentoRota }) {
               Partida: {rota.enderecoInicial}
             </p>
           </div>
-          <Badge variant="default">
-            {rota.stats.entregues}/{rota.totalParadas} entregues
-          </Badge>
+          <div className="flex flex-wrap gap-2">
+            {isRotaPlanejada ? (
+              <Badge variant="warning">Rota planejada</Badge>
+            ) : (
+              <Badge variant="success">Em execução</Badge>
+            )}
+            <Badge variant="default">
+              {rota.stats.entregues}/{rota.totalParadas} entregues
+            </Badge>
+          </div>
         </div>
 
         <div className="space-y-1">
