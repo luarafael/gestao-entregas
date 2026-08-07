@@ -12,10 +12,12 @@ import {
   dashboardStatsQuerySchema,
   listEntregasSchema,
   monitoramentoQuerySchema,
+  monitoramentoEventosQuerySchema,
   updateEntregaSchema,
   type DashboardStatsQuery,
   type ListEntregasInput,
   type MonitoramentoQuery,
+  type MonitoramentoEventosQuery,
 } from '../schemas/entrega.schema.js'
 import { entregaService } from '../services/entrega.service.js'
 import { resolveMotoboyScope } from '../utils/auth-scope.utils.js'
@@ -33,6 +35,20 @@ entregaRoutes.get(
       resolveMotoboyScope(req.user!, query.motoboyId),
     )
     res.json(stats)
+  }),
+)
+
+entregaRoutes.get(
+  '/monitoramento/eventos',
+  requireRole('ADMIN'),
+  validateQuery(monitoramentoEventosQuerySchema),
+  asyncHandler(async (req, res) => {
+    const query = getValidatedQuery<MonitoramentoEventosQuery>(req)
+    const eventos = await entregaService.getMonitoramentoEventos(
+      new Date(query.since),
+      query.motoboyId,
+    )
+    res.json({ eventos })
   }),
 )
 

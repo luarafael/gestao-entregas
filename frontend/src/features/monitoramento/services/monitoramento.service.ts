@@ -12,4 +12,22 @@ export const monitoramentoService = {
       `/api/entregas/monitoramento?${params.toString()}`,
     )
   },
+
+  getEventos(since: string, motoboyId?: string) {
+    const params = new URLSearchParams({ since })
+    if (motoboyId) {
+      params.set('motoboyId', motoboyId)
+    }
+    return apiFetch<{
+      eventos: Array<{
+        id: string
+        motoboyId: string | null
+        motoboyNome: string
+        cliente: string | null
+        endereco: string
+        ordem: number | null
+        dataHoraStatus: string
+      }>
+    }>(`/api/entregas/monitoramento/eventos?${params.toString()}`)
+  },
 }

@@ -227,6 +227,16 @@ export interface MonitoramentoRotaHistorico extends MonitoramentoRota {
   concluidaEm: string | null
 }
 
+export interface MonitoramentoEvento {
+  id: string
+  motoboyId: string | null
+  motoboyNome: string
+  cliente: string | null
+  endereco: string
+  ordem: number | null
+  dataHoraStatus: string
+}
+
 export class MonitoramentoService {
   async getMonitoramento(reference?: Date | string, motoboyId?: string) {
     const day =
@@ -352,6 +362,25 @@ export class MonitoramentoService {
       rotas: rotasAtivas,
       historico,
     }
+  }
+
+  async getEventosEntrega(since: Date, motoboyId?: string) {
+    const execucoes = await rotaExecucaoRepository.findRecentEntregues(
+      since,
+      motoboyId,
+    )
+
+    return execucoes
+      .filter((execucao) => execucao.dataHoraStatus != null)
+      .map((execucao) => ({
+        id: execucao.id,
+        motoboyId: execucao.rota.motoboyId,
+        motoboyNome: execucao.rota.motoboy?.nome ?? 'Motoboy',
+        cliente: execucao.parada?.cliente ?? null,
+        endereco: execucao.parada?.endereco ?? 'Endereço não informado',
+        ordem: execucao.parada?.ordem ?? null,
+        dataHoraStatus: execucao.dataHoraStatus!.toISOString(),
+      }))
   }
 }
 

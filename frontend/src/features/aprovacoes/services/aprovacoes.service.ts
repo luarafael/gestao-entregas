@@ -1,4 +1,5 @@
 import { apiFetch } from '@/shared/services/api'
+import type { PaginatedResponse } from '@/shared/types/api.types'
 import type { PrestacaoMotoboy } from '@/features/motoboy/types/prestacaoMotoboy.types'
 
 export const aprovacoesService = {
@@ -35,6 +36,23 @@ export const aprovacoesService = {
   getWhatsAppText(id: string) {
     return apiFetch<{ text: string }>(
       `/api/prestacoes-motoboy/${id}/whatsapp`,
+    )
+  },
+
+  listHistory(params: {
+    page?: number
+    limit?: number
+    motoboyId?: string
+  }) {
+    const search = new URLSearchParams()
+    search.set('historico', 'true')
+    search.set('page', String(params.page ?? 1))
+    search.set('limit', String(params.limit ?? 20))
+    if (params.motoboyId) {
+      search.set('motoboyId', params.motoboyId)
+    }
+    return apiFetch<PaginatedResponse<PrestacaoMotoboy>>(
+      `/api/prestacoes-motoboy?${search.toString()}`,
     )
   },
 }

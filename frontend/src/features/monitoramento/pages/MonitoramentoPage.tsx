@@ -12,6 +12,7 @@ import {
 import { formatDateBR, formatTimeBR } from '@/shared/utils/format'
 import { getTodayInputDate } from '@/features/accounting/schemas/prestacao.schema'
 import { useMonitoramento } from '../hooks/useMonitoramento'
+import { useMonitoramentoDeliveryAlerts } from '../hooks/useMonitoramentoDeliveryAlerts'
 import { MonitoramentoRotaCard } from '../components/MonitoramentoRotaCard'
 import { MonitoramentoHistoricoSection } from '../components/MonitoramentoHistoricoSection'
 import { MonitoramentoResumoBar } from '../components/MonitoramentoResumoBar'
@@ -50,6 +51,8 @@ export function MonitoramentoPage() {
 
   const monitoramentoQuery = useMonitoramento(selectedDate, motoboyId)
   const monitoramento = monitoramentoQuery.data
+
+  useMonitoramentoDeliveryAlerts(monitoramento, motoboyId)
 
   const hasRotasAtivas = (monitoramento?.rotas.length ?? 0) > 0
   const hasHistorico = (monitoramento?.historico.length ?? 0) > 0

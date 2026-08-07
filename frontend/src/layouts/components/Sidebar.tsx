@@ -14,6 +14,7 @@ import {
 import { cn } from '@/shared/utils/cn'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import { UserProfilePanel } from '@/features/auth/components/UserProfilePanel'
+import { usePendingPrestacoesCount } from '@/features/aprovacoes/hooks/useAprovacoes'
 import type { UserRole } from '@/features/auth/schemas/auth.schema'
 
 const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'Sistema Rotas'
@@ -52,6 +53,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
+  const pendingCountQuery = usePendingPrestacoesCount(user?.role === 'ADMIN')
+  const pendingCount =
+    user?.role === 'ADMIN' ? (pendingCountQuery.data?.total ?? 0) : 0
 
   const handleLogout = () => {
     logout()
@@ -105,7 +109,12 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                   />
                 ) : null}
                 <item.icon className="relative size-5 shrink-0" />
-                <span className="relative">{item.label}</span>
+                <span className="relative flex-1">{item.label}</span>
+                {item.to === '/aprovacoes' && pendingCount > 0 ? (
+                  <span className="relative rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                    {pendingCount > 9 ? '9+' : pendingCount}
+                  </span>
+                ) : null}
               </>
             )}
           </NavLink>

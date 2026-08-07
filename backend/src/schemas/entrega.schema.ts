@@ -23,6 +23,15 @@ export const monitoramentoQuerySchema = z.object({
 
 export type MonitoramentoQuery = z.infer<typeof monitoramentoQuerySchema>
 
+export const monitoramentoEventosQuerySchema = z.object({
+  since: z.string().datetime({ message: 'Data/hora inválida' }),
+  motoboyId: z.string().trim().min(1).optional(),
+})
+
+export type MonitoramentoEventosQuery = z.infer<
+  typeof monitoramentoEventosQuerySchema
+>
+
 const entregaBaseSchema = z.object({
   nomeCliente: z.string().trim().optional(),
   endereco: z.string().trim().min(1, 'Endereço é obrigatório'),

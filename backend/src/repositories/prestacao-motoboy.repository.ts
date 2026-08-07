@@ -66,11 +66,16 @@ export class PrestacaoMotoboyRepository {
     limit: number
     motoboyId?: string
     status?: StatusPrestacaoMotoboy
+    historico?: boolean
   }) {
     const skip = (filters.page - 1) * filters.limit
     const where = {
       ...(filters.motoboyId ? { motoboyId: filters.motoboyId } : {}),
-      ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.historico
+        ? { status: { in: ['APROVADA', 'REJEITADA'] as StatusPrestacaoMotoboy[] } }
+        : filters.status
+          ? { status: filters.status }
+          : {}),
     }
 
     const [data, total] = await Promise.all([
@@ -78,7 +83,7 @@ export class PrestacaoMotoboyRepository {
         where,
         skip,
         take: filters.limit,
-        orderBy: { data: 'desc' },
+        orderBy: [{ aprovadaEm: 'desc' }, { rejeitadaEm: 'desc' }, { data: 'desc' }],
         include: {
           motoboy: { select: { id: true, nome: true, email: true } },
         },

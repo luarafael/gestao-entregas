@@ -69,6 +69,37 @@ export class RotaExecucaoRepository {
     })
   }
 
+  async findRecentEntregues(since: Date, motoboyId?: string) {
+    return prisma.rotaExecucao.findMany({
+      where: {
+        status: 'ENTREGUE',
+        dataHoraStatus: { gt: since },
+        ...(motoboyId
+          ? {
+              rota: { motoboyId },
+            }
+          : {}),
+      },
+      orderBy: { dataHoraStatus: 'asc' },
+      take: 50,
+      include: {
+        parada: {
+          select: {
+            cliente: true,
+            endereco: true,
+            ordem: true,
+          },
+        },
+        rota: {
+          select: {
+            motoboyId: true,
+            motoboy: { select: { id: true, nome: true } },
+          },
+        },
+      },
+    })
+  }
+
   async bulkSync(
     rotaId: string,
     paradas: Array<{

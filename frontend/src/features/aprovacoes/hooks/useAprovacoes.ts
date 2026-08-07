@@ -15,11 +15,26 @@ export function usePendingPrestacoesMotoboy(motoboyId?: string) {
   })
 }
 
-export function usePendingPrestacoesCount() {
+export function usePendingPrestacoesCount(enabled = true) {
   return useQuery({
     queryKey: [APROVACOES_QUERY_KEY, 'count'],
     queryFn: () => aprovacoesService.countPending(),
+    enabled,
     refetchInterval: 15_000,
+  })
+}
+
+export function usePrestacoesHistorico(motoboyId?: string, page = 1) {
+  const scope = motoboyId ?? 'all'
+
+  return useQuery({
+    queryKey: [APROVACOES_QUERY_KEY, 'historico', scope, page],
+    queryFn: () =>
+      aprovacoesService.listHistory({
+        page,
+        limit: 20,
+        motoboyId,
+      }),
   })
 }
 

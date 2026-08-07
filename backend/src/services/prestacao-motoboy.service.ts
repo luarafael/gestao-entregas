@@ -185,6 +185,7 @@ export class PrestacaoMotoboyService {
       limit: scopedFilters.limit,
       motoboyId: scopedFilters.motoboyId,
       status: scopedFilters.status,
+      historico: scopedFilters.historico,
     })
 
     return buildPaginatedResult(data, total, filters.page, filters.limit)

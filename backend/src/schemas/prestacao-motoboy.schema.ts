@@ -22,6 +22,10 @@ export const listPrestacoesMotoboySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   status: z.enum(['ENVIADA', 'APROVADA', 'REJEITADA']).optional(),
   motoboyId: z.string().trim().min(1).optional(),
+  historico: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
 })
 
 export const previewPrestacaoMotoboyQuerySchema = z.object({

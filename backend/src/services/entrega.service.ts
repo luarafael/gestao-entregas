@@ -140,6 +140,10 @@ export class EntregaService {
   async getMonitoramento(reference?: Date | string, motoboyId?: string) {
     return monitoramentoService.getMonitoramento(reference, motoboyId)
   }
+
+  async getMonitoramentoEventos(since: Date, motoboyId?: string) {
+    return monitoramentoService.getEventosEntrega(since, motoboyId)
+  }
 }
 
 export const entregaService = new EntregaService()

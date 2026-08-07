@@ -1,5 +1,6 @@
 import { ThemeToggle } from '@/shared/components/ui'
 import { IconMenu } from '@/shared/components/icons'
+import { NotificationBell } from '@/shared/components/NotificationBell'
 import { cn } from '@/shared/utils/cn'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import { UserProfilePanel } from '@/features/auth/components/UserProfilePanel'
@@ -53,6 +54,7 @@ export function Navbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {user?.role === 'ADMIN' ? <NotificationBell /> : null}
         {user ? (
           <UserProfilePanel
             user={user}
