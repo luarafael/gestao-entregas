@@ -33,6 +33,9 @@ postgres_data/
 # Documentação comercial (apenas local)
 docs/comercial/
 
+# Scripts locais de debug/operação (backend)
+backend/scripts/
+
 # Misc
 *.tsbuildinfo
 promtp.txt.bak
