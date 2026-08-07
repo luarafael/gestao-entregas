@@ -72,6 +72,7 @@ export interface OptimizedRouteResult {
   polyline: string | null
   sugestoes: string[]
   paradas: PlannerStop[]
+  rotaId?: string
 }
 
 export interface RotaPlanejada {

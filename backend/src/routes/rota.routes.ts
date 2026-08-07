@@ -33,6 +33,15 @@ rotaRoutes.post(
   }),
 )
 
+rotaRoutes.post(
+  '/planejar',
+  validateBody(optimizeRotaSchema),
+  asyncHandler(async (req, res) => {
+    const result = await rotaService.planear(req.user!, req.body)
+    res.json(result)
+  }),
+)
+
 rotaRoutes.get(
   '/',
   validateQuery(listRotasSchema),

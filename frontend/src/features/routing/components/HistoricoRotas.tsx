@@ -91,7 +91,7 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
             <EmptyState
               icon={<IconRoute className="size-6" />}
               title="Nenhuma rota salva"
-              description="Calcule e salve uma rota para ver o histórico aqui."
+              description="Calcule uma rota no planejador para registrá-la automaticamente aqui."
             />
           ) : (
             <div className="space-y-3">

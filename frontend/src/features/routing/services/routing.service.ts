@@ -22,6 +22,21 @@ export const routingService = {
     })
   },
 
+  planRoute(
+    enderecoInicial: string,
+    paradas: PlannerStop[],
+    options?: { preservarOrdem?: boolean },
+  ) {
+    return apiFetch<OptimizedRouteResult>('/api/rotas/planejar', {
+      method: 'POST',
+      body: JSON.stringify({
+        enderecoInicial,
+        paradas,
+        preservarOrdem: options?.preservarOrdem ?? false,
+      }),
+    })
+  },
+
   save(payload: {
     enderecoInicial: string
     distanciaTotal: number

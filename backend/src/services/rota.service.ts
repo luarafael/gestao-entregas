@@ -329,6 +329,37 @@ export class RotaService {
     }
   }
 
+  async planear(user: AuthenticatedUser, input: OptimizeRotaInput) {
+    const optimized = await this.optimize(input)
+    const rota = await this.save(user, {
+      enderecoInicial: optimized.enderecoInicial,
+      distanciaTotal: optimized.distanciaTotal,
+      tempoTotal: optimized.tempoTotal,
+      aproximada: optimized.aproximada,
+      paradas: optimized.paradas,
+    })
+
+    const paradas = optimized.paradas.map((parada) => {
+      const savedParada = rota.paradas.find(
+        (item) =>
+          item.ordem === parada.ordem &&
+          item.endereco === parada.endereco &&
+          (item.cliente ?? '') === (parada.cliente ?? ''),
+      )
+
+      return {
+        ...parada,
+        paradaId: savedParada?.id ?? null,
+      }
+    })
+
+    return {
+      ...optimized,
+      paradas,
+      rotaId: rota.id,
+    }
+  }
+
   async save(user: AuthenticatedUser, input: SaveRotaInput) {
     const motoboyId = await resolveMotoboyIdForSave(user, input.paradas)
     const day = input.data ?? toUtcDateOnlyFromBusinessTz()

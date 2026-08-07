@@ -29,6 +29,28 @@ export function useOptimizeRoute() {
   })
 }
 
+export function usePlanRoute() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      enderecoInicial,
+      paradas,
+      preservarOrdem = false,
+    }: {
+      enderecoInicial: string
+      paradas: PlannerStop[]
+      preservarOrdem?: boolean
+    }) => routingService.planRoute(enderecoInicial, paradas, { preservarOrdem }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
+    },
+    onError: () => {
+      toast('Erro ao calcular e registrar rota no monitoramento', 'error')
+    },
+  })
+}
+
 export function useSaveRoute() {
   const queryClient = useQueryClient()
 

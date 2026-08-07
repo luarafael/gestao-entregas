@@ -22,6 +22,7 @@ import { HistoricoRotas } from '../components/HistoricoRotas'
 import {
   useEnderecoPartida,
   useOptimizeRoute,
+  usePlanRoute,
   useSaveRoute,
 } from '../hooks/useRouting'
 import { routingService } from '../services/routing.service'
@@ -85,6 +86,7 @@ export function PlannerPage() {
   >([])
 
   const optimizeMutation = useOptimizeRoute()
+  const planMutation = usePlanRoute()
   const saveMutation = useSaveRoute()
   const copyMutation = useCopyWhatsAppText()
 
@@ -278,25 +280,17 @@ export function PlannerPage() {
       return
     }
 
-    const optimized = await optimizeMutation.mutateAsync({
+    const planned = await planMutation.mutateAsync({
       enderecoInicial,
       paradas: currentStops,
       preservarOrdem: true,
     })
-    const merged = applyOptimizedResult(currentStops, optimized)
+    applyOptimizedResult(currentStops, planned)
+    setSavedRotaId(planned.rotaId ?? null)
     setOrderDirty(false)
     setReorderLocked(true)
 
-    try {
-      await persistCalculatedRoute({ ...optimized, paradas: merged })
-    } catch {
-      toast(
-        'Rota recalculada, mas não foi possível atualizar o monitoramento.',
-        'error',
-      )
-    }
-
-    toast('Rota recalculada com a ordem atual', 'success')
+    toast('Rota recalculada e atualizada no monitoramento', 'success')
   }
 
   const handleOptimize = async () => {
@@ -305,41 +299,32 @@ export function PlannerPage() {
       return
     }
 
-    const optimized = await optimizeMutation.mutateAsync({
+    const planned = await planMutation.mutateAsync({
       enderecoInicial,
       paradas: stops,
     })
-    const merged = applyOptimizedResult(stops, optimized)
+    applyOptimizedResult(stops, planned)
+    setSavedRotaId(planned.rotaId ?? null)
     setReorderLocked(true)
     setOrderDirty(false)
 
     if (
-      optimized.paradas.length > 0 &&
-      optimized.distanciaTotal === 0 &&
-      optimized.tempoTotal === 0
+      planned.paradas.length > 0 &&
+      planned.distanciaTotal === 0 &&
+      planned.tempoTotal === 0
     ) {
       toast(
-        'Não foi possível calcular distâncias. Verifique endereço e bairro de cada parada.',
-        'error',
-      )
-      return
-    }
-
-    try {
-      await persistCalculatedRoute({ ...optimized, paradas: merged })
-    } catch {
-      toast(
-        'Rota calculada, mas não foi possível registrar no monitoramento.',
-        'error',
+        'Rota registrada no monitoramento. Não foi possível calcular distâncias — verifique endereço e bairro de cada parada.',
+        'info',
       )
       return
     }
 
     toast(
-      optimized.aproximada
-        ? 'Rota calculada e registrada (aproximada)'
-        : 'Melhor rota calculada e registrada!',
-      optimized.aproximada ? 'info' : 'success',
+      planned.aproximada
+        ? 'Rota calculada e registrada no monitoramento (aproximada)'
+        : 'Melhor rota calculada e registrada no monitoramento!',
+      planned.aproximada ? 'info' : 'success',
     )
   }
 
@@ -662,7 +647,7 @@ export function PlannerPage() {
                   <Button
                     variant="secondary"
                     isLoading={
-                      optimizeMutation.isPending || saveMutation.isPending
+                      planMutation.isPending || saveMutation.isPending
                     }
                     onClick={handleRecalculateManualOrder}
                   >
@@ -672,7 +657,7 @@ export function PlannerPage() {
                 <Button
                   size="lg"
                   className="sm:ml-auto"
-                  isLoading={optimizeMutation.isPending || saveMutation.isPending}
+                  isLoading={planMutation.isPending || saveMutation.isPending}
                   onClick={handleOptimize}
                 >
                   <span className="inline-flex items-center gap-2">
