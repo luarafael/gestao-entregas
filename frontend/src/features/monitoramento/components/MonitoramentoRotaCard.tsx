@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   STATUS_COLORS,
   STATUS_LABELS,
@@ -7,171 +8,313 @@ import {
   formatDistance,
   formatDuration,
 } from '@/features/routing/utils/googleMapsUrl'
-import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui'
+import { IconMapPin, IconRoute } from '@/shared/components/icons'
+import { Badge, Card } from '@/shared/components/ui'
+import { cn } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
 import type { MonitoramentoParada, MonitoramentoRota } from '../types'
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
 
 function StatusBadge({ status }: { status: StatusExecucao }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status].badge}`}
+      className={cn(
+        'inline-flex shrink-0 items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
+        STATUS_COLORS[status].badge,
+      )}
     >
       {STATUS_LABELS[status]}
     </span>
   )
 }
 
-function MetricPill({
+function StatBlock({
   label,
   value,
+  tone,
 }: {
   label: string
-  value: string
+  value: string | number
+  tone: 'slate' | 'blue' | 'emerald' | 'amber'
 }) {
+  const tones = {
+    slate: 'border-slate-500/30 bg-slate-500/10',
+    blue: 'border-blue-500/30 bg-blue-500/10',
+    emerald: 'border-emerald-500/30 bg-emerald-500/10',
+    amber: 'border-amber-500/30 bg-amber-500/10',
+  }
+
   return (
-    <div className="rounded-lg border border-border/60 bg-surface/40 px-3 py-2 text-center">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+    <div className={cn('rounded-xl border px-3 py-2.5', tones[tone])}>
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className="text-sm font-semibold">{value}</p>
+      <p className="mt-0.5 text-lg font-semibold tabular-nums">{value}</p>
     </div>
   )
 }
 
-function ParadaRow({ parada }: { parada: MonitoramentoParada }) {
-  const isEmRota = parada.status === 'EM_ROTA'
-  const isEntregue = parada.status === 'ENTREGUE'
+function ProximaParadaHighlight({
+  proxima,
+  isPlanejada,
+}: {
+  proxima: NonNullable<MonitoramentoRota['proximaParada']>
+  isPlanejada: boolean
+}) {
+  const isEmRota = proxima.status === 'EM_ROTA'
 
   return (
-    <div
-      className={`rounded-xl border px-4 py-3 text-sm transition-colors ${STATUS_COLORS[parada.status].row} ${
-        isEmRota ? 'bg-blue-500/5' : 'bg-surface/20'
-      }`}
-    >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs text-muted-foreground">
-              #{parada.ordem}
+    <div className="rounded-2xl border border-blue-500/40 bg-gradient-to-br from-blue-500/15 to-blue-500/5 p-4">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-300">
+        <IconMapPin className="size-3.5" />
+        {isPlanejada
+          ? 'Primeira parada'
+          : isEmRota
+            ? 'Entrega em andamento'
+            : 'Próxima entrega'}
+      </div>
+      <p className="text-lg font-semibold">
+        {proxima.cliente?.trim() || 'Sem nome'}
+        {proxima.bairro ? (
+          <span className="font-normal text-muted-foreground">
+            {' '}
+            · {proxima.bairro}
+          </span>
+        ) : null}
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{proxima.endereco}</p>
+      {(proxima.distancia != null || proxima.tempo != null) && (
+        <div className="mt-3 flex flex-wrap gap-4 text-sm">
+          {proxima.distancia != null ? (
+            <span>
+              <span className="text-muted-foreground">Distância: </span>
+              <span className="font-medium">{formatDistance(proxima.distancia)}</span>
             </span>
-            <StatusBadge status={parada.status} />
-            {parada.dataHoraStatus ? (
-              <span className="text-xs text-muted-foreground">
-                {formatTimeBR(parada.dataHoraStatus)}
+          ) : null}
+          {proxima.tempo != null ? (
+            <span>
+              <span className="text-muted-foreground">Tempo: </span>
+              <span className="font-medium">{formatDuration(proxima.tempo)}</span>
+            </span>
+          ) : null}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ParadaTimelineItem({
+  parada,
+  isLast,
+}: {
+  parada: MonitoramentoParada
+  isLast: boolean
+}) {
+  const isActive = parada.status === 'EM_ROTA'
+  const markerColor = STATUS_COLORS[parada.status].marker
+
+  return (
+    <div className="relative flex gap-4">
+      <div className="flex flex-col items-center pt-1">
+        <div
+          className={cn(
+            'z-10 size-3.5 shrink-0 rounded-full ring-4 ring-card/80',
+            isActive && 'size-4 animate-pulse',
+          )}
+          style={{ backgroundColor: markerColor }}
+        />
+        {!isLast ? (
+          <div className="mt-1 w-px flex-1 bg-border/70" aria-hidden />
+        ) : null}
+      </div>
+
+      <div
+        className={cn(
+          'mb-4 min-w-0 flex-1 rounded-xl border p-3.5',
+          STATUS_COLORS[parada.status].row,
+          isActive ? 'bg-blue-500/5 shadow-sm shadow-blue-500/10' : 'bg-surface/20',
+        )}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex size-6 items-center justify-center rounded-md bg-black/20 text-xs font-semibold tabular-nums">
+            {parada.ordem}
+          </span>
+          <StatusBadge status={parada.status} />
+          {parada.dataHoraStatus ? (
+            <span className="text-xs text-muted-foreground">
+              {formatTimeBR(parada.dataHoraStatus)}
+            </span>
+          ) : null}
+        </div>
+
+        <p className="mt-2 font-medium leading-snug">
+          {parada.cliente?.trim() || 'Sem nome'}
+        </p>
+        <p className="mt-0.5 text-sm text-muted-foreground">{parada.endereco}</p>
+        {parada.bairro ? (
+          <p className="mt-1 text-xs text-muted-foreground">Bairro: {parada.bairro}</p>
+        ) : null}
+        {parada.statusObservacao ? (
+          <p className="mt-2 rounded-lg bg-amber-500/10 px-2 py-1 text-xs text-amber-200">
+            {parada.statusObservacao}
+          </p>
+        ) : null}
+
+        {(parada.distancia != null || parada.tempo != null) && (
+          <div className="mt-2 flex gap-3 text-xs text-muted-foreground">
+            {parada.distancia != null ? (
+              <span>{formatDistance(parada.distancia)}</span>
+            ) : null}
+            {parada.tempo != null ? (
+              <span className="font-medium text-foreground">
+                {formatDuration(parada.tempo)}
               </span>
             ) : null}
           </div>
-          <p className="font-medium">
-            {parada.cliente ?? 'Sem nome'}
-            {parada.bairro ? ` — ${parada.bairro}` : ''}
-          </p>
-          <p className="text-muted-foreground">{parada.endereco}</p>
-          {parada.statusObservacao ? (
-            <p className="text-xs text-amber-300/90">
-              Obs: {parada.statusObservacao}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="flex shrink-0 gap-2 text-right text-xs sm:flex-col sm:items-end">
-          {parada.distancia != null ? (
-            <span className="text-muted-foreground">
-              {formatDistance(parada.distancia)}
-            </span>
-          ) : null}
-          {parada.tempo != null ? (
-            <span className="font-medium">
-              {formatDuration(parada.tempo)}
-            </span>
-          ) : null}
-          {isEntregue && parada.distancia == null && parada.tempo == null ? (
-            <span className="text-emerald-400">Concluída</span>
-          ) : null}
-        </div>
+        )}
       </div>
     </div>
   )
 }
 
 export function MonitoramentoRotaCard({ rota }: { rota: MonitoramentoRota }) {
+  const [showAllStops, setShowAllStops] = useState(false)
   const proxima = rota.proximaParada
   const isRotaPlanejada =
     rota.stats.pendentes === rota.totalParadas && rota.totalParadas > 0
+  const isConcluida =
+    rota.stats.entregues === rota.totalParadas && rota.totalParadas > 0
+
+  const visibleParadas = showAllStops ? rota.paradas : rota.paradas.slice(0, 4)
+  const hiddenCount = rota.paradas.length - visibleParadas.length
 
   return (
-    <Card>
-      <CardHeader className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle className="text-base">{rota.motoboyNome}</CardTitle>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Partida: {rota.enderecoInicial}
-            </p>
+    <Card glass={false} className="overflow-hidden border-border/60 bg-card/80 p-0">
+      <div className="border-b border-border/60 bg-surface/25 px-5 py-4 sm:px-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-sm font-semibold text-primary">
+              {getInitials(rota.motoboyNome)}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-semibold tracking-tight">
+                  {rota.motoboyNome}
+                </h3>
+                {isRotaPlanejada ? (
+                  <Badge variant="warning">Planejada</Badge>
+                ) : isConcluida ? (
+                  <Badge variant="success">Concluída</Badge>
+                ) : (
+                  <Badge variant="success">Em execução</Badge>
+                )}
+              </div>
+              <p className="mt-1 flex items-start gap-1.5 text-sm text-muted-foreground">
+                <IconRoute className="mt-0.5 size-3.5 shrink-0" />
+                <span className="line-clamp-2">{rota.enderecoInicial}</span>
+              </p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {isRotaPlanejada ? (
-              <Badge variant="warning">Rota planejada</Badge>
-            ) : (
-              <Badge variant="success">Em execução</Badge>
-            )}
-            <Badge variant="default">
-              {rota.stats.entregues}/{rota.totalParadas} entregues
-            </Badge>
+
+          <div className="text-left sm:text-right">
+            <p className="text-3xl font-semibold tabular-nums text-emerald-400">
+              {rota.stats.percentual}%
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {rota.stats.entregues} de {rota.totalParadas} entregas
+            </p>
           </div>
         </div>
 
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Progresso da rota</span>
-            <span>{rota.stats.percentual}%</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-surface/60">
+        <div className="mt-4 space-y-2">
+          <div className="h-2.5 overflow-hidden rounded-full bg-surface/60">
             <div
-              className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-              style={{ width: `${rota.stats.percentual}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-500"
+              style={{ width: `${Math.max(rota.stats.percentual, 4)}%` }}
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <MetricPill label="Restante" value={formatDistance(rota.distanciaRestante)} />
-          <MetricPill label="Tempo est." value={formatDuration(rota.tempoRestante)} />
-          <MetricPill label="Em rota" value={String(rota.stats.emRota)} />
-          <MetricPill label="Pendentes" value={String(rota.stats.pendentes)} />
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <StatBlock
+            label="Restante"
+            value={formatDistance(rota.distanciaRestante)}
+            tone="slate"
+          />
+          <StatBlock
+            label="Tempo est."
+            value={formatDuration(rota.tempoRestante)}
+            tone="blue"
+          />
+          <StatBlock
+            label="Em rota"
+            value={rota.stats.emRota}
+            tone="blue"
+          />
+          <StatBlock
+            label="Pendentes"
+            value={rota.stats.pendentes}
+            tone="amber"
+          />
         </div>
+      </div>
 
+      <div className="space-y-5 px-5 py-5 sm:px-6">
         {proxima ? (
-          <div className="rounded-xl border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-blue-300">
-              {proxima.status === 'EM_ROTA' ? 'Parada em andamento' : 'Próxima parada'}
-            </p>
-            <p className="mt-1 font-medium">
-              #{proxima.ordem} — {proxima.cliente ?? 'Sem nome'}
-            </p>
-            <p className="text-muted-foreground">{proxima.endereco}</p>
-            <div className="mt-2 flex flex-wrap gap-3 text-xs">
-              {proxima.distancia != null ? (
-                <span>{formatDistance(proxima.distancia)} até a parada</span>
-              ) : null}
-              {proxima.tempo != null ? (
-                <span className="font-medium">
-                  {formatDuration(proxima.tempo)} estimado
-                </span>
-              ) : null}
-            </div>
-          </div>
-        ) : rota.stats.entregues === rota.totalParadas && rota.totalParadas > 0 ? (
-          <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300">
-            Rota concluída
+          <ProximaParadaHighlight proxima={proxima} isPlanejada={isRotaPlanejada} />
+        ) : isConcluida ? (
+          <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-center text-sm font-medium text-emerald-300">
+            Todas as entregas desta rota foram concluídas
           </div>
         ) : null}
-      </CardHeader>
 
-      <CardContent className="space-y-2">
-        {rota.paradas.map((parada) => (
-          <ParadaRow key={parada.paradaId} parada={parada} />
-        ))}
-      </CardContent>
+        <div>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h4 className="text-sm font-medium text-muted-foreground">
+              Paradas da rota
+            </h4>
+            <span className="text-xs text-muted-foreground">
+              {rota.totalParadas} no total
+            </span>
+          </div>
+
+          <div>
+            {visibleParadas.map((parada, index) => (
+              <ParadaTimelineItem
+                key={parada.paradaId}
+                parada={parada}
+                isLast={index === visibleParadas.length - 1 && hiddenCount === 0}
+              />
+            ))}
+          </div>
+
+          {hiddenCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowAllStops(true)}
+              className="w-full rounded-xl border border-border/60 bg-surface/20 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface/40 hover:text-foreground"
+            >
+              Ver mais {hiddenCount} parada(s)
+            </button>
+          ) : showAllStops && rota.paradas.length > 4 ? (
+            <button
+              type="button"
+              onClick={() => setShowAllStops(false)}
+              className="w-full rounded-xl border border-border/60 bg-surface/20 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface/40 hover:text-foreground"
+            >
+              Mostrar menos
+            </button>
+          ) : null}
+        </div>
+      </div>
     </Card>
   )
 }
