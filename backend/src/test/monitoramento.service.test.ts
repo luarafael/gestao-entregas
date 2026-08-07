@@ -13,6 +13,7 @@ const rotaRepository = vi.hoisted(() => ({
 
 const rotaExecucaoRepository = vi.hoisted(() => ({
   findByRotaId: vi.fn(),
+  initForRota: vi.fn(),
 }))
 
 const entregaRepository = vi.hoisted(() => ({
@@ -59,6 +60,7 @@ describe('MonitoramentoService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     entregaRepository.findByIds.mockResolvedValue([])
+    rotaExecucaoRepository.initForRota.mockResolvedValue([])
   })
 
   it('identifica rota em execução e concluída', () => {
@@ -135,6 +137,8 @@ describe('MonitoramentoService', () => {
         enderecoInicial: 'Depósito',
         distanciaTotal: 1000,
         tempoTotal: 300,
+        motoboyId: 'm1',
+        motoboy: { id: 'm1', nome: 'João' },
         paradas: [
           {
             id: 'p4',
@@ -181,6 +185,17 @@ describe('MonitoramentoService', () => {
         ]
       }
 
+      if (rotaId === 'rota-salva') {
+        return [
+          {
+            paradaId: 'p4',
+            status: 'PENDENTE',
+            observacao: null,
+            dataHoraStatus: null,
+          },
+        ]
+      }
+
       return []
     })
 
@@ -202,13 +217,15 @@ describe('MonitoramentoService', () => {
       },
     ])
 
-    const result = await service.getMonitoramento('2026-08-05')
+    const result = await service.getMonitoramento('2026-08-05', 'm1')
 
-    expect(result.rotas).toHaveLength(1)
-    expect(result.rotas[0]?.rotaId).toBe('rota-ativa')
+    expect(result.rotas).toHaveLength(2)
+    expect(result.rotas.map((rota) => rota.rotaId)).toEqual(
+      expect.arrayContaining(['rota-ativa', 'rota-salva']),
+    )
     expect(result.historico).toHaveLength(1)
     expect(result.historico[0]?.rotaId).toBe('rota-concluida')
-    expect(result.resumo.totalRotas).toBe(1)
+    expect(result.resumo.totalRotas).toBe(2)
     expect(result.resumo.rotasConcluidas).toBe(1)
   })
 
@@ -359,5 +376,51 @@ describe('MonitoramentoService', () => {
     expect(result.rotas[0]?.rotaId).toBe('rota-planejada')
     expect(result.rotas[0]?.motoboyNome).toBe('João')
     expect(result.rotas[0]?.stats.pendentes).toBe(2)
+  })
+
+  it('inicializa execuções ausentes e filtra rota manual por motoboyId da rota', async () => {
+    rotaRepository.findByDate.mockResolvedValue([
+      {
+        id: 'rota-manual',
+        enderecoInicial: 'Depósito',
+        distanciaTotal: 1000,
+        tempoTotal: 300,
+        motoboyId: 'm1',
+        motoboy: { id: 'm1', nome: 'João' },
+        paradas: [
+          {
+            id: 'p1',
+            ordem: 1,
+            entregaId: null,
+            cliente: 'Cliente manual',
+            endereco: 'Rua 1',
+            bairro: 'Centro',
+            telefone: null,
+            observacao: null,
+            distancia: 1000,
+            tempo: 300,
+          },
+        ],
+      },
+    ])
+
+    rotaExecucaoRepository.findByRotaId.mockResolvedValue([])
+    rotaExecucaoRepository.initForRota.mockResolvedValue([
+      {
+        paradaId: 'p1',
+        status: 'PENDENTE',
+        observacao: null,
+        dataHoraStatus: null,
+      },
+    ])
+
+    entregaRepository.findAllByDate.mockResolvedValue([])
+
+    const result = await service.getMonitoramento('2026-08-05', 'm1')
+
+    expect(rotaExecucaoRepository.initForRota).toHaveBeenCalledWith('rota-manual')
+    expect(result.rotas).toHaveLength(1)
+    expect(result.rotas[0]?.rotaId).toBe('rota-manual')
+    expect(result.rotas[0]?.motoboyNome).toBe('João')
   })
 })

@@ -1,4 +1,6 @@
 import { NotFoundError } from '../errors/app.error.js'
+import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
+import { entregaRepository } from '../repositories/entrega.repository.js'
 import { rotaRepository } from '../repositories/rota.repository.js'
 import { rotaExecucaoRepository } from '../repositories/rota-execucao.repository.js'
 import type {
@@ -20,6 +22,37 @@ import { formatRoutingAddress } from '../utils/geocoding.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { googleRoutesService } from './googleRoutes.service.js'
 import { osrmService } from './osrm.service.js'
+import { isAdminUser } from '../utils/auth-scope.utils.js'
+
+async function resolveMotoboyIdForSave(
+  user: AuthenticatedUser,
+  paradas: SaveRotaInput['paradas'],
+): Promise<string | null> {
+  if (!isAdminUser(user)) {
+    return user.id
+  }
+
+  const entregaIds = paradas
+    .map((parada) => parada.entregaId)
+    .filter((id): id is string => Boolean(id))
+
+  if (entregaIds.length === 0) {
+    return null
+  }
+
+  const entregas = await entregaRepository.findByIds(entregaIds)
+  const motoboyIds = new Set(
+    entregas
+      .map((entrega) => entrega.motoboyId)
+      .filter((id): id is string => Boolean(id)),
+  )
+
+  if (motoboyIds.size === 1) {
+    return [...motoboyIds][0]!
+  }
+
+  return null
+}
 
 function buildSuggestions(params: {
   paradas: OptimizeRotaInput['paradas']
@@ -278,8 +311,9 @@ export class RotaService {
     }
   }
 
-  async save(input: SaveRotaInput) {
-    const rota = await rotaRepository.create(input)
+  async save(user: AuthenticatedUser, input: SaveRotaInput) {
+    const motoboyId = await resolveMotoboyIdForSave(user, input.paradas)
+    const rota = await rotaRepository.create({ ...input, motoboyId })
     await rotaExecucaoRepository.initForRota(rota.id)
     return rota
   }
@@ -306,6 +340,7 @@ export class RotaService {
   async duplicate(id: string) {
     const rota = await this.findById(id)
     return rotaRepository.create({
+      motoboyId: rota.motoboyId,
       enderecoInicial: rota.enderecoInicial,
       distanciaTotal: Number(rota.distanciaTotal),
       tempoTotal: rota.tempoTotal,

@@ -4,7 +4,7 @@ import { DEFAULT_ENDERECO_PARTIDA } from '../schemas/rota.schema.js'
 import { toUtcDateOnlyFromBusinessTz } from '../utils/date.utils.js'
 
 export class RotaRepository {
-  async create(input: SaveRotaInput) {
+  async create(input: SaveRotaInput & { motoboyId?: string | null }) {
     const data = input.data ?? toUtcDateOnlyFromBusinessTz()
 
     return prisma.rotaPlanejada.create({
@@ -14,6 +14,7 @@ export class RotaRepository {
         distanciaTotal: input.distanciaTotal,
         tempoTotal: input.tempoTotal,
         aproximada: input.aproximada ?? false,
+        motoboyId: input.motoboyId ?? null,
         paradas: {
           create: input.paradas.map((parada) => ({
             entregaId: parada.entregaId ?? null,
@@ -74,7 +75,10 @@ export class RotaRepository {
     return prisma.rotaPlanejada.findMany({
       where: { data: date },
       orderBy: { criadoEm: 'desc' },
-      include: { paradas: { orderBy: { ordem: 'asc' } } },
+      include: {
+        paradas: { orderBy: { ordem: 'asc' } },
+        motoboy: { select: { id: true, nome: true } },
+      },
     })
   }
 

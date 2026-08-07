@@ -145,6 +145,19 @@ function rotaPertenceAoMotoboy(
   })
 }
 
+function rotaMatchesMotoboy(
+  rota: { motoboyId?: string | null },
+  paradas: MonitoramentoParada[],
+  entregaMap: Map<string, { motoboy?: { id: string; nome: string } | null }>,
+  motoboyId: string,
+): boolean {
+  if (rota.motoboyId === motoboyId) {
+    return true
+  }
+
+  return rotaPertenceAoMotoboy(paradas, entregaMap, motoboyId)
+}
+
 function getConcluidaEm(paradas: MonitoramentoParada[]): string | null {
   const timestamps = paradas
     .map((parada) => parada.dataHoraStatus)
@@ -163,6 +176,8 @@ function buildMonitoramentoRota(
     enderecoInicial: string
     distanciaTotal: unknown
     tempoTotal: number
+    motoboyId?: string | null
+    motoboy?: { id: string; nome: string } | null
   },
   paradas: MonitoramentoParada[],
   entregaMap: Map<string, { motoboy?: { id: string; nome: string } | null }>,
@@ -171,16 +186,18 @@ function buildMonitoramentoRota(
   const { distanciaRestante, tempoRestante } = computeRemaining(paradas)
   const proxima = getProximaParada(paradas)
 
-  let motoboyId: string | null = null
-  let motoboyNome = 'Sem motoboy'
+  let motoboyId = rota.motoboyId ?? null
+  let motoboyNome = rota.motoboy?.nome ?? 'Sem motoboy'
 
-  for (const parada of paradas) {
-    if (!parada.entregaId) continue
-    const entrega = entregaMap.get(parada.entregaId)
-    if (entrega?.motoboy) {
-      motoboyId = entrega.motoboy.id
-      motoboyNome = entrega.motoboy.nome
-      break
+  if (!motoboyId) {
+    for (const parada of paradas) {
+      if (!parada.entregaId) continue
+      const entrega = entregaMap.get(parada.entregaId)
+      if (entrega?.motoboy) {
+        motoboyId = entrega.motoboy.id
+        motoboyNome = entrega.motoboy.nome
+        break
+      }
     }
   }
 
@@ -245,10 +262,15 @@ export class MonitoramentoService {
     const historico: MonitoramentoRotaHistorico[] = []
 
     for (const rota of rotas) {
-      const execucoes = await rotaExecucaoRepository.findByRotaId(rota.id)
+      if (rota.paradas.length === 0) {
+        continue
+      }
+
+      let execucoes = await rotaExecucaoRepository.findByRotaId(rota.id)
 
       if (execucoes.length === 0) {
-        continue
+        const inited = await rotaExecucaoRepository.initForRota(rota.id)
+        execucoes = inited ?? []
       }
 
       const execucaoByParadaId = new Map(
@@ -279,7 +301,7 @@ export class MonitoramentoService {
 
       if (
         motoboyId &&
-        !rotaPertenceAoMotoboy(paradas, entregaMap, motoboyId)
+        !rotaMatchesMotoboy(rota, paradas, entregaMap, motoboyId)
       ) {
         continue
       }

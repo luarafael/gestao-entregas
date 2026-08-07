@@ -119,7 +119,7 @@ rotaRoutes.post(
   '/',
   validateBody(saveRotaSchema),
   asyncHandler(async (req, res) => {
-    const rota = await rotaService.save(req.body)
+    const rota = await rotaService.save(req.user!, req.body)
     res.status(201).json(rota)
   }),
 )
