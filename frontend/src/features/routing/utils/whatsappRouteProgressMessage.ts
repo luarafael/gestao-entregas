@@ -205,8 +205,6 @@ export function formatRouteCompletedWhatsAppText(
     '━━━━━━━━━━━━━━',
     '',
     `${WA.thanks} Todas as entregas foram concluídas com sucesso!`,
-    '',
-    'Mensagem gerada automaticamente pelo Planejador de Rotas.',
   )
 
   return lines.join('\n')
@@ -326,13 +324,6 @@ export function formatRouteProgressWhatsAppText(
   if (tempoRestante > 0) {
     lines.push(`Tempo restante: ${formatDuration(tempoRestante)}`)
   }
-
-  lines.push(
-    '',
-    '━━━━━━━━━━━━━━',
-    '',
-    'Mensagem gerada automaticamente pelo Planejador de Rotas.',
-  )
 
   return lines.join('\n')
 }
