@@ -20,6 +20,7 @@ import {
 } from '../utils/route-optimizer.js'
 import { formatRoutingAddress } from '../utils/geocoding.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
+import { toUtcDateOnlyFromBusinessTz } from '../utils/date.utils.js'
 import { googleRoutesService } from './googleRoutes.service.js'
 import { osrmService } from './osrm.service.js'
 import { isAdminUser } from '../utils/auth-scope.utils.js'
@@ -52,6 +53,23 @@ async function resolveMotoboyIdForSave(
   }
 
   return null
+}
+
+async function replacePendingRoutesForMotoboy(
+  motoboyId: string,
+  day: Date,
+) {
+  const existingRotas = await rotaRepository.findByMotoboyAndDate(motoboyId, day)
+
+  for (const existing of existingRotas) {
+    const hasProgress = existing.execucoes.some(
+      (execucao) => execucao.status !== 'PENDENTE',
+    )
+
+    if (!hasProgress) {
+      await rotaRepository.delete(existing.id)
+    }
+  }
 }
 
 function buildSuggestions(params: {
@@ -313,7 +331,13 @@ export class RotaService {
 
   async save(user: AuthenticatedUser, input: SaveRotaInput) {
     const motoboyId = await resolveMotoboyIdForSave(user, input.paradas)
-    const rota = await rotaRepository.create({ ...input, motoboyId })
+    const day = input.data ?? toUtcDateOnlyFromBusinessTz()
+
+    if (motoboyId) {
+      await replacePendingRoutesForMotoboy(motoboyId, day)
+    }
+
+    const rota = await rotaRepository.create({ ...input, data: day, motoboyId })
     await rotaExecucaoRepository.initForRota(rota.id)
     return rota
   }

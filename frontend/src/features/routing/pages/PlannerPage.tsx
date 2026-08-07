@@ -164,6 +164,43 @@ export function PlannerPage() {
     setResult(null)
     setOrderDirty(false)
     setReorderLocked(false)
+    setSavedRotaId(null)
+  }
+
+  const applySavedParadaIds = (
+    saved: RotaPlanejada,
+    paradas: PlannerStop[],
+  ) =>
+    paradas.map((stop) => {
+      const parada = saved.paradas.find(
+        (item) =>
+          item.ordem === stop.ordem &&
+          item.endereco === stop.endereco &&
+          (item.cliente ?? '') === (stop.cliente ?? ''),
+      )
+
+      return {
+        ...stop,
+        paradaId: parada?.id ?? stop.paradaId ?? null,
+      }
+    })
+
+  const persistCalculatedRoute = async (
+    optimized: OptimizedRouteResult,
+    options?: { silent?: boolean },
+  ) => {
+    const saved = await saveMutation.mutateAsync({
+      enderecoInicial: optimized.enderecoInicial,
+      distanciaTotal: optimized.distanciaTotal,
+      tempoTotal: optimized.tempoTotal,
+      aproximada: optimized.aproximada,
+      paradas: optimized.paradas,
+      silent: options?.silent ?? true,
+    })
+
+    setSavedRotaId(saved.id)
+    syncStops(applySavedParadaIds(saved, optimized.paradas))
+    return saved
   }
 
   const handleAddOrUpdate = (data: PlannerStopFormData) => {
@@ -246,9 +283,19 @@ export function PlannerPage() {
       paradas: currentStops,
       preservarOrdem: true,
     })
-    applyOptimizedResult(currentStops, optimized)
+    const merged = applyOptimizedResult(currentStops, optimized)
     setOrderDirty(false)
     setReorderLocked(true)
+
+    try {
+      await persistCalculatedRoute({ ...optimized, paradas: merged })
+    } catch {
+      toast(
+        'Rota recalculada, mas não foi possível atualizar o monitoramento.',
+        'error',
+      )
+    }
+
     toast('Rota recalculada com a ordem atual', 'success')
   }
 
@@ -262,7 +309,7 @@ export function PlannerPage() {
       enderecoInicial,
       paradas: stops,
     })
-    applyOptimizedResult(stops, optimized)
+    const merged = applyOptimizedResult(stops, optimized)
     setReorderLocked(true)
     setOrderDirty(false)
 
@@ -278,10 +325,20 @@ export function PlannerPage() {
       return
     }
 
+    try {
+      await persistCalculatedRoute({ ...optimized, paradas: merged })
+    } catch {
+      toast(
+        'Rota calculada, mas não foi possível registrar no monitoramento.',
+        'error',
+      )
+      return
+    }
+
     toast(
       optimized.aproximada
-        ? 'Rota calculada (aproximada)'
-        : 'Melhor rota calculada!',
+        ? 'Rota calculada e registrada (aproximada)'
+        : 'Melhor rota calculada e registrada!',
       optimized.aproximada ? 'info' : 'success',
     )
   }
@@ -401,32 +458,11 @@ export function PlannerPage() {
 
   const handleSave = async () => {
     if (!result) {
-      toast('Calcule a rota antes de salvar', 'error')
+      toast('Calcule a rota antes de registrar', 'error')
       return
     }
 
-    const saved = await saveMutation.mutateAsync({
-      enderecoInicial: result.enderecoInicial,
-      distanciaTotal: result.distanciaTotal,
-      tempoTotal: result.tempoTotal,
-      aproximada: result.aproximada,
-      paradas: result.paradas,
-    })
-
-    setSavedRotaId(saved.id)
-    const withParadaIds = result.paradas.map((stop) => {
-      const parada = saved.paradas.find(
-        (item) =>
-          item.ordem === stop.ordem &&
-          item.endereco === stop.endereco &&
-          (item.cliente ?? '') === (stop.cliente ?? ''),
-      )
-      return {
-        ...stop,
-        paradaId: parada?.id ?? stop.paradaId ?? null,
-      }
-    })
-    syncStops(withParadaIds)
+    await persistCalculatedRoute(result, { silent: false })
   }
 
   const handleCopyWhatsApp = () => {
@@ -625,7 +661,9 @@ export function PlannerPage() {
                 {orderDirty ? (
                   <Button
                     variant="secondary"
-                    isLoading={optimizeMutation.isPending}
+                    isLoading={
+                      optimizeMutation.isPending || saveMutation.isPending
+                    }
                     onClick={handleRecalculateManualOrder}
                   >
                     Recalcular rota
@@ -634,7 +672,7 @@ export function PlannerPage() {
                 <Button
                   size="lg"
                   className="sm:ml-auto"
-                  isLoading={optimizeMutation.isPending}
+                  isLoading={optimizeMutation.isPending || saveMutation.isPending}
                   onClick={handleOptimize}
                 >
                   <span className="inline-flex items-center gap-2">
@@ -642,6 +680,11 @@ export function PlannerPage() {
                     Calcular melhor rota
                   </span>
                 </Button>
+                {savedRotaId ? (
+                  <span className="w-full text-xs text-muted-foreground sm:w-auto">
+                    Visível no monitoramento
+                  </span>
+                ) : null}
               </div>
 
               <ListaEntregas
@@ -759,17 +802,18 @@ export function PlannerPage() {
               ) : null}
 
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={handleSave}
-                  isLoading={saveMutation.isPending}
-                  disabled={!result}
-                >
-                  Salvar no histórico
-                </Button>
                 <Button onClick={handleNavigate} disabled={displayStops.length === 0}>
                   Iniciar navegação
                 </Button>
+                {result && !savedRotaId ? (
+                  <Button
+                    variant="secondary"
+                    onClick={handleSave}
+                    isLoading={saveMutation.isPending}
+                  >
+                    Registrar no monitoramento
+                  </Button>
+                ) : null}
               </div>
             </div>
           </div>

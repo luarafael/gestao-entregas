@@ -82,6 +82,13 @@ export class RotaRepository {
     })
   }
 
+  async findByMotoboyAndDate(motoboyId: string, date: Date) {
+    return prisma.rotaPlanejada.findMany({
+      where: { motoboyId, data: date },
+      include: { execucoes: { select: { status: true } } },
+    })
+  }
+
   async delete(id: string) {
     return prisma.rotaPlanejada.delete({ where: { id } })
   }

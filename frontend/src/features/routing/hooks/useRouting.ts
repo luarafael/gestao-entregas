@@ -33,13 +33,22 @@ export function useSaveRoute() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: routingService.save,
-    onSuccess: () => {
+    mutationFn: (variables: Parameters<typeof routingService.save>[0] & { silent?: boolean }) =>
+      routingService.save({
+        enderecoInicial: variables.enderecoInicial,
+        distanciaTotal: variables.distanciaTotal,
+        tempoTotal: variables.tempoTotal,
+        aproximada: variables.aproximada,
+        paradas: variables.paradas,
+      }),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
-      toast('Rota salva no histórico!', 'success')
+      if (!variables.silent) {
+        toast('Rota registrada no monitoramento!', 'success')
+      }
     },
     onError: () => {
-      toast('Erro ao salvar rota', 'error')
+      toast('Erro ao registrar rota no monitoramento', 'error')
     },
   })
 }
