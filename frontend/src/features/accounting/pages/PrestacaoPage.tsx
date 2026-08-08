@@ -31,11 +31,14 @@ import {
   usePrestacaoClientePreview,
   usePrestacaoHistorico,
   useSubmitPrestacaoCliente,
+  useUpdatePrestacaoCliente,
 } from '../hooks/usePrestacaoCliente'
 import {
   useCopyPrestacaoMotoboyWhatsApp,
+  useDeletePrestacaoMotoboy,
   usePrestacaoMotoboyPreview,
   useSubmitPrestacaoMotoboy,
+  useUpdatePrestacaoMotoboy,
 } from '@/features/motoboy/hooks/usePrestacaoMotoboy'
 import { prestacaoService } from '../services/prestacao.service'
 import { prestacaoMotoboyService } from '@/features/motoboy/services/prestacaoMotoboy.service'
@@ -67,7 +70,7 @@ import {
 } from '../schemas/prestacaoCliente.schema'
 import { formatPrestacaoMotoboyDate } from '@/features/motoboy/schemas/prestacaoMotoboy.schema'
 import { exportPrestacaoPdf } from '../utils/exportPrestacaoPdf'
-import type { GeneratePrestacaoResponse, PrestacaoContas } from '../types'
+import type { GeneratePrestacaoResponse } from '../types'
 import type { SubmitPrestacaoMotoboyResponse } from '@/features/motoboy/types/prestacaoMotoboy.types'
 import type {
   PrestacaoHistoricoFilter,
@@ -100,7 +103,7 @@ export function PrestacaoPage() {
   const [sendingId, setSendingId] = useState<string | null>(null)
   const [sendModalOpen, setSendModalOpen] = useState(false)
   const [sendPayload, setSendPayload] = useState<WhatsAppSendPayload | null>(null)
-  const [editingPrestacao, setEditingPrestacao] = useState<PrestacaoContas | null>(
+  const [editingItem, setEditingItem] = useState<PrestacaoHistoricoItem | null>(
     null,
   )
   const [editObservacoes, setEditObservacoes] = useState('')
@@ -116,7 +119,10 @@ export function PrestacaoPage() {
   const copyMotoboyMutation = useCopyPrestacaoMotoboyWhatsApp()
   const copyClienteMutation = useCopyPrestacaoClienteWhatsApp()
   const updateMutation = useUpdatePrestacao()
+  const updateMotoboyMutation = useUpdatePrestacaoMotoboy()
+  const updateClienteMutation = useUpdatePrestacaoCliente()
   const deleteMutation = useDeletePrestacao()
+  const deleteMotoboyMutation = useDeletePrestacaoMotoboy()
   const deleteClienteMutation = useDeletePrestacaoCliente()
 
   const empresaForm = useForm<GeneratePrestacaoFormData>({
@@ -290,46 +296,68 @@ export function PrestacaoPage() {
     }
   }
 
-  const buildDailyReportFromPrestacao = (item: PrestacaoContas) => ({
+  const buildDailyReportFromPrestacao = (
+    item: { data: string; totalEntregas: number; valorTotal: number | string; valorPendencias?: number | string; valorFinal: number | string; valorRepasseMotoboys?: number | string; valorLiquido?: number | string; observacoes?: string | null },
+  ) => ({
     date: item.data.slice(0, 10),
     totalEntregas: item.totalEntregas,
     valorTotal: Number(item.valorTotal),
-    valorPendencias: Number(item.valorPendencias),
+    valorPendencias: Number(item.valorPendencias ?? 0),
     valorFinal: Number(item.valorFinal),
-    valorRepasseMotoboys: Number(item.valorRepasseMotoboys),
-    valorLiquido: Number(item.valorLiquido),
+    valorRepasseMotoboys: Number(item.valorRepasseMotoboys ?? 0),
+    valorLiquido: Number(item.valorLiquido ?? 0),
     observacoes: item.observacoes,
   })
 
   const handleExportHistoryPdf = async (item: PrestacaoHistoricoItem) => {
-    if (item.tipo === 'empresa') {
-      try {
+    try {
+      if (item.tipo === 'empresa') {
         const prestacao = await prestacaoService.getById(item.id)
         exportPrestacaoPdf(buildDailyReportFromPrestacao(prestacao))
-      } catch {
-        toast('Erro ao exportar PDF', 'error')
-        return
+      } else if (item.tipo === 'motoboy') {
+        const prestacao = await prestacaoMotoboyService.getById(item.id)
+        exportPrestacaoPdf({
+          date: prestacao.data.slice(0, 10),
+          totalEntregas: prestacao.totalEntregas,
+          valorTotal: Number(prestacao.valorTotal),
+          valorPendencias: Number(prestacao.valorPendencias),
+          valorFinal: Number(prestacao.valorFinal),
+          observacoes: prestacao.observacoes,
+        })
+      } else {
+        const prestacao = await prestacaoClienteService.getById(item.id)
+        exportPrestacaoPdf({
+          date: prestacao.data.slice(0, 10),
+          totalEntregas: prestacao.totalEntregas,
+          valorTotal: Number(prestacao.valorTotal),
+          valorPendencias: 0,
+          valorFinal: Number(prestacao.valorFinal),
+          observacoes: prestacao.observacoes,
+        })
       }
-    } else {
-      exportPrestacaoPdf({
-        date: item.data,
-        totalEntregas: item.totalEntregas,
-        valorTotal: item.valorFinal,
-        valorPendencias: 0,
-        valorFinal: item.valorFinal,
-        observacoes: null,
-      })
+      toast('PDF exportado com sucesso', 'success')
+    } catch {
+      toast('Erro ao exportar PDF', 'error')
     }
-    toast('PDF exportado com sucesso', 'success')
   }
 
   const handleOpenEdit = async (item: PrestacaoHistoricoItem) => {
-    if (item.tipo !== 'empresa') return
-
     try {
-      const prestacao = await prestacaoService.getById(item.id)
-      setEditingPrestacao(prestacao)
-      setEditObservacoes(prestacao.observacoes ?? '')
+      let observacoes = ''
+
+      if (item.tipo === 'empresa') {
+        const prestacao = await prestacaoService.getById(item.id)
+        observacoes = prestacao.observacoes ?? ''
+      } else if (item.tipo === 'motoboy') {
+        const prestacao = await prestacaoMotoboyService.getById(item.id)
+        observacoes = prestacao.observacoes ?? ''
+      } else {
+        const prestacao = await prestacaoClienteService.getById(item.id)
+        observacoes = prestacao.observacoes ?? ''
+      }
+
+      setEditingItem(item)
+      setEditObservacoes(observacoes)
       setEditRecalcular(false)
     } catch {
       toast('Erro ao carregar prestação para edição', 'error')
@@ -337,17 +365,22 @@ export function PrestacaoPage() {
   }
 
   const handleSaveEdit = async () => {
-    if (!editingPrestacao) return
+    if (!editingItem) return
 
-    await updateMutation.mutateAsync({
-      id: editingPrestacao.id,
-      data: {
-        observacoes: editObservacoes.trim() || null,
-        recalcular: editRecalcular,
-      },
-    })
+    const payload = {
+      observacoes: editObservacoes.trim() || null,
+      recalcular: editRecalcular,
+    }
 
-    setEditingPrestacao(null)
+    if (editingItem.tipo === 'empresa') {
+      await updateMutation.mutateAsync({ id: editingItem.id, data: payload })
+    } else if (editingItem.tipo === 'motoboy') {
+      await updateMotoboyMutation.mutateAsync({ id: editingItem.id, data: payload })
+    } else {
+      await updateClienteMutation.mutateAsync({ id: editingItem.id, data: payload })
+    }
+
+    setEditingItem(null)
   }
 
   const handleConfirmDelete = async () => {
@@ -363,10 +396,35 @@ export function PrestacaoPage() {
       if (clienteGenerated?.prestacao.id === deletingItem.id) {
         setClienteGenerated(null)
       }
+    } else {
+      await deleteMotoboyMutation.mutateAsync(deletingItem.id)
+      if (motoboyGenerated?.prestacao.id === deletingItem.id) {
+        setMotoboyGenerated(null)
+      }
     }
 
     setDeletingItem(null)
   }
+
+  const editModalCopy = editingItem
+    ? {
+        empresa: {
+          title: 'Editar prestação — Empresa',
+          description:
+            'Atualize observações ou recalcule os valores com base nas entregas e pendências do dia.',
+        },
+        motoboy: {
+          title: 'Editar prestação — Motoboy',
+          description:
+            'Atualize observações ou recalcule os valores com base nas entregas e repasses do motoboy.',
+        },
+        cliente: {
+          title: 'Editar prestação — Cliente',
+          description:
+            'Atualize observações ou recalcule os valores com base nas entregas do cliente.',
+        },
+      }[editingItem.tipo]
+    : null
 
   const handleExportPreviewPdf = () => {
     if (prestacaoScope === 'motoboy') {
@@ -713,7 +771,9 @@ export function PrestacaoPage() {
             copyingId={copyingId}
             sendingId={sendingId}
             deletingId={
-              deleteMutation.isPending || deleteClienteMutation.isPending
+              deleteMutation.isPending ||
+              deleteClienteMutation.isPending ||
+              deleteMotoboyMutation.isPending
                 ? deletingItem?.id ?? null
                 : null
             }
@@ -722,14 +782,19 @@ export function PrestacaoPage() {
       </section>
 
       <PrestacaoEditModal
-        prestacao={editingPrestacao}
-        isOpen={Boolean(editingPrestacao)}
-        isSaving={updateMutation.isPending}
+        isOpen={Boolean(editingItem)}
+        isSaving={
+          updateMutation.isPending ||
+          updateMotoboyMutation.isPending ||
+          updateClienteMutation.isPending
+        }
         observacoes={editObservacoes}
         recalcular={editRecalcular}
+        title={editModalCopy?.title}
+        description={editModalCopy?.description}
         onObservacoesChange={setEditObservacoes}
         onRecalcularChange={setEditRecalcular}
-        onClose={() => setEditingPrestacao(null)}
+        onClose={() => setEditingItem(null)}
         onSave={handleSaveEdit}
       />
 
@@ -751,7 +816,11 @@ export function PrestacaoPage() {
         confirmLabel="Excluir"
         variant="danger"
         onConfirm={handleConfirmDelete}
-        isLoading={deleteMutation.isPending || deleteClienteMutation.isPending}
+        isLoading={
+          deleteMutation.isPending ||
+          deleteClienteMutation.isPending ||
+          deleteMotoboyMutation.isPending
+        }
       />
     </div>
   )

@@ -11,6 +11,7 @@ import {
   listPrestacoesClienteSchema,
   previewPrestacaoClienteQuerySchema,
   submitPrestacaoClienteSchema,
+  updatePrestacaoClienteSchema,
   type ListClientesByDateQuery,
   type ListPrestacoesClienteInput,
   type PreviewPrestacaoClienteQuery,
@@ -76,6 +77,18 @@ prestacaoClienteRoutes.get(
   '/:id',
   asyncHandler(async (req, res) => {
     const prestacao = await prestacaoClienteService.findById(getRouteParam(req, 'id'))
+    res.json(prestacao)
+  }),
+)
+
+prestacaoClienteRoutes.put(
+  '/:id',
+  validateBody(updatePrestacaoClienteSchema),
+  asyncHandler(async (req, res) => {
+    const prestacao = await prestacaoClienteService.update(
+      getRouteParam(req, 'id'),
+      req.body,
+    )
     res.json(prestacao)
   }),
 )

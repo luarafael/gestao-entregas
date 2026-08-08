@@ -64,6 +64,18 @@ export class PrestacaoClienteRepository {
   async delete(id: string) {
     return prisma.prestacaoCliente.delete({ where: { id } })
   }
+
+  async update(
+    id: string,
+    data: {
+      totalEntregas?: number
+      valorTotal?: number
+      valorFinal?: number
+      observacoes?: string | null
+    },
+  ) {
+    return prisma.prestacaoCliente.update({ where: { id }, data })
+  }
 }
 
 export const prestacaoClienteRepository = new PrestacaoClienteRepository()

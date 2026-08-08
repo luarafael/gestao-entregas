@@ -5,6 +5,7 @@ import type {
   ListClientesByDateQuery,
   ListPrestacoesClienteInput,
   SubmitPrestacaoClienteInput,
+  UpdatePrestacaoClienteInput,
 } from '../schemas/prestacao-cliente.schema.js'
 import {
   formatDateOnlyISO,
@@ -171,6 +172,30 @@ export class PrestacaoClienteService {
   async delete(id: string) {
     await this.findById(id)
     return prestacaoClienteRepository.delete(id)
+  }
+
+  async update(id: string, input: UpdatePrestacaoClienteInput) {
+    const prestacao = await this.findById(id)
+
+    if (input.recalcular) {
+      const date = this.resolveStoredDate(prestacao.data)
+      const totals = await this.calculateTotals(prestacao.nomeCliente, date)
+
+      return prestacaoClienteRepository.update(id, {
+        totalEntregas: totals.totalEntregas,
+        valorTotal: totals.valorTotal,
+        valorFinal: totals.valorFinal,
+        observacoes:
+          input.observacoes === undefined
+            ? prestacao.observacoes
+            : input.observacoes,
+      })
+    }
+
+    return prestacaoClienteRepository.update(id, {
+      observacoes:
+        input.observacoes === undefined ? prestacao.observacoes : input.observacoes,
+    })
   }
 }
 

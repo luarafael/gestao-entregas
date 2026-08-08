@@ -7,6 +7,7 @@ import type {
   SubmitPrestacaoClienteResponse,
 } from '../types/prestacaoCliente.types'
 import type { SubmitPrestacaoClienteFormData } from '../schemas/prestacaoCliente.schema'
+import type { PrestacaoCliente } from '../types/prestacaoCliente.types'
 
 export const prestacaoClienteService = {
   listClientesByDate(data: string) {
@@ -36,6 +37,17 @@ export const prestacaoClienteService = {
 
   getWhatsAppText(id: string) {
     return apiFetch<{ text: string }>(`/api/prestacoes-cliente/${id}/whatsapp`)
+  },
+
+  getById(id: string) {
+    return apiFetch<PrestacaoCliente>(`/api/prestacoes-cliente/${id}`)
+  },
+
+  update(id: string, data: { observacoes?: string | null; recalcular?: boolean }) {
+    return apiFetch<PrestacaoCliente>(`/api/prestacoes-cliente/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
   },
 
   delete(id: string) {

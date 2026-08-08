@@ -13,6 +13,7 @@ import type {
   ListPrestacoesMotoboyInput,
   RejectPrestacaoMotoboyInput,
   SubmitPrestacaoMotoboyInput,
+  UpdatePrestacaoMotoboyInput,
 } from '../schemas/prestacao-motoboy.schema.js'
 import { assertOwnsResource, isAdminUser } from '../utils/auth-scope.utils.js'
 import {
@@ -292,6 +293,51 @@ export class PrestacaoMotoboyService {
         prestacao.motoboy.pix,
       ),
     }
+  }
+
+  async update(user: AuthenticatedUser, id: string, input: UpdatePrestacaoMotoboyInput) {
+    if (!isAdminUser(user)) {
+      throw new ForbiddenError()
+    }
+
+    const prestacao = await prestacaoMotoboyRepository.findById(id)
+    if (!prestacao) {
+      throw new NotFoundError('Prestação não encontrada')
+    }
+
+    if (input.recalcular) {
+      const date = this.resolveStoredDate(prestacao.data)
+      const totals = await this.calculateTotals(prestacao.motoboyId, date)
+
+      return prestacaoMotoboyRepository.update(id, {
+        totalEntregas: totals.totalEntregas,
+        valorTotal: totals.valorTotal,
+        valorPendencias: totals.valorPendencias,
+        valorFinal: totals.valorFinal,
+        observacoes:
+          input.observacoes === undefined
+            ? prestacao.observacoes
+            : input.observacoes,
+      })
+    }
+
+    return prestacaoMotoboyRepository.update(id, {
+      observacoes:
+        input.observacoes === undefined ? prestacao.observacoes : input.observacoes,
+    })
+  }
+
+  async delete(user: AuthenticatedUser, id: string) {
+    if (!isAdminUser(user)) {
+      throw new ForbiddenError()
+    }
+
+    const prestacao = await prestacaoMotoboyRepository.findById(id)
+    if (!prestacao) {
+      throw new NotFoundError('Prestação não encontrada')
+    }
+
+    return prestacaoMotoboyRepository.delete(id)
   }
 }
 

@@ -57,4 +57,19 @@ export const prestacaoMotoboyService = {
       `/api/prestacoes-motoboy/${id}/whatsapp`,
     )
   },
+
+  getById(id: string) {
+    return apiFetch<PrestacaoMotoboy>(`/api/prestacoes-motoboy/${id}`)
+  },
+
+  update(id: string, data: { observacoes?: string | null; recalcular?: boolean }) {
+    return apiFetch<PrestacaoMotoboy>(`/api/prestacoes-motoboy/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete(id: string) {
+    return apiFetch<void>(`/api/prestacoes-motoboy/${id}`, { method: 'DELETE' })
+  },
 }

@@ -81,6 +81,29 @@ export function useDeletePrestacaoCliente() {
   })
 }
 
+export function useUpdatePrestacaoCliente() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: { observacoes?: string | null; recalcular?: boolean }
+    }) => prestacaoClienteService.update(id, data),
+    onSuccess: () => {
+      invalidatePrestacaoRelated(queryClient)
+      queryClient.invalidateQueries({ queryKey: [PRESTACAO_CLIENTE_QUERY_KEY] })
+      queryClient.invalidateQueries({ queryKey: [PRESTACAO_HISTORICO_QUERY_KEY] })
+      toast('Prestação do cliente atualizada!', 'success')
+    },
+    onError: () => {
+      toast('Erro ao atualizar prestação do cliente', 'error')
+    },
+  })
+}
+
 export function useCopyPrestacaoClienteWhatsApp() {
   return useMutation({
     mutationFn: async (text: string) => {

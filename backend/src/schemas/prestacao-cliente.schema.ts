@@ -38,6 +38,11 @@ export const listClientesByDateQuerySchema = z.object({
     .transform((value) => toUtcDateOnly(value)),
 })
 
+export const updatePrestacaoClienteSchema = z.object({
+  observacoes: z.string().trim().nullable().optional(),
+  recalcular: z.boolean().optional(),
+})
+
 export const listHistoricoPrestacaoSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
@@ -58,3 +63,4 @@ export type ListPrestacoesClienteInput = z.infer<typeof listPrestacoesClienteSch
 export type ListClientesByDateQuery = z.infer<typeof listClientesByDateQuerySchema>
 export type ListHistoricoPrestacaoInput = z.infer<typeof listHistoricoPrestacaoSchema>
 export type PrestacaoWhatsAppQuery = z.infer<typeof prestacaoWhatsAppQuerySchema>
+export type UpdatePrestacaoClienteInput = z.infer<typeof updatePrestacaoClienteSchema>

@@ -41,6 +41,11 @@ export const rejectPrestacaoMotoboySchema = z.object({
   motivoRejeicao: z.string().trim().min(1, 'Informe o motivo da rejeição'),
 })
 
+export const updatePrestacaoMotoboySchema = z.object({
+  observacoes: z.string().trim().nullable().optional(),
+  recalcular: z.boolean().optional(),
+})
+
 export const listPendentesQuerySchema = z.object({
   motoboyId: z.string().trim().min(1).optional(),
 })
@@ -52,3 +57,4 @@ export type PreviewPrestacaoMotoboyQuery = z.infer<
   typeof previewPrestacaoMotoboyQuerySchema
 >
 export type RejectPrestacaoMotoboyInput = z.infer<typeof rejectPrestacaoMotoboySchema>
+export type UpdatePrestacaoMotoboyInput = z.infer<typeof updatePrestacaoMotoboySchema>

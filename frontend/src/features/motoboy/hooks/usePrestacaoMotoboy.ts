@@ -70,3 +70,43 @@ export function useCopyPrestacaoMotoboyWhatsApp() {
     },
   })
 }
+
+export function useUpdatePrestacaoMotoboy() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: { observacoes?: string | null; recalcular?: boolean }
+    }) => prestacaoMotoboyService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PRESTACAO_MOTOBOY_QUERY_KEY] })
+      queryClient.invalidateQueries({ queryKey: ['prestacoes-historico'] })
+      invalidatePrestacaoRelated(queryClient)
+      toast('Prestação do motoboy atualizada!', 'success')
+    },
+    onError: () => {
+      toast('Erro ao atualizar prestação do motoboy', 'error')
+    },
+  })
+}
+
+export function useDeletePrestacaoMotoboy() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => prestacaoMotoboyService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PRESTACAO_MOTOBOY_QUERY_KEY] })
+      queryClient.invalidateQueries({ queryKey: ['prestacoes-historico'] })
+      invalidatePrestacaoRelated(queryClient)
+      toast('Prestação do motoboy excluída!', 'success')
+    },
+    onError: () => {
+      toast('Erro ao excluir prestação do motoboy', 'error')
+    },
+  })
+}

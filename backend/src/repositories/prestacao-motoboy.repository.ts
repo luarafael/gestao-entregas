@@ -139,6 +139,10 @@ export class PrestacaoMotoboyRepository {
       },
     })
   }
+
+  async delete(id: string) {
+    return prisma.prestacaoMotoboy.delete({ where: { id } })
+  }
 }
 
 export const prestacaoMotoboyRepository = new PrestacaoMotoboyRepository()

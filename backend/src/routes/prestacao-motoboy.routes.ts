@@ -13,6 +13,7 @@ import {
   previewPrestacaoMotoboyQuerySchema,
   rejectPrestacaoMotoboySchema,
   submitPrestacaoMotoboySchema,
+  updatePrestacaoMotoboySchema,
   type ListPendentesQuery,
   type ListPrestacoesMotoboyInput,
   type PreviewPrestacaoMotoboyQuery,
@@ -114,6 +115,29 @@ prestacaoMotoboyRoutes.post(
       req.body,
     )
     res.json(prestacao)
+  }),
+)
+
+prestacaoMotoboyRoutes.put(
+  '/:id',
+  requireRole('ADMIN'),
+  validateBody(updatePrestacaoMotoboySchema),
+  asyncHandler(async (req, res) => {
+    const prestacao = await prestacaoMotoboyService.update(
+      req.user!,
+      getRouteParam(req, 'id'),
+      req.body,
+    )
+    res.json(prestacao)
+  }),
+)
+
+prestacaoMotoboyRoutes.delete(
+  '/:id',
+  requireRole('ADMIN'),
+  asyncHandler(async (req, res) => {
+    await prestacaoMotoboyService.delete(req.user!, getRouteParam(req, 'id'))
+    res.status(204).send()
   }),
 )
 

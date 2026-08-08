@@ -119,7 +119,7 @@ export function PrestacaoUnifiedHistory({
                 </td>
                 <td className="px-3 py-3">
                   <div className="flex flex-wrap justify-end gap-2">
-                    {item.tipo === 'empresa' && onEdit ? (
+                    {onEdit ? (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -128,7 +128,7 @@ export function PrestacaoUnifiedHistory({
                         Editar
                       </Button>
                     ) : null}
-                    {onExportPdf && item.tipo !== 'motoboy' ? (
+                    {onExportPdf ? (
                       <Button
                         variant="secondary"
                         size="sm"
@@ -155,7 +155,9 @@ export function PrestacaoUnifiedHistory({
                         WhatsApp
                       </Button>
                     ) : null}
-                    {(item.tipo === 'empresa' || item.tipo === 'cliente') &&
+                    {(item.tipo === 'empresa' ||
+                      item.tipo === 'cliente' ||
+                      item.tipo === 'motoboy') &&
                     onDelete ? (
                       <Button
                         variant="danger"
