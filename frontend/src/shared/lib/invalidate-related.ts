@@ -16,6 +16,8 @@ export function invalidatePendingRelated(queryClient: QueryClient) {
 
 export function invalidatePrestacaoRelated(queryClient: QueryClient) {
   queryClient.invalidateQueries({ queryKey: ['prestacoes'] })
+  queryClient.invalidateQueries({ queryKey: ['prestacoes-cliente'] })
+  queryClient.invalidateQueries({ queryKey: ['prestacoes-historico'] })
   queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
   queryClient.invalidateQueries({ queryKey: ['reports'] })
 }

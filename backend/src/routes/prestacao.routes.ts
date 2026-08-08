@@ -14,9 +14,27 @@ import {
   type ListPrestacoesInput,
   type PreviewPrestacaoQuery,
 } from '../schemas/prestacao.schema.js'
+import {
+  listHistoricoPrestacaoSchema,
+  prestacaoWhatsAppQuerySchema,
+  type ListHistoricoPrestacaoInput,
+  type PrestacaoWhatsAppQuery,
+} from '../schemas/prestacao-cliente.schema.js'
+import { prestacaoHistoricoService } from '../services/prestacao-historico.service.js'
 import { prestacaoService } from '../services/prestacao.service.js'
 
 export const prestacaoRoutes = Router()
+
+prestacaoRoutes.get(
+  '/historico',
+  validateQuery(listHistoricoPrestacaoSchema),
+  asyncHandler(async (req, res) => {
+    const result = await prestacaoHistoricoService.list(
+      getValidatedQuery<ListHistoricoPrestacaoInput>(req),
+    )
+    res.json(result)
+  }),
+)
 
 prestacaoRoutes.get(
   '/',
@@ -50,8 +68,13 @@ prestacaoRoutes.post(
 
 prestacaoRoutes.get(
   '/:id/whatsapp',
+  validateQuery(prestacaoWhatsAppQuerySchema),
   asyncHandler(async (req, res) => {
-    const text = await prestacaoService.getWhatsAppText(getRouteParam(req, 'id'))
+    const query = getValidatedQuery<PrestacaoWhatsAppQuery>(req)
+    const text = await prestacaoService.getWhatsAppText(
+      getRouteParam(req, 'id'),
+      query,
+    )
     res.json({ text })
   }),
 )

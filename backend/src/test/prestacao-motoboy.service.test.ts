@@ -146,7 +146,7 @@ describe('PrestacaoMotoboyService', () => {
 
     expect(entregaRepository.getStatsByDate).toHaveBeenCalledWith(
       expect.any(Date),
-      'motoboy-1',
+      { motoboyId: 'motoboy-1' },
     )
     expect(preview.valorFinal).toBe(45)
   })

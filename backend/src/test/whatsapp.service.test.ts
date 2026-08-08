@@ -78,7 +78,8 @@ describe('generateWhatsAppText', () => {
     const text = generateWhatsAppText(prestacao, [], [])
 
     expect(text).toContain('Nenhuma entrega registrada')
-    expect(text).toContain('Nenhuma pendência')
+    expect(text).not.toContain('Nenhuma pendência')
+    expect(text).not.toContain('*Pendências*')
   })
 
   it('should mark deliveries paid by client and show summary', () => {
@@ -137,7 +138,7 @@ describe('generateWhatsAppText', () => {
     expect(text).toContain('3 entrega(s)')
   })
 
-  it('agrupa entregas por motoboy quando houver mais de um', () => {
+  it('agrupa entregas por motoboy quando houver motoboy atribuído', () => {
     const text = generateWhatsAppText(
       prestacao,
       [

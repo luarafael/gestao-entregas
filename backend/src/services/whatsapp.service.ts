@@ -18,6 +18,12 @@ interface EntregaSummary {
   valorEntrega: number | { toString(): string }
   pagoPeloCliente?: boolean
   motoboyNome?: string | null
+  motoboyId?: string | null
+}
+
+export interface GenerateWhatsAppOptions {
+  motoboyId?: string
+  agruparPorMotoboy?: boolean
 }
 
 interface PendenciaSummary {
@@ -40,40 +46,60 @@ function formatEntregaLine(entrega: EntregaSummary): string {
   return `• ${WA.pin} ${entrega.bairro} - ${WA.user} ${cliente} - ${WA.money} ${valor}${pagoPeloCliente}`
 }
 
-function appendEntregasSection(lines: string[], entregas: EntregaSummary[]) {
+function appendEntregasSection(
+  lines: string[],
+  entregas: EntregaSummary[],
+  options?: { agruparPorMotoboy?: boolean; motoboyId?: string },
+) {
+  const filtered = options?.motoboyId
+    ? entregas.filter((entrega) => entrega.motoboyId === options.motoboyId)
+    : entregas
+
   lines.push(`${WA.truck} *Entregas realizadas:*`, '')
 
-  if (entregas.length === 0) {
+  if (filtered.length === 0) {
     lines.push('• Nenhuma entrega registrada', '')
     return
   }
 
   const motoboyNames = [
     ...new Set(
-      entregas
+      filtered
         .map((entrega) => entrega.motoboyNome?.trim())
         .filter((nome): nome is string => Boolean(nome)),
     ),
   ]
 
-  if (motoboyNames.length > 1) {
+  const shouldGroup =
+    options?.agruparPorMotoboy !== false && motoboyNames.length > 0
+
+  if (shouldGroup) {
     for (const motoboyNome of motoboyNames) {
       lines.push(`*${motoboyNome}*`)
-      for (const entrega of entregas.filter(
+      for (const entrega of filtered.filter(
         (item) => item.motoboyNome?.trim() === motoboyNome,
       )) {
         lines.push(formatEntregaLine(entrega))
       }
       lines.push('')
     }
+
+    const semMotoboy = filtered.filter((item) => !item.motoboyNome?.trim())
+    if (semMotoboy.length > 0) {
+      lines.push('*Sem motoboy*')
+      for (const entrega of semMotoboy) {
+        lines.push(formatEntregaLine(entrega))
+      }
+      lines.push('')
+    }
   } else {
-    for (const entrega of entregas) {
+    for (const entrega of filtered) {
       lines.push(formatEntregaLine(entrega))
     }
     lines.push('')
   }
 
-  const pagasPeloCliente = entregas.filter((entrega) => entrega.pagoPeloCliente)
+  const pagasPeloCliente = filtered.filter((entrega) => entrega.pagoPeloCliente)
   if (pagasPeloCliente.length > 0) {
     const valorForaDoTotal = pagasPeloCliente.reduce(
       (sum, entrega) => sum + Number(entrega.valorEntrega),
@@ -95,6 +121,7 @@ export function generateWhatsAppText(
   entregas: EntregaSummary[],
   pendencias: PendenciaSummary[],
   prestacoesMotoboy: MotoboyPrestacaoSummary[] = [],
+  options?: GenerateWhatsAppOptions,
 ): string {
   const lines: string[] = [
     `${WA.report} *Prestação de Contas*`,
@@ -105,13 +132,14 @@ export function generateWhatsAppText(
     '',
   ]
 
-  appendEntregasSection(lines, entregas)
+  appendEntregasSection(lines, entregas, {
+    motoboyId: options?.motoboyId,
+    agruparPorMotoboy: options?.agruparPorMotoboy,
+  })
 
-  lines.push(`${WA.hourglass} *Pendências*`, '')
+  if (pendencias.length > 0) {
+    lines.push(`${WA.hourglass} *Pendências*`, '')
 
-  if (pendencias.length === 0) {
-    lines.push('• Nenhuma pendência')
-  } else {
     for (const pendencia of pendencias) {
       lines.push(`• ${WA.memo} ${pendencia.descricao}`)
       lines.push(
@@ -127,13 +155,18 @@ export function generateWhatsAppText(
     '',
     formatCurrency(Number(prestacao.valorTotal)),
     '',
-    `${WA.warning} *Pendências:*`,
-    '',
-    formatCurrency(Number(prestacao.valorPendencias)),
-    '',
-    `${WA.truck} *Repasse motoboys (aprovado):*`,
-    '',
   )
+
+  if (pendencias.length > 0) {
+    lines.push(
+      `${WA.warning} *Pendências:*`,
+      '',
+      formatCurrency(Number(prestacao.valorPendencias)),
+      '',
+    )
+  }
+
+  lines.push(`${WA.truck} *Repasse motoboys (aprovado):*`, '')
 
   if (prestacoesMotoboy.length === 0) {
     lines.push('• Nenhum repasse aprovado', '')
@@ -209,6 +242,41 @@ export function generateMotoboyPrestacaoWhatsAppText(
   const pixKey = pix?.trim()
   if (pixKey) {
     lines.push(`${WA.key} *PIX:* ${pixKey}`)
+  }
+
+  return lines.join('\n')
+}
+
+export function generateClientePrestacaoWhatsAppText(
+  nomeCliente: string,
+  prestacao: PrestacaoSummary,
+  entregas: EntregaSummary[],
+): string {
+  const lines: string[] = [
+    `${WA.report} *Prestação — ${nomeCliente}*`,
+    `${WA.clock} *Data:* ${formatDateOnlyBR(prestacao.data)}`,
+  ]
+
+  if (entregas.length > 0) {
+    lines.push(`${WA.package} *Entregas:* ${prestacao.totalEntregas}`)
+
+    for (const entrega of entregas) {
+      const motoboy = entrega.motoboyNome?.trim()
+      const motoboyInfo = motoboy ? ` — ${WA.user} ${motoboy}` : ''
+      const valor = formatCurrency(Number(entrega.valorEntrega))
+      const pagoPeloCliente = entrega.pagoPeloCliente
+        ? ' — _pago pelo cliente_'
+        : ''
+
+      lines.push(
+        `• ${WA.pin} ${entrega.bairro} - ${WA.money} ${valor}${motoboyInfo}${pagoPeloCliente}`,
+      )
+    }
+  }
+
+  const valorFinal = Number(prestacao.valorFinal)
+  if (valorFinal > 0) {
+    lines.push(`${WA.money} *Total:* ${formatCurrency(valorFinal)}`)
   }
 
   return lines.join('\n')

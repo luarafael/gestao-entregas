@@ -77,14 +77,20 @@ export class EntregaRepository {
     return { data, total }
   }
 
-  async findByDate(date: Date, motoboyId?: string) {
+  async findByDate(
+    date: Date,
+    filters?: { motoboyId?: string; nomeCliente?: string },
+  ) {
     const day = toUtcDateOnly(formatDateOnlyISO(date))
 
     return prisma.entrega.findMany({
       where: {
         data: day,
         status: 'ENTREGUE',
-        ...(motoboyId ? { motoboyId } : {}),
+        ...(filters?.motoboyId ? { motoboyId: filters.motoboyId } : {}),
+        ...(filters?.nomeCliente
+          ? { nomeCliente: { equals: filters.nomeCliente, mode: 'insensitive' } }
+          : {}),
       },
       orderBy: { horario: 'asc' },
       include: {
@@ -140,12 +146,37 @@ export class EntregaRepository {
     return prisma.entrega.delete({ where: { id } })
   }
 
-  async getStatsByDate(date: Date, motoboyId?: string) {
+  async findDistinctClientesByDate(date: Date) {
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
+
+    const rows = await prisma.entrega.findMany({
+      where: {
+        data: day,
+        status: 'ENTREGUE',
+        nomeCliente: { not: null },
+      },
+      select: { nomeCliente: true },
+      distinct: ['nomeCliente'],
+      orderBy: { nomeCliente: 'asc' },
+    })
+
+    return rows
+      .map((row) => row.nomeCliente?.trim())
+      .filter((nome): nome is string => Boolean(nome))
+  }
+
+  async getStatsByDate(
+    date: Date,
+    filters?: { motoboyId?: string; nomeCliente?: string },
+  ) {
     const day = toUtcDateOnly(formatDateOnlyISO(date))
     const baseWhere: Prisma.EntregaWhereInput = {
       data: day,
       status: 'ENTREGUE' as StatusEntrega,
-      ...(motoboyId ? { motoboyId } : {}),
+      ...(filters?.motoboyId ? { motoboyId: filters.motoboyId } : {}),
+      ...(filters?.nomeCliente
+        ? { nomeCliente: { equals: filters.nomeCliente, mode: 'insensitive' } }
+        : {}),
     }
 
     const [total, billable, paidByClient] = await Promise.all([

@@ -86,7 +86,7 @@ export class EntregaService {
           : toUtcDateOnly(formatDateOnlyISO(reference))
 
     const [entregaStats, pendenciaStats] = await Promise.all([
-      entregaRepository.getStatsByDate(day, motoboyId),
+      entregaRepository.getStatsByDate(day, motoboyId ? { motoboyId } : undefined),
       pendenciaRepository.getPendingTotal(motoboyId),
     ])
 
@@ -111,9 +111,9 @@ export class EntregaService {
           : toUtcDateOnly(formatDateOnlyISO(reference))
 
     const [entregaStats, pendenciaStats, entregas] = await Promise.all([
-      entregaRepository.getStatsByDate(day, user.id),
+      entregaRepository.getStatsByDate(day, { motoboyId: user.id }),
       pendenciaRepository.findPendingRepasseByMotoboy(user.id),
-      entregaRepository.findByDate(day, user.id),
+      entregaRepository.findByDate(day, { motoboyId: user.id }),
     ])
 
     return {
@@ -134,7 +134,7 @@ export class EntregaService {
         ? toUtcDateOnly(reference)
         : toUtcDateOnlyFromBusinessTz(reference)
 
-    return entregaRepository.findByDate(day, motoboyId)
+    return entregaRepository.findByDate(day, motoboyId ? { motoboyId } : undefined)
   }
 
   async getMonitoramento(reference?: Date | string, motoboyId?: string) {

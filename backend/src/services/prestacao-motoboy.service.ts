@@ -40,7 +40,7 @@ export class PrestacaoMotoboyService {
     const day = toUtcDateOnly(formatDateOnlyISO(date))
 
     const [entregaStats, repasseStats, pendencias] = await Promise.all([
-      entregaRepository.getStatsByDate(day, motoboyId),
+      entregaRepository.getStatsByDate(day, { motoboyId }),
       pendenciaRepository.findPendingRepasseByMotoboy(motoboyId),
       pendenciaRepository.findOpenRepasseListByMotoboy(motoboyId),
     ])
@@ -122,7 +122,7 @@ export class PrestacaoMotoboyService {
 
     const date = this.normalizeDate(input.data)
     const totals = await this.calculateTotals(motoboyId, date)
-    const entregas = await entregaRepository.findByDate(date, motoboyId)
+    const entregas = await entregaRepository.findByDate(date, { motoboyId })
     const existing = await prestacaoMotoboyRepository.findByMotoboyAndDate(
       motoboyId,
       date,
@@ -279,7 +279,7 @@ export class PrestacaoMotoboyService {
     const date = this.resolveStoredDate(prestacao.data)
 
     const [entregas, pendencias] = await Promise.all([
-      entregaRepository.findByDate(date, prestacao.motoboyId),
+      entregaRepository.findByDate(date, { motoboyId: prestacao.motoboyId }),
       pendenciaRepository.findOpenRepasseListByMotoboy(prestacao.motoboyId),
     ])
 

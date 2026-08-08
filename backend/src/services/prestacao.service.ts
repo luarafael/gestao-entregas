@@ -8,6 +8,7 @@ import type {
   ListPrestacoesInput,
   UpdatePrestacaoInput,
 } from '../schemas/prestacao.schema.js'
+import type { PrestacaoWhatsAppQuery } from '../schemas/prestacao-cliente.schema.js'
 import {
   formatDateOnlyISO,
   toUtcDateOnly,
@@ -25,6 +26,7 @@ function mapEntregasForWhatsApp(
     valorEntrega: entrega.valorEntrega,
     pagoPeloCliente: entrega.pagoPeloCliente,
     motoboyNome: entrega.motoboy?.nome ?? null,
+    motoboyId: entrega.motoboyId,
   }))
 }
 
@@ -210,31 +212,47 @@ export class PrestacaoService {
     return prestacaoRepository.delete(id)
   }
 
-  async getWhatsAppText(id: string) {
+  async getWhatsAppText(id: string, options?: PrestacaoWhatsAppQuery) {
     const prestacao = await this.findById(id)
 
     const date = this.resolveStoredDate(prestacao.data)
 
     const [entregas, pendencias, motoboy] = await Promise.all([
-      entregaRepository.findByDate(date),
+      entregaRepository.findByDate(
+        date,
+        options?.motoboyId ? { motoboyId: options.motoboyId } : undefined,
+      ),
       pendenciaRepository.findPendingCliente(),
       prestacaoMotoboyRepository.findByDate(date, 'APROVADA'),
     ])
 
-    const prestacoesMotoboy = motoboy.map((item) => ({
-      id: item.id,
-      motoboyId: item.motoboyId,
-      motoboyNome: item.motoboy.nome,
-      totalEntregas: item.totalEntregas,
-      valorFinal: Number(item.valorFinal),
-      status: item.status,
-    }))
+    const prestacoesMotoboy = motoboy
+      .filter((item) =>
+        options?.motoboyId ? item.motoboyId === options.motoboyId : true,
+      )
+      .map((item) => ({
+        id: item.id,
+        motoboyId: item.motoboyId,
+        motoboyNome: item.motoboy.nome,
+        totalEntregas: item.totalEntregas,
+        valorFinal: Number(item.valorFinal),
+        status: item.status,
+      }))
+
+    const allEntregas = await entregaRepository.findByDate(date)
+    const mappedEntregas = mapEntregasForWhatsApp(
+      options?.motoboyId ? entregas : allEntregas,
+    )
 
     return generateWhatsAppText(
       prestacao,
-      mapEntregasForWhatsApp(entregas),
+      mappedEntregas,
       pendencias,
       prestacoesMotoboy,
+      {
+        motoboyId: options?.motoboyId,
+        agruparPorMotoboy: !options?.motoboyId,
+      },
     )
   }
 

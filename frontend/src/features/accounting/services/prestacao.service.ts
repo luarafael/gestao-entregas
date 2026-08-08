@@ -33,8 +33,15 @@ export const prestacaoService = {
     return apiFetch<PrestacaoPreview>(`/api/prestacoes/preview${params}`)
   },
 
-  getWhatsAppText(id: string) {
-    return apiFetch<{ text: string }>(`/api/prestacoes/${id}/whatsapp`)
+  getById(id: string) {
+    return apiFetch<PrestacaoContas>(`/api/prestacoes/${id}`)
+  },
+
+  getWhatsAppText(id: string, motoboyId?: string) {
+    const params = motoboyId
+      ? `?motoboyId=${encodeURIComponent(motoboyId)}`
+      : ''
+    return apiFetch<{ text: string }>(`/api/prestacoes/${id}/whatsapp${params}`)
   },
 
   update(

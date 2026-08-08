@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { authRoutes } from './auth.routes.js'
 import { entregaRoutes } from './entrega.routes.js'
 import { pendenciaRoutes } from './pendencia.routes.js'
+import { prestacaoClienteRoutes } from './prestacao-cliente.routes.js'
 import { prestacaoMotoboyRoutes } from './prestacao-motoboy.routes.js'
 import { prestacaoRoutes } from './prestacao.routes.js'
 import { reportRoutes } from './report.routes.js'
@@ -18,6 +19,7 @@ apiRoutes.use(requireAuth)
 apiRoutes.use('/usuarios', usuarioRoutes)
 apiRoutes.use('/pendencias', pendenciaRoutes)
 apiRoutes.use('/prestacoes', requireRole('ADMIN'), prestacaoRoutes)
+apiRoutes.use('/prestacoes-cliente', requireRole('ADMIN'), prestacaoClienteRoutes)
 apiRoutes.use('/prestacoes-motoboy', prestacaoMotoboyRoutes)
 apiRoutes.use('/reports', reportRoutes)
 apiRoutes.use('/entregas', entregaRoutes)

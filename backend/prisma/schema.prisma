@@ -108,6 +108,21 @@ model PrestacaoMotoboy {
   @@map("prestacoes_motoboy")
 }
 
+model PrestacaoCliente {
+  id            String   @id @default(cuid())
+  nomeCliente   String   @map("nome_cliente")
+  data          DateTime @db.Date
+  totalEntregas Int      @map("total_entregas")
+  valorTotal    Decimal  @map("valor_total") @db.Decimal(10, 2)
+  valorFinal    Decimal  @map("valor_final") @db.Decimal(10, 2)
+  observacoes   String?
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  @@unique([nomeCliente, data])
+  @@index([data])
+  @@map("prestacoes_cliente")
+}
+
 enum PrioridadeParada {
   NORMAL
   URGENTE

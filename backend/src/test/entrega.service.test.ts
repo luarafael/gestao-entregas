@@ -150,7 +150,7 @@ describe('EntregaService', () => {
 
     expect(entregaRepository.getStatsByDate).toHaveBeenCalledWith(
       expect.any(Date),
-      'motoboy-1',
+      { motoboyId: 'motoboy-1' },
     )
     expect(pendenciaRepository.getPendingTotal).toHaveBeenCalledWith(
       'motoboy-1',
