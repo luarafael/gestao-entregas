@@ -113,6 +113,70 @@ describe('generateWhatsAppText', () => {
     expect(text).toContain('Repasse motoboys')
     expect(text).toContain('Carlos')
     expect(text).toContain('Valor líquido')
+    expect(text).toContain('Total repasse motoboys')
+  })
+
+  it('lista todos os motoboys aprovados no repasse', () => {
+    const text = generateWhatsAppText(
+      {
+        ...prestacao,
+        valorRepasseMotoboys: 80,
+        valorLiquido: 0,
+      },
+      entregas,
+      [],
+      [
+        { motoboyNome: 'Carlos', totalEntregas: 2, valorFinal: 40 },
+        { motoboyNome: 'João', totalEntregas: 3, valorFinal: 40 },
+      ],
+    )
+
+    expect(text).toContain('Carlos')
+    expect(text).toContain('João')
+    expect(text).toContain('2 entrega(s)')
+    expect(text).toContain('3 entrega(s)')
+  })
+
+  it('agrupa entregas por motoboy quando houver mais de um', () => {
+    const text = generateWhatsAppText(
+      prestacao,
+      [
+        {
+          bairro: 'Centro',
+          nomeCliente: 'Cliente A',
+          valorEntrega: 25,
+          motoboyNome: 'Carlos',
+        },
+        {
+          bairro: 'Jardins',
+          nomeCliente: 'Cliente B',
+          valorEntrega: 30,
+          motoboyNome: 'João',
+        },
+      ],
+      [],
+    )
+
+    expect(text).toContain('*Carlos*')
+    expect(text).toContain('*João*')
+    expect(text).toContain('Cliente A')
+    expect(text).toContain('Cliente B')
+  })
+
+  it('mostra repasse e valor liquido mesmo sem motoboys aprovados', () => {
+    const text = generateWhatsAppText(
+      {
+        ...prestacao,
+        valorRepasseMotoboys: 0,
+        valorLiquido: 80,
+      },
+      entregas,
+      [],
+      [],
+    )
+
+    expect(text).toContain('Nenhum repasse aprovado')
+    expect(text).toContain('Valor líquido')
   })
 })
 

@@ -17,6 +17,7 @@ interface EntregaSummary {
   nomeCliente: string | null
   valorEntrega: number | { toString(): string }
   pagoPeloCliente?: boolean
+  motoboyNome?: string | null
 }
 
 interface PendenciaSummary {
@@ -31,6 +32,61 @@ interface MotoboyPrestacaoSummary {
   valorFinal: number
 }
 
+function formatEntregaLine(entrega: EntregaSummary): string {
+  const cliente = entrega.nomeCliente?.trim() || 'Sem nome'
+  const valor = formatCurrency(Number(entrega.valorEntrega))
+  const pagoPeloCliente = entrega.pagoPeloCliente ? ' — _pago pelo cliente_' : ''
+
+  return `• ${WA.pin} ${entrega.bairro} - ${WA.user} ${cliente} - ${WA.money} ${valor}${pagoPeloCliente}`
+}
+
+function appendEntregasSection(lines: string[], entregas: EntregaSummary[]) {
+  lines.push(`${WA.truck} *Entregas realizadas:*`, '')
+
+  if (entregas.length === 0) {
+    lines.push('• Nenhuma entrega registrada', '')
+    return
+  }
+
+  const motoboyNames = [
+    ...new Set(
+      entregas
+        .map((entrega) => entrega.motoboyNome?.trim())
+        .filter((nome): nome is string => Boolean(nome)),
+    ),
+  ]
+
+  if (motoboyNames.length > 1) {
+    for (const motoboyNome of motoboyNames) {
+      lines.push(`*${motoboyNome}*`)
+      for (const entrega of entregas.filter(
+        (item) => item.motoboyNome?.trim() === motoboyNome,
+      )) {
+        lines.push(formatEntregaLine(entrega))
+      }
+      lines.push('')
+    }
+  } else {
+    for (const entrega of entregas) {
+      lines.push(formatEntregaLine(entrega))
+    }
+    lines.push('')
+  }
+
+  const pagasPeloCliente = entregas.filter((entrega) => entrega.pagoPeloCliente)
+  if (pagasPeloCliente.length > 0) {
+    const valorForaDoTotal = pagasPeloCliente.reduce(
+      (sum, entrega) => sum + Number(entrega.valorEntrega),
+      0,
+    )
+
+    lines.push(
+      `${WA.check} *Pagas pelo cliente (fora do total):* ${pagasPeloCliente.length} corrida(s) — ${formatCurrency(valorForaDoTotal)}`,
+      '',
+    )
+  }
+}
+
 export function generateWhatsAppText(
   prestacao: PrestacaoSummary & {
     valorRepasseMotoboys?: number | { toString(): string }
@@ -41,48 +97,17 @@ export function generateWhatsAppText(
   prestacoesMotoboy: MotoboyPrestacaoSummary[] = [],
 ): string {
   const lines: string[] = [
-    '---',
-    '',
     `${WA.report} *Prestação de Contas*`,
     '',
     `${WA.clock} *Data:* ${formatDateOnlyBR(prestacao.data)}`,
     '',
     `${WA.package} *Entregas:* ${prestacao.totalEntregas}`,
     '',
-    `${WA.truck} *Entregas realizadas:*`,
-    '',
   ]
 
-  if (entregas.length === 0) {
-    lines.push('• Nenhuma entrega registrada')
-  } else {
-    for (const entrega of entregas) {
-      const cliente = entrega.nomeCliente ?? 'Sem nome'
-      const valor = formatCurrency(Number(entrega.valorEntrega))
-      const pagoPeloCliente = entrega.pagoPeloCliente
-        ? ' — _pago pelo cliente_'
-        : ''
+  appendEntregasSection(lines, entregas)
 
-      lines.push(
-        `• ${WA.pin} ${entrega.bairro} - ${WA.user} ${cliente} - ${WA.money} ${valor}${pagoPeloCliente}`,
-      )
-    }
-
-    const pagasPeloCliente = entregas.filter((entrega) => entrega.pagoPeloCliente)
-    if (pagasPeloCliente.length > 0) {
-      const valorForaDoTotal = pagasPeloCliente.reduce(
-        (sum, entrega) => sum + Number(entrega.valorEntrega),
-        0,
-      )
-
-      lines.push(
-        '',
-        `${WA.check} *Pagas pelo cliente (fora do total):* ${pagasPeloCliente.length} corrida(s) — ${formatCurrency(valorForaDoTotal)}`,
-      )
-    }
-  }
-
-  lines.push('', `${WA.hourglass} *Pendências*`, '')
+  lines.push(`${WA.hourglass} *Pendências*`, '')
 
   if (pendencias.length === 0) {
     lines.push('• Nenhuma pendência')
@@ -106,32 +131,33 @@ export function generateWhatsAppText(
     '',
     formatCurrency(Number(prestacao.valorPendencias)),
     '',
+    `${WA.truck} *Repasse motoboys (aprovado):*`,
+    '',
   )
 
-  if (prestacoesMotoboy.length > 0) {
-    lines.push(`${WA.truck} *Repasse motoboys (aprovado):*`, '')
+  if (prestacoesMotoboy.length === 0) {
+    lines.push('• Nenhum repasse aprovado', '')
+  } else {
     for (const item of prestacoesMotoboy) {
       lines.push(
         `• ${WA.user} ${item.motoboyNome} — ${item.totalEntregas} entrega(s) — ${formatCurrency(item.valorFinal)}`,
       )
     }
-    lines.push(
-      '',
-      `${WA.warning} *Total repasse motoboys:*`,
-      '',
-      formatCurrency(Number(prestacao.valorRepasseMotoboys ?? 0)),
-      '',
-    )
+    lines.push('')
   }
 
   lines.push(
+    `${WA.warning} *Total repasse motoboys:*`,
+    '',
+    formatCurrency(Number(prestacao.valorRepasseMotoboys ?? 0)),
+    '',
     `${WA.check} *Valor final:*`,
     '',
     formatCurrency(Number(prestacao.valorFinal)),
     '',
   )
 
-  if (prestacoesMotoboy.length > 0 && prestacao.valorLiquido !== undefined) {
+  if (prestacao.valorLiquido !== undefined) {
     lines.push(
       `${WA.check} *Valor líquido (após motoboys):*`,
       '',
@@ -140,11 +166,7 @@ export function generateWhatsAppText(
     )
   }
 
-  lines.push(
-    `${WA.thanks} Obrigado!`,
-    '',
-    '---',
-  )
+  lines.push(`${WA.thanks} Obrigado!`, '', '---')
 
   return lines.join('\n')
 }
@@ -165,11 +187,7 @@ export function generateMotoboyPrestacaoWhatsAppText(
     lines.push(`${WA.package} *Corridas:* ${prestacao.totalEntregas}`)
 
     for (const entrega of entregas) {
-      const cliente = entrega.nomeCliente?.trim() || 'Sem nome'
-      const valor = formatCurrency(Number(entrega.valorEntrega))
-      lines.push(
-        `• ${WA.pin} ${entrega.bairro} — ${WA.user} ${cliente} — ${WA.money} ${valor}`,
-      )
+      lines.push(formatEntregaLine(entrega))
     }
   }
 

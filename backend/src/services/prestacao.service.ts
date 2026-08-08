@@ -16,6 +16,18 @@ import {
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { generateWhatsAppText } from './whatsapp.service.js'
 
+function mapEntregasForWhatsApp(
+  entregas: Awaited<ReturnType<typeof entregaRepository.findByDate>>,
+) {
+  return entregas.map((entrega) => ({
+    bairro: entrega.bairro,
+    nomeCliente: entrega.nomeCliente,
+    valorEntrega: entrega.valorEntrega,
+    pagoPeloCliente: entrega.pagoPeloCliente,
+    motoboyNome: entrega.motoboy?.nome ?? null,
+  }))
+}
+
 export class PrestacaoService {
   private normalizeDate(input?: Date) {
     if (!input) {
@@ -124,7 +136,7 @@ export class PrestacaoService {
 
     const whatsappText = generateWhatsAppText(
       prestacao,
-      entregas,
+      mapEntregasForWhatsApp(entregas),
       totals.pendencias,
       totals.prestacoesMotoboy,
     )
@@ -218,7 +230,12 @@ export class PrestacaoService {
       status: item.status,
     }))
 
-    return generateWhatsAppText(prestacao, entregas, pendencias, prestacoesMotoboy)
+    return generateWhatsAppText(
+      prestacao,
+      mapEntregasForWhatsApp(entregas),
+      pendencias,
+      prestacoesMotoboy,
+    )
   }
 
   async list(filters: ListPrestacoesInput) {

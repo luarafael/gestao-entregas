@@ -176,23 +176,6 @@ export function PrestacaoPage() {
     copyMotoboyMutation.mutate(motoboyGenerated.whatsappText)
   }
 
-  const buildDailyReportFromPreview = () => {
-    if (!preview) return undefined
-
-    return {
-      date: preview.data,
-      totalEntregas: preview.totalEntregas,
-      valorTotal: preview.valorTotal,
-      entregasPagasPeloCliente: preview.entregasPagasPeloCliente,
-      valorPagasPeloCliente: preview.valorPagasPeloCliente,
-      valorPendencias: preview.valorPendencias,
-      valorFinal: preview.valorFinal,
-      valorRepasseMotoboys: preview.valorRepasseMotoboys,
-      valorLiquido: preview.valorLiquido,
-      totalPendencias: preview.totalPendencias,
-    }
-  }
-
   const buildDailyReportFromPrestacao = (item: PrestacaoContas) => ({
     date: item.data.slice(0, 10),
     totalEntregas: item.totalEntregas,
@@ -270,7 +253,6 @@ export function PrestacaoPage() {
 
     setSendPayload({
       baseText: generatedResult.whatsappText,
-      dailyReport: buildDailyReportFromPreview(),
     })
     setSendModalOpen(true)
   }
@@ -281,7 +263,6 @@ export function PrestacaoPage() {
       const { text } = await prestacaoService.getWhatsAppText(item.id)
       setSendPayload({
         baseText: text,
-        dailyReport: buildDailyReportFromPrestacao(item),
       })
       setSendModalOpen(true)
     } catch {
