@@ -48,4 +48,10 @@ export const motoboyService = {
       body: JSON.stringify({ ativo }),
     })
   },
+
+  delete(id: string) {
+    return apiFetch<void>(`/api/usuarios/motoboys/${id}`, {
+      method: 'DELETE',
+    })
+  },
 }

@@ -79,6 +79,11 @@ export class UsuarioService {
     await this.getMotoboyById(id)
     return usuarioRepository.setAtivo(id, input.ativo)
   }
+
+  async deleteMotoboy(id: string) {
+    await this.getMotoboyById(id)
+    return usuarioRepository.deleteMotoboy(id)
+  }
 }
 
 export const usuarioService = new UsuarioService()

@@ -71,3 +71,11 @@ usuarioRoutes.patch(
     res.json(motoboy)
   }),
 )
+
+usuarioRoutes.delete(
+  '/motoboys/:id',
+  asyncHandler(async (req, res) => {
+    await usuarioService.deleteMotoboy(getRouteParam(req, 'id'))
+    res.status(204).send()
+  }),
+)

@@ -9,6 +9,7 @@ const usuarioRepository = vi.hoisted(() => ({
   create: vi.fn(),
   updateMotoboy: vi.fn(),
   setAtivo: vi.fn(),
+  deleteMotoboy: vi.fn(),
 }))
 
 vi.mock('../repositories/usuario.repository.js', () => ({
@@ -105,5 +106,20 @@ describe('UsuarioService', () => {
     await expect(
       service.updateMotoboy('x', { nome: 'Novo' }),
     ).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('exclui motoboy existente', async () => {
+    usuarioRepository.findMotoboyById.mockResolvedValue({
+      id: 'm1',
+      nome: 'João',
+      email: 'joao@test.com',
+      role: 'MOTOBOY',
+      ativo: true,
+    })
+    usuarioRepository.deleteMotoboy.mockResolvedValue({ id: 'm1' })
+
+    await service.deleteMotoboy('m1')
+
+    expect(usuarioRepository.deleteMotoboy).toHaveBeenCalledWith('m1')
   })
 })

@@ -131,6 +131,13 @@ export const usuarioRepository = {
     })
   },
 
+  deleteMotoboy(id: string) {
+    return prisma.usuario.delete({
+      where: { id, role: 'MOTOBOY' },
+      select: motoboyPublicSelect,
+    })
+  },
+
   upsertAdmin(input: CreateUsuarioInput) {
     return prisma.usuario.upsert({
       where: { email: input.email.toLowerCase().trim() },

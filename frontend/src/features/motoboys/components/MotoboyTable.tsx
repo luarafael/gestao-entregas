@@ -9,6 +9,7 @@ interface MotoboyTableProps {
   isFetching?: boolean
   onEdit: (item: Motoboy) => void
   onToggleAtivo: (item: Motoboy) => void
+  onDelete: (item: Motoboy) => void
 }
 
 export function MotoboyTable({
@@ -17,6 +18,7 @@ export function MotoboyTable({
   isFetching = false,
   onEdit,
   onToggleAtivo,
+  onDelete,
 }: MotoboyTableProps) {
   return (
     <DataTable
@@ -73,6 +75,13 @@ export function MotoboyTable({
                 onClick={() => onToggleAtivo(item)}
               >
                 {item.ativo ? 'Desativar' : 'Reativar'}
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => onDelete(item)}
+              >
+                Excluir
               </Button>
             </div>
           ),

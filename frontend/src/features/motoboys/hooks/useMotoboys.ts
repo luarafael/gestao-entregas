@@ -69,3 +69,18 @@ export function useSetMotoboyAtivo() {
     },
   })
 }
+
+export function useDeleteMotoboy() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => motoboyService.delete(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [MOTOBOYS_QUERY_KEY] })
+      toast('Motoboy excluído com sucesso!', 'success')
+    },
+    onError: (error: Error) => {
+      toast(error.message || 'Erro ao excluir motoboy', 'error')
+    },
+  })
+}

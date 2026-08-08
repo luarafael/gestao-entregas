@@ -4,6 +4,7 @@ import { IconUsers } from '@/shared/components/icons'
 import { useDebounce } from '@/shared/hooks'
 import {
   useCreateMotoboy,
+  useDeleteMotoboy,
   useMotoboysList,
   useSetMotoboyAtivo,
   useUpdateMotoboy,
@@ -29,6 +30,7 @@ export function MotoboysPage() {
   const [filters, setFilters] = useState<MotoboyFilters>(initialFilters)
   const [editingMotoboy, setEditingMotoboy] = useState<Motoboy | null>(null)
   const [togglingMotoboy, setTogglingMotoboy] = useState<Motoboy | null>(null)
+  const [deletingMotoboy, setDeletingMotoboy] = useState<Motoboy | null>(null)
 
   const debouncedSearch = useDebounce(filters.search)
 
@@ -42,6 +44,7 @@ export function MotoboysPage() {
   const createMutation = useCreateMotoboy()
   const updateMutation = useUpdateMotoboy()
   const setAtivoMutation = useSetMotoboyAtivo()
+  const deleteMutation = useDeleteMotoboy()
 
   const items = data?.data ?? []
   const meta = data?.meta
@@ -79,13 +82,25 @@ export function MotoboysPage() {
     setTogglingMotoboy(null)
   }
 
+  const handleConfirmDelete = async () => {
+    if (!deletingMotoboy) return
+
+    await deleteMutation.mutateAsync(deletingMotoboy.id)
+
+    if (editingMotoboy?.id === deletingMotoboy.id) {
+      setEditingMotoboy(null)
+    }
+
+    setDeletingMotoboy(null)
+  }
+
   return (
     <div className="space-y-6 min-w-0 max-w-full">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Motoboys</h2>
         <p className="text-sm text-muted-foreground">
-          Gerencie os funcionários da empresa: crie, edite, desative e reative
-          usuários motoboy.
+          Gerencie os funcionários da empresa: crie, edite, desative, reative ou
+          exclua usuários motoboy.
         </p>
       </div>
 
@@ -128,6 +143,7 @@ export function MotoboysPage() {
               isFetching={isFetching}
               onEdit={setEditingMotoboy}
               onToggleAtivo={setTogglingMotoboy}
+              onDelete={setDeletingMotoboy}
             />
           )}
 
@@ -156,6 +172,21 @@ export function MotoboysPage() {
         variant={togglingMotoboy?.ativo ? 'danger' : 'default'}
         isLoading={setAtivoMutation.isPending}
         onConfirm={handleConfirmToggle}
+      />
+
+      <Modal
+        open={Boolean(deletingMotoboy)}
+        onClose={() => setDeletingMotoboy(null)}
+        title="Excluir motoboy"
+        description={
+          deletingMotoboy
+            ? `Excluir ${deletingMotoboy.nome} permanentemente? Entregas e rotas antigas permanecem no sistema, mas sem vínculo com este usuário.`
+            : undefined
+        }
+        confirmLabel="Excluir"
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   )
