@@ -345,6 +345,7 @@ export function PrestacaoPage() {
         date: item.data,
         totalEntregas: item.totalEntregas,
         valorTotal: item.valorFinal,
+        valorPendencias: 0,
         valorFinal: item.valorFinal,
         observacoes: null,
       })
@@ -417,6 +418,7 @@ export function PrestacaoPage() {
         date: clientePreview.data,
         totalEntregas: clientePreview.totalEntregas,
         valorTotal: clientePreview.valorTotal,
+        valorPendencias: 0,
         valorFinal: clientePreview.valorFinal,
         observacoes: observacoes.trim() || null,
       })
