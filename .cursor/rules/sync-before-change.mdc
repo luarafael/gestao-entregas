@@ -1,0 +1,47 @@
+---
+description: Verificar estrutura existente antes de codar; evitar dessincronia entre camadas
+alwaysApply: true
+---
+
+# Sincronizar antes de editar
+
+Antes de adicionar ou alterar qualidade, **leia o código e a estrutura já em uso** no trecho afetado. Não assuma nomes, tipos ou padrões — confirme no repositório e no banco.
+
+## Checklist obrigatório
+
+1. **Backend + Prisma**: ler `schema.prisma`, migrations recentes e repositório/service/route correspondentes.
+2. **Frontend**: ler schema Zod, `api.types.ts`, service e hooks que consomem o endpoint.
+3. **Contrato API**: payload do frontend deve bater com schema Zod do backend e campos retornados pelo Prisma.
+4. **Migrations SQL**: em SQL cru, usar o **nome real da coluna no PostgreSQL**, não o nome do campo Prisma.
+
+## Banco `entregas` — convenção mista (crítico)
+
+Colunas **antigas** (init) ficaram em **camelCase** no Postgres:
+
+- `"valorEntrega"`, `"nomeCliente"`, `"criadoEm"`, etc.
+
+Colunas **novas** com `@map(...)` no schema ficam em **snake_case**:
+
+- `"valor_produto"`, `"telefone_cliente"`, `"origem_cadastro"`, `"valor_entrega_motoboy"`, etc.
+
+Em migrations com `UPDATE`/`INSERT`/`SELECT` raw, consulte a migration de criação ou `information_schema.columns`. Exemplo:
+
+```sql
+-- ❌ ERRADO (coluna não existe)
+COALESCE("valor_entrega", 0)
+
+-- ✅ CORRETO
+COALESCE("valorEntrega", 0)
+```
+
+## Ao criar feature que cruza abas (ex.: Cliente → Motoboy)
+
+- Confirmar filtro `origemCadastro`, endpoint dedicado e campo usado na importação.
+- Motoboy tab e Planejador devem listar só entregas `MOTOBOY`.
+- Testar build + testes das áreas tocadas antes de commit.
+
+## Migrations em produção
+
+- Preferir `prisma migrate dev` localmente para gerar SQL consistente.
+- Se migration falhar: verificar se DDL já foi aplicado parcialmente antes de `resolve --rolled-back` ou `--applied`.
+- Nunca referenciar coluna no SQL sem confirmar o nome no banco real.
