@@ -38,7 +38,7 @@ export function DeliveryFiltersBar({
   const motoboyValue: MotoboySelectValue = filters.motoboyId ?? 'all'
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Input
         placeholder={
           viewMode === 'cliente'
@@ -67,7 +67,7 @@ export function DeliveryFiltersBar({
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         {viewMode === 'motoboy' && isAdmin ? (
           <MotoboySelect
             id="filtro-motoboy-entregas"
@@ -79,12 +79,12 @@ export function DeliveryFiltersBar({
           />
         ) : null}
 
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          Ordenar por
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          Ordenar
           <select
             value={filters.sortBy}
             onChange={(event) => onSortByChange(event.target.value as SortField)}
-            className="h-9 rounded-lg border border-border/70 bg-surface/50 px-2 text-sm text-foreground"
+            className="h-8 rounded-lg border border-border/70 bg-surface/50 px-2 text-xs text-foreground"
           >
             {SORT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -94,14 +94,14 @@ export function DeliveryFiltersBar({
           </select>
         </label>
 
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          Direção
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          Ordem
           <select
             value={filters.sortOrder}
             onChange={(event) =>
               onSortOrderChange(event.target.value as SortOrder)
             }
-            className="h-9 rounded-lg border border-border/70 bg-surface/50 px-2 text-sm text-foreground"
+            className="h-8 rounded-lg border border-border/70 bg-surface/50 px-2 text-xs text-foreground"
           >
             <option value="desc">Decrescente</option>
             <option value="asc">Crescente</option>

@@ -16,6 +16,9 @@ interface DataTableProps<T> {
   data: T[]
   rowKey: (row: T) => string
   minWidthClass?: string
+  tableClassName?: string
+  compact?: boolean
+  scrollable?: boolean
   isLoading?: boolean
   isFetching?: boolean
   emptyState: {
@@ -31,7 +34,10 @@ export function DataTable<T>({
   columns,
   data,
   rowKey,
-  minWidthClass = 'min-w-120',
+  minWidthClass,
+  tableClassName,
+  compact = false,
+  scrollable = true,
   isLoading = false,
   isFetching = false,
   emptyState,
@@ -52,20 +58,30 @@ export function DataTable<T>({
     )
   }
 
+  const cellPadding = compact ? 'px-2 py-2' : 'px-3 py-3'
+
   return (
     <div
       className={cn(
-        'overflow-x-auto transition-opacity',
+        'transition-opacity',
+        scrollable ? 'overflow-x-auto' : 'overflow-hidden',
         isFetching && 'opacity-70',
       )}
     >
-      <table className={cn('w-full text-left text-sm', minWidthClass)}>
+      <table
+        className={cn(
+          'w-full text-left',
+          compact ? 'table-fixed text-xs' : 'text-sm',
+          minWidthClass,
+          tableClassName,
+        )}
+      >
         <thead>
-          <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
+          <tr className="border-b border-border/60 text-[10px] uppercase tracking-wide text-muted-foreground">
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={cn('px-3 py-3 font-medium', column.headerClassName)}
+                className={cn(cellPadding, 'font-medium', column.headerClassName)}
               >
                 {column.header}
               </th>
@@ -81,7 +97,7 @@ export function DataTable<T>({
               {columns.map((column) => (
                 <td
                   key={column.key}
-                  className={cn('px-3 py-3', column.cellClassName)}
+                  className={cn(cellPadding, column.cellClassName)}
                 >
                   {column.render(row)}
                 </td>

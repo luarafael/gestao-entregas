@@ -83,12 +83,12 @@ export function DeliveryMotoboyForm({
   })
 
   return (
-    <Card glass className="h-fit">
-      <CardHeader>
-        <CardTitle>{editingDelivery ? 'Editar Entrega' : 'Nova Entrega — Motoboy'}</CardTitle>
+    <Card glass className="h-fit min-w-0">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">{editingDelivery ? 'Editar Entrega' : 'Nova Entrega — Motoboy'}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-3">
           {isAdmin ? (
             <Controller
               name="motoboyId"

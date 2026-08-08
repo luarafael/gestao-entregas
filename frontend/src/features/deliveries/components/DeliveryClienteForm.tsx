@@ -76,12 +76,12 @@ export function DeliveryClienteForm({
   })
 
   return (
-    <Card glass className="h-fit">
-      <CardHeader>
-        <CardTitle>{editingDelivery ? 'Editar Pedido' : 'Novo Pedido — Cliente'}</CardTitle>
+    <Card glass className="h-fit min-w-0">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">{editingDelivery ? 'Editar Pedido' : 'Novo Pedido — Cliente'}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-3">
           <Input
             label="Nome do cliente"
             placeholder="Ex: João Silva"

@@ -77,7 +77,7 @@ export function DeliveriesPage() {
   const importMutation = useImportClienteDeliveries()
   const deleteMutation = useDeleteDelivery()
 
-  const deliveries = data?.data ?? []
+  const deliveries = useMemo(() => data?.data ?? [], [data?.data])
   const meta = data?.meta
 
   const importableCount = useMemo(
@@ -223,11 +223,11 @@ export function DeliveriesPage() {
       : createClienteMutation.isPending || updateClienteMutation.isPending
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Entregas</h2>
-          <p className="text-sm text-muted-foreground">
+    <div className="min-w-0 space-y-4 overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Entregas</h2>
+          <p className="text-xs text-muted-foreground sm:text-sm">
             {viewMode === 'motoboy'
               ? 'Cadastre corridas do motoboy e filtre por motoboy.'
               : 'Cadastre pedidos de clientes, envie ao motoboy via WhatsApp e importe para rotas.'}
@@ -253,7 +253,7 @@ export function DeliveriesPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] xl:gap-5">
         {viewMode === 'motoboy' ? (
           <DeliveryMotoboyForm
             editingDelivery={editingDelivery}
@@ -270,7 +270,7 @@ export function DeliveriesPage() {
           />
         )}
 
-        <div className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
+        <div className="min-w-0 space-y-3 overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3 backdrop-blur-xl sm:p-4">
           <DeliveryFiltersBar
             viewMode={viewMode}
             filters={filters}
@@ -308,23 +308,25 @@ export function DeliveriesPage() {
           )}
 
           {viewMode === 'cliente' ? (
-            <div className="flex flex-wrap gap-2 border-t border-border/50 pt-4">
+            <div className="flex flex-wrap gap-2 border-t border-border/50 pt-3">
               <Button
                 variant="secondary"
+                size="sm"
                 onClick={() => void handleWhatsAppClick()}
                 isLoading={isPreparingWhatsApp}
                 disabled={deliveries.length === 0}
               >
-                <IconWhatsApp className="mr-2 size-4" />
-                Enviar pedidos via WhatsApp
+                <IconWhatsApp className="mr-1.5 size-3.5" />
+                WhatsApp
               </Button>
               <Button
                 variant="secondary"
+                size="sm"
                 onClick={() => void handleImportClick()}
                 isLoading={importMutation.isPending || isPreparingImport}
                 disabled={importableCount === 0 && !isPreparingImport}
               >
-                Importar para Motoboy
+                Importar
               </Button>
             </div>
           ) : null}
