@@ -249,7 +249,7 @@ export function generateMotoboyPrestacaoWhatsAppText(
 
 export function generateClientePrestacaoWhatsAppText(
   nomeCliente: string,
-  prestacao: PrestacaoSummary,
+  prestacao: Pick<PrestacaoSummary, 'data' | 'totalEntregas' | 'valorFinal'>,
   entregas: EntregaSummary[],
 ): string {
   const lines: string[] = [
