@@ -516,7 +516,7 @@ export class RotaService {
     return rotaRepository.delete(id)
   }
 
-  async duplicate(user: AuthenticatedUser, id: string) {
+  async duplicate(_user: AuthenticatedUser, id: string) {
     const rota = await this.findById(id)
     const motoboyId = await resolveMotoboyIdFromRota(rota)
     const day = rota.data ?? toUtcDateOnlyFromBusinessTz()

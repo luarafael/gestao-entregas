@@ -169,6 +169,7 @@ export class RotaExecucaoService {
           bairro: parada.bairro?.trim() || 'Centro',
           observacao: parada.observacao ?? undefined,
           valorEntrega,
+          pagoPeloCliente: false,
         },
         motoboyId,
       )
