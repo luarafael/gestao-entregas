@@ -65,6 +65,7 @@ export class PrestacaoService {
         totalEntregas: item.totalEntregas,
         valorFinal: Number(item.valorFinal),
         status: item.status,
+        pix: item.motoboy.pix,
       })),
     }
   }
@@ -237,6 +238,7 @@ export class PrestacaoService {
         totalEntregas: item.totalEntregas,
         valorFinal: Number(item.valorFinal),
         status: item.status,
+        pix: item.motoboy.pix,
       }))
 
     const allEntregas = await entregaRepository.findByDate(date)

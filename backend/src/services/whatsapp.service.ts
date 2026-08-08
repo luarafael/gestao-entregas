@@ -36,6 +36,15 @@ interface MotoboyPrestacaoSummary {
   motoboyNome: string
   totalEntregas: number
   valorFinal: number
+  pix?: string | null
+}
+
+function formatMotoboyRepasseLine(item: MotoboyPrestacaoSummary): string {
+  const valor = formatCurrency(item.valorFinal)
+  const pixKey = item.pix?.trim()
+  const pixSuffix = pixKey ? ` — ${WA.key} PIX: ${pixKey}` : ''
+
+  return `• ${WA.user} ${item.motoboyNome} — ${item.totalEntregas} entrega(s) — ${WA.money} ${valor}${pixSuffix}`
 }
 
 function formatEntregaLine(entrega: EntregaSummary): string {
@@ -172,9 +181,7 @@ export function generateWhatsAppText(
     lines.push('• Nenhum repasse aprovado', '')
   } else {
     for (const item of prestacoesMotoboy) {
-      lines.push(
-        `• ${WA.user} ${item.motoboyNome} — ${item.totalEntregas} entrega(s) — ${formatCurrency(item.valorFinal)}`,
-      )
+      lines.push(formatMotoboyRepasseLine(item))
     }
     lines.push('')
   }

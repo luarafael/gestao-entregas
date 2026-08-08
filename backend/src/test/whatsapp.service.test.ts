@@ -138,6 +138,45 @@ describe('generateWhatsAppText', () => {
     expect(text).toContain('3 entrega(s)')
   })
 
+  it('inclui PIX do motoboy ao lado do valor no repasse', () => {
+    const text = generateWhatsAppText(
+      {
+        ...prestacao,
+        valorRepasseMotoboys: 40,
+        valorLiquido: 40,
+      },
+      entregas,
+      [],
+      [
+        {
+          motoboyNome: 'Carlos',
+          totalEntregas: 2,
+          valorFinal: 40,
+          pix: '11999998888',
+        },
+      ],
+    )
+
+    expect(text).toContain('Carlos')
+    expect(text).toContain('PIX: 11999998888')
+  })
+
+  it('omite PIX no repasse quando motoboy não cadastrou', () => {
+    const text = generateWhatsAppText(
+      {
+        ...prestacao,
+        valorRepasseMotoboys: 40,
+        valorLiquido: 40,
+      },
+      entregas,
+      [],
+      [{ motoboyNome: 'Carlos', totalEntregas: 2, valorFinal: 40, pix: null }],
+    )
+
+    expect(text).toContain('Carlos')
+    expect(text).not.toContain('PIX:')
+  })
+
   it('agrupa entregas por motoboy quando houver motoboy atribuído', () => {
     const text = generateWhatsAppText(
       prestacao,
