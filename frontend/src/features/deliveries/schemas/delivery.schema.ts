@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 export type FormaPagamentoEntrega = 'DINHEIRO' | 'PIX' | 'CARTAO'
 
+export type StatusPagamentoCliente = 'PAGO' | 'NAO_PAGO'
+
 export type DeliveryViewMode = 'motoboy' | 'cliente'
 
 export type OrigemCadastroEntrega = 'MOTOBOY' | 'CLIENTE'
@@ -13,6 +15,14 @@ export const FORMA_PAGAMENTO_OPTIONS: {
   { value: 'DINHEIRO', label: 'Dinheiro' },
   { value: 'PIX', label: 'PIX' },
   { value: 'CARTAO', label: 'Cartão' },
+]
+
+export const STATUS_PAGAMENTO_OPTIONS: {
+  value: StatusPagamentoCliente
+  label: string
+}[] = [
+  { value: 'PAGO', label: 'Pago' },
+  { value: 'NAO_PAGO', label: 'Não pago' },
 ]
 
 export const deliveryMotoboyFormSchema = z
@@ -46,6 +56,12 @@ export const deliveryClienteFormSchema = z.object({
   formaPagamento: z.enum(['DINHEIRO', 'PIX', 'CARTAO'], {
     message: 'Forma de pagamento é obrigatória',
   }),
+  statusPagamento: z.enum(['PAGO', 'NAO_PAGO'], {
+    message: 'Informe se está pago ou não pago',
+  }),
+  valorEntregaMotoboy: z
+    .number({ message: 'Valor entrega motoboy é obrigatório' })
+    .positive('Valor entrega motoboy deve ser maior que zero'),
   valorEntrega: z
     .number()
     .min(0, 'Taxa de entrega inválida')

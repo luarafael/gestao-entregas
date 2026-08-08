@@ -7,6 +7,7 @@ export type {
   DeliveryFilters,
   DeliveryViewMode,
   OrigemCadastroEntrega,
+  StatusPagamentoCliente,
 } from '../schemas/delivery.schema'
 
 export {
@@ -16,6 +17,7 @@ export {
   DATE_FILTER_OPTIONS,
   SORT_OPTIONS,
   FORMA_PAGAMENTO_OPTIONS,
+  STATUS_PAGAMENTO_OPTIONS,
 } from '../schemas/delivery.schema'
 
 export type { Entrega } from '@/shared/types/api.types'

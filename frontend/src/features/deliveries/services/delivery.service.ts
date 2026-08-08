@@ -55,6 +55,8 @@ function toClienteApiPayload(data: DeliveryClienteFormData) {
     endereco: data.endereco,
     valorProduto: data.valorProduto,
     formaPagamento: data.formaPagamento,
+    statusPagamento: data.statusPagamento,
+    valorEntregaMotoboy: data.valorEntregaMotoboy,
     valorEntrega: data.valorEntrega,
     observacao: data.observacao,
     cidade: data.cidade,

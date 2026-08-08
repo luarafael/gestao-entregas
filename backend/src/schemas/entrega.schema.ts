@@ -33,6 +33,7 @@ export type MonitoramentoEventosQuery = z.infer<
 >
 
 const formaPagamentoSchema = z.enum(['DINHEIRO', 'PIX', 'CARTAO'])
+const statusPagamentoClienteSchema = z.enum(['PAGO', 'NAO_PAGO'])
 
 const entregaBaseSchema = z.object({
   nomeCliente: z.string().trim().optional(),
@@ -93,6 +94,10 @@ export const createEntregaClienteSchema = z.object({
   endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
   valorProduto: z.coerce.number().min(0, 'Valor do produto inválido'),
   formaPagamento: formaPagamentoSchema,
+  statusPagamento: statusPagamentoClienteSchema,
+  valorEntregaMotoboy: z.coerce
+    .number()
+    .positive('Valor entrega motoboy deve ser maior que zero'),
   valorEntrega: z.coerce.number().min(0).optional(),
   observacao: z.string().trim().optional(),
   cidade: z.string().trim().optional(),

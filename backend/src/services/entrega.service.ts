@@ -109,7 +109,7 @@ export class EntregaService {
       if (entrega.origemCadastro !== 'CLIENTE') continue
       if (entrega.entregaMotoboyId) continue
 
-      const taxa = Number(entrega.valorEntrega)
+      const valorMotoboy = Number(entrega.valorEntregaMotoboy ?? 0)
       const motoboyEntrega = await entregaRepository.create(
         {
           nomeCliente: entrega.nomeCliente ?? undefined,
@@ -120,7 +120,7 @@ export class EntregaService {
             ? Number(entrega.valorProduto)
             : undefined,
           formaPagamento: entrega.formaPagamento ?? undefined,
-          valorEntrega: taxa > 0 ? taxa : Number(entrega.valorProduto ?? 0) || 1,
+          valorEntrega: valorMotoboy > 0 ? valorMotoboy : 1,
           observacao: entrega.observacao ?? undefined,
           pagoPeloCliente: false,
         },

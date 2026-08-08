@@ -14,4 +14,7 @@ export const WA = {
   check: '\u{2705}',
   thanks: '\u{1F64F}',
   chart: '\u{1F4CA}',
+  phone: '\u{1F4DE}',
+  person: '\u{1F464}',
+  unpaid: '\u{274C}',
 } as const

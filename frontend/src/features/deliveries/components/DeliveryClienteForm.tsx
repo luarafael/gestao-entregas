@@ -5,6 +5,7 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Input, Textarea } fro
 import {
   deliveryClienteFormSchema,
   FORMA_PAGAMENTO_OPTIONS,
+  STATUS_PAGAMENTO_OPTIONS,
   type DeliveryClienteFormData,
 } from '../schemas/delivery.schema'
 import type { Entrega } from '@/shared/types/api.types'
@@ -22,6 +23,8 @@ const defaultValues: DeliveryClienteFormData = {
   endereco: '',
   valorProduto: 0,
   formaPagamento: 'DINHEIRO',
+  statusPagamento: 'NAO_PAGO',
+  valorEntregaMotoboy: undefined as unknown as number,
   valorEntrega: undefined,
   observacao: '',
   cidade: '',
@@ -51,6 +54,8 @@ export function DeliveryClienteForm({
         endereco: editingDelivery.endereco,
         valorProduto: Number(editingDelivery.valorProduto ?? 0),
         formaPagamento: editingDelivery.formaPagamento ?? 'DINHEIRO',
+        statusPagamento: editingDelivery.statusPagamentoCliente ?? 'NAO_PAGO',
+        valorEntregaMotoboy: Number(editingDelivery.valorEntregaMotoboy ?? 0),
         valorEntrega:
           Number(editingDelivery.valorEntrega) > 0
             ? Number(editingDelivery.valorEntrega)
@@ -131,6 +136,33 @@ export function DeliveryClienteForm({
               <p className="text-xs text-destructive">{errors.formaPagamento.message}</p>
             ) : null}
           </label>
+
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-foreground">Status do pagamento</span>
+            <select
+              className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3 text-sm text-foreground"
+              {...register('statusPagamento')}
+            >
+              {STATUS_PAGAMENTO_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {errors.statusPagamento?.message ? (
+              <p className="text-xs text-destructive">{errors.statusPagamento.message}</p>
+            ) : null}
+          </label>
+
+          <Input
+            label="Valor entrega motoboy"
+            type="number"
+            step="0.01"
+            min="0.01"
+            placeholder="0,00"
+            error={errors.valorEntregaMotoboy?.message}
+            {...register('valorEntregaMotoboy', { valueAsNumber: true })}
+          />
 
           <Input
             label="Taxa de entrega (opcional)"

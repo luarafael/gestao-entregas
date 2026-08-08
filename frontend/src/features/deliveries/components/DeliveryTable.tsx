@@ -2,7 +2,7 @@ import { Button, Badge, DataTable } from '@/shared/components/ui'
 import { IconPackage } from '@/shared/components/icons'
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
-import { FORMA_PAGAMENTO_OPTIONS, type DeliveryViewMode } from '../schemas/delivery.schema'
+import { FORMA_PAGAMENTO_OPTIONS, STATUS_PAGAMENTO_OPTIONS, type DeliveryViewMode } from '../schemas/delivery.schema'
 import type { Entrega } from '@/shared/types/api.types'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 
@@ -30,6 +30,11 @@ export function DeliveryTable({
   const pagamentoLabel = (value: Entrega['formaPagamento']) => {
     if (!value) return '—'
     return FORMA_PAGAMENTO_OPTIONS.find((item) => item.value === value)?.label ?? value
+  }
+
+  const statusPagamentoLabel = (value: Entrega['statusPagamentoCliente']) => {
+    if (!value) return 'Não pago'
+    return STATUS_PAGAMENTO_OPTIONS.find((item) => item.value === value)?.label ?? value
   }
 
   return (
@@ -122,16 +127,39 @@ export function DeliveryTable({
                 key: 'taxa',
                 header: 'Taxa',
                 headerClassName: 'text-right',
-                cellClassName: 'text-right font-medium',
+                cellClassName: 'text-right text-muted-foreground',
                 render: (delivery: Entrega) =>
                   Number(delivery.valorEntrega) > 0
                     ? formatCurrency(Number(delivery.valorEntrega))
                     : '—',
               },
               {
+                key: 'motoboy-valor',
+                header: 'Entrega motoboy',
+                headerClassName: 'text-right',
+                cellClassName: 'text-right font-medium',
+                render: (delivery: Entrega) =>
+                  delivery.valorEntregaMotoboy
+                    ? formatCurrency(Number(delivery.valorEntregaMotoboy))
+                    : '—',
+              },
+              {
                 key: 'pagamento',
                 header: 'Pagamento',
                 render: (delivery: Entrega) => pagamentoLabel(delivery.formaPagamento),
+              },
+              {
+                key: 'status-pagamento',
+                header: 'Status',
+                render: (delivery: Entrega) => (
+                  <Badge
+                    variant={
+                      delivery.statusPagamentoCliente === 'PAGO' ? 'success' : 'warning'
+                    }
+                  >
+                    {statusPagamentoLabel(delivery.statusPagamentoCliente)}
+                  </Badge>
+                ),
               },
             ]
           : [

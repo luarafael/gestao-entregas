@@ -33,6 +33,11 @@ enum OrigemCadastroEntrega {
   CLIENTE
 }
 
+enum StatusPagamentoCliente {
+  PAGO
+  NAO_PAGO
+}
+
 model Entrega {
   id               String                 @id @default(cuid())
   data             DateTime               @db.Date
@@ -46,6 +51,8 @@ model Entrega {
   valorProduto     Decimal?               @map("valor_produto") @db.Decimal(10, 2)
   formaPagamento   FormaPagamentoEntrega? @map("forma_pagamento")
   valorEntrega     Decimal                @db.Decimal(10, 2)
+  valorEntregaMotoboy Decimal?            @map("valor_entrega_motoboy") @db.Decimal(10, 2)
+  statusPagamentoCliente StatusPagamentoCliente? @map("status_pagamento_cliente")
   pagoPeloCliente  Boolean                @default(false)
   origemCadastro   OrigemCadastroEntrega  @default(MOTOBOY) @map("origem_cadastro")
   entregaMotoboyId String?                @map("entrega_motoboy_id")

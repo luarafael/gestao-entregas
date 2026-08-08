@@ -179,6 +179,8 @@ export class EntregaRepository {
     cidade?: string
     valorProduto: number
     formaPagamento: 'DINHEIRO' | 'PIX' | 'CARTAO'
+    statusPagamento: 'PAGO' | 'NAO_PAGO'
+    valorEntregaMotoboy: number
     valorEntrega?: number
     observacao?: string
   }) {
@@ -193,6 +195,8 @@ export class EntregaRepository {
         cidade: data.cidade,
         valorProduto: data.valorProduto,
         formaPagamento: data.formaPagamento,
+        statusPagamentoCliente: data.statusPagamento,
+        valorEntregaMotoboy: data.valorEntregaMotoboy,
         valorEntrega: data.valorEntrega ?? 0,
         observacao: data.observacao,
         origemCadastro: 'CLIENTE',
@@ -211,11 +215,23 @@ export class EntregaRepository {
       cidade: string | null
       valorProduto: number
       formaPagamento: 'DINHEIRO' | 'PIX' | 'CARTAO'
+      statusPagamento: 'PAGO' | 'NAO_PAGO'
+      valorEntregaMotoboy: number
       valorEntrega: number
       observacao: string | null
     }>,
   ) {
-    return prisma.entrega.update({ where: { id }, data })
+    const { statusPagamento, ...rest } = data
+
+    return prisma.entrega.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(statusPagamento !== undefined
+          ? { statusPagamentoCliente: statusPagamento }
+          : {}),
+      },
+    })
   }
 
   async linkEntregaMotoboy(clienteId: string, motoboyEntregaId: string) {

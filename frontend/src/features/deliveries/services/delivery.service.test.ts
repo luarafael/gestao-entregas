@@ -68,6 +68,8 @@ describe('deliveryService', () => {
       endereco: 'Rua A',
       valorProduto: 50,
       formaPagamento: 'PIX',
+      statusPagamento: 'NAO_PAGO',
+      valorEntregaMotoboy: 12,
     })
 
     expect(apiFetch).toHaveBeenCalledWith('/api/entregas/cliente', expect.any(Object))

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   createEntregaSchema,
   updateEntregaSchema,
+  createEntregaClienteSchema,
 } from '../schemas/entrega.schema.js'
 
 describe('entrega schemas', () => {
@@ -54,5 +55,20 @@ describe('entrega schemas', () => {
     })
 
     expect(parsed.status).toBe('CANCELADA')
+  })
+
+  it('valida criação de entrega cliente com pagamento e valor motoboy', () => {
+    const parsed = createEntregaClienteSchema.parse({
+      nomeCliente: 'João',
+      telefoneCliente: '11999999999',
+      endereco: 'Rua A',
+      valorProduto: 50,
+      formaPagamento: 'PIX',
+      statusPagamento: 'NAO_PAGO',
+      valorEntregaMotoboy: 12,
+    })
+
+    expect(parsed.statusPagamento).toBe('NAO_PAGO')
+    expect(parsed.valorEntregaMotoboy).toBe(12)
   })
 })

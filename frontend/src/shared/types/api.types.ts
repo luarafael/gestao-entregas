@@ -18,6 +18,8 @@ export interface Entrega {
   valorProduto: string | null
   formaPagamento: 'DINHEIRO' | 'PIX' | 'CARTAO' | null
   valorEntrega: string
+  valorEntregaMotoboy?: string | null
+  statusPagamentoCliente?: 'PAGO' | 'NAO_PAGO' | null
   pagoPeloCliente: boolean
   origemCadastro?: 'MOTOBOY' | 'CLIENTE'
   entregaMotoboyId?: string | null
