@@ -29,6 +29,7 @@ export interface MonitoramentoRota {
   tempoRestante: number
   motoboyId: string | null
   motoboyNome: string
+  motoboyFotoPerfil: string | null
   totalParadas: number
   stats: {
     pendentes: number
@@ -170,6 +171,108 @@ function getConcluidaEm(paradas: MonitoramentoParada[]): string | null {
   )
 }
 
+function isRotaNuncaIniciada(rota: MonitoramentoRota): boolean {
+  return (
+    rota.stats.pendentes === rota.totalParadas &&
+    rota.stats.emRota === 0 &&
+    rota.stats.entregues === 0
+  )
+}
+
+function routeProgressScore(rota: MonitoramentoRota): number {
+  return (
+    rota.stats.entregues * 100 +
+    rota.stats.emRota * 10 +
+    rota.stats.problemas -
+    rota.stats.pendentes
+  )
+}
+
+function dedupeActiveRotasPorMotoboy(
+  rotas: MonitoramentoRota[],
+): { kept: MonitoramentoRota[]; staleIds: string[] } {
+  const bestByMotoboy = new Map<string, MonitoramentoRota>()
+  const staleIds: string[] = []
+
+  for (const rota of rotas) {
+    const key = rota.motoboyId ?? rota.rotaId
+    const current = bestByMotoboy.get(key)
+
+    if (!current) {
+      bestByMotoboy.set(key, rota)
+      continue
+    }
+
+    const currentScore = routeProgressScore(current)
+    const nextScore = routeProgressScore(rota)
+
+    if (nextScore > currentScore) {
+      staleIds.push(current.rotaId)
+      bestByMotoboy.set(key, rota)
+    } else {
+      staleIds.push(rota.rotaId)
+    }
+  }
+
+  return { kept: [...bestByMotoboy.values()], staleIds }
+}
+
+async function cleanupStaleActiveRoutes(
+  rotasAtivas: MonitoramentoRota[],
+  historico: MonitoramentoRotaHistorico[],
+): Promise<MonitoramentoRota[]> {
+  const completedMotoboyIds = new Set(
+    historico
+      .map((rota) => rota.motoboyId)
+      .filter((id): id is string => Boolean(id)),
+  )
+
+  const staleIds = new Set<string>()
+
+  for (const rota of rotasAtivas) {
+    if (!rota.motoboyId || !completedMotoboyIds.has(rota.motoboyId)) {
+      continue
+    }
+
+    if (isRotaNuncaIniciada(rota)) {
+      staleIds.add(rota.rotaId)
+    }
+  }
+
+  const { kept, staleIds: duplicateIds } = dedupeActiveRotasPorMotoboy(
+    rotasAtivas.filter((rota) => !staleIds.has(rota.rotaId)),
+  )
+
+  for (const id of duplicateIds) {
+    staleIds.add(id)
+  }
+
+  if (staleIds.size > 0) {
+    await Promise.all([...staleIds].map((id) => rotaRepository.delete(id)))
+  }
+
+  return kept
+}
+
+function resolveExecucaoForParada<
+  T extends {
+    paradaId: string | null
+    entregaId: string | null
+    status: StatusExecucaoParada
+    dataHoraStatus: Date | null
+    observacao: string | null
+  },
+>(
+  parada: { id: string; entregaId: string | null },
+  execucaoByParadaId: Map<string | null, T>,
+  execucaoByEntregaId: Map<string, T>,
+): T | undefined {
+  return (
+    execucaoByParadaId.get(parada.id) ??
+    (parada.entregaId ? execucaoByEntregaId.get(parada.entregaId) : undefined)
+  )
+}
+
 function buildMonitoramentoRota(
   rota: {
     id: string
@@ -177,10 +280,13 @@ function buildMonitoramentoRota(
     distanciaTotal: unknown
     tempoTotal: number
     motoboyId?: string | null
-    motoboy?: { id: string; nome: string } | null
+    motoboy?: { id: string; nome: string; fotoPerfil: string | null } | null
   },
   paradas: MonitoramentoParada[],
-  entregaMap: Map<string, { motoboy?: { id: string; nome: string } | null }>,
+  entregaMap: Map<
+    string,
+    { motoboy?: { id: string; nome: string; fotoPerfil: string | null } | null }
+  >,
 ): MonitoramentoRota {
   const stats = computeStats(paradas)
   const { distanciaRestante, tempoRestante } = computeRemaining(paradas)
@@ -188,6 +294,7 @@ function buildMonitoramentoRota(
 
   let motoboyId = rota.motoboyId ?? null
   let motoboyNome = rota.motoboy?.nome ?? 'Sem motoboy'
+  let motoboyFotoPerfil = rota.motoboy?.fotoPerfil ?? null
 
   if (!motoboyId) {
     for (const parada of paradas) {
@@ -196,6 +303,7 @@ function buildMonitoramentoRota(
       if (entrega?.motoboy) {
         motoboyId = entrega.motoboy.id
         motoboyNome = entrega.motoboy.nome
+        motoboyFotoPerfil = entrega.motoboy.fotoPerfil ?? null
         break
       }
     }
@@ -210,6 +318,7 @@ function buildMonitoramentoRota(
     tempoRestante,
     motoboyId,
     motoboyNome,
+    motoboyFotoPerfil,
     totalParadas: paradas.length,
     stats: {
       pendentes: stats.pendentes,
@@ -278,17 +387,32 @@ export class MonitoramentoService {
 
       let execucoes = await rotaExecucaoRepository.findByRotaId(rota.id)
 
-      if (execucoes.length === 0) {
-        const inited = await rotaExecucaoRepository.initForRota(rota.id)
-        execucoes = inited ?? []
+      if (
+        execucoes.length === 0 ||
+        execucoes.length < rota.paradas.length
+      ) {
+        const synced = await rotaExecucaoRepository.initForRota(rota.id)
+        execucoes = synced ?? []
       }
 
       const execucaoByParadaId = new Map(
         execucoes.map((execucao) => [execucao.paradaId, execucao]),
       )
+      const execucaoByEntregaId = new Map(
+        execucoes
+          .filter(
+            (execucao): execucao is typeof execucao & { entregaId: string } =>
+              Boolean(execucao.entregaId),
+          )
+          .map((execucao) => [execucao.entregaId, execucao]),
+      )
 
       const paradas: MonitoramentoParada[] = rota.paradas.map((parada) => {
-        const execucao = execucaoByParadaId.get(parada.id)
+        const execucao = resolveExecucaoForParada(
+          parada,
+          execucaoByParadaId,
+          execucaoByEntregaId,
+        )
 
         return {
           paradaId: parada.id,
@@ -335,7 +459,12 @@ export class MonitoramentoService {
       return bTime.localeCompare(aTime)
     })
 
-    const resumo = rotasAtivas.reduce(
+    const rotasAtivasLimpas = await cleanupStaleActiveRoutes(
+      rotasAtivas,
+      historico,
+    )
+
+    const resumo = rotasAtivasLimpas.reduce(
       (acc, rota) => {
         acc.totalParadas += rota.totalParadas
         acc.entregues += rota.stats.entregues
@@ -345,7 +474,7 @@ export class MonitoramentoService {
         return acc
       },
       {
-        totalRotas: rotasAtivas.length,
+        totalRotas: rotasAtivasLimpas.length,
         totalParadas: 0,
         entregues: 0,
         emRota: 0,
@@ -359,7 +488,7 @@ export class MonitoramentoService {
       data: formatDateOnlyISO(day),
       atualizadoEm: new Date().toISOString(),
       resumo,
-      rotas: rotasAtivas,
+      rotas: rotasAtivasLimpas,
       historico,
     }
   }

@@ -10,12 +10,14 @@ function toPublicUser(user: {
   email: string
   role: 'ADMIN' | 'MOTOBOY'
   pix?: string | null
+  fotoPerfil?: string | null
 }) {
   return {
     id: user.id,
     nome: user.nome,
     email: user.email,
     role: user.role,
+    fotoPerfil: user.fotoPerfil ?? null,
     ...(user.role === 'MOTOBOY' ? { pix: user.pix ?? null } : {}),
   }
 }
@@ -62,6 +64,17 @@ export class AuthService {
     }
 
     const updated = await usuarioRepository.updatePix(userId, pix)
+    return toPublicUser(updated)
+  }
+
+  async updateFotoPerfil(userId: string, fotoPerfil: string | null) {
+    const user = await usuarioRepository.findById(userId)
+
+    if (!user || !user.ativo) {
+      throw new UnauthorizedError('Usuário não encontrado ou inativo')
+    }
+
+    const updated = await usuarioRepository.updateFotoPerfil(userId, fotoPerfil)
     return toPublicUser(updated)
   }
 

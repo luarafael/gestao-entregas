@@ -4,6 +4,7 @@ export interface AuthUser {
   email: string
   role: 'ADMIN' | 'MOTOBOY'
   pix?: string | null
+  fotoPerfil?: string | null
 }
 
 export type UserRole = AuthUser['role']

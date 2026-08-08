@@ -1,6 +1,7 @@
-import { EmptyState, TableSkeleton } from '@/shared/components/ui'
+import { EmptyState, TableSkeleton, PAGE_CARD_ARTICLE } from '@/shared/components/ui'
 import { IconPackage } from '@/shared/components/icons'
 import { formatTimeBR } from '@/shared/utils/format'
+import { cn } from '@/shared/utils/cn'
 import type { Entrega } from '@/shared/types/api.types'
 import { DeliveryCardHeader } from './DeliveryCardChips'
 import {
@@ -48,10 +49,7 @@ export function DeliveryClienteList({
         const endereco = [delivery.endereco, delivery.cidade].filter(Boolean).join(' — ')
 
         return (
-          <article
-            key={delivery.id}
-            className="rounded-xl border border-border/60 bg-surface/20 p-3 sm:p-4"
-          >
+          <article key={delivery.id} className={cn(PAGE_CARD_ARTICLE)}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <DeliveryCardHeader
                 horario={formatTimeBR(delivery.horario)}

@@ -94,7 +94,7 @@ export function WhatsAppContactsManager() {
               </div>
               <div className="flex gap-2">
                 <Button
-                  variant="ghost"
+                  variant="edit"
                   size="sm"
                   onClick={() => startEdit(contact.id, contact.name, contact.phone)}
                 >

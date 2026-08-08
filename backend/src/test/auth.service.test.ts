@@ -40,6 +40,7 @@ describe('AuthService', () => {
       senhaHash: 'hash',
       role: 'ADMIN',
       ativo: true,
+      fotoPerfil: null,
     })
 
     const result = await service.login({
@@ -53,6 +54,7 @@ describe('AuthService', () => {
       nome: 'Admin',
       email: 'admin@test.com',
       role: 'ADMIN',
+      fotoPerfil: null,
     })
   })
 

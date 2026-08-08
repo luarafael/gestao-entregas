@@ -7,6 +7,19 @@ vi.mock('@/shared/stores/toast.store', () => ({
   toast: vi.fn(),
 }))
 
+vi.mock('../services/auth.service', () => ({
+  authService: {
+    updateFoto: vi.fn(),
+  },
+}))
+
+vi.mock('../stores/auth.store', () => ({
+  useAuthStore: {
+    getState: () => ({ user: null }),
+    setState: vi.fn(),
+  },
+}))
+
 describe('UserAvatar', () => {
   beforeEach(() => {
     useProfileStore.setState({ avatars: {} })

@@ -1,7 +1,20 @@
 import { useState } from 'react'
-import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Pagination, TableSkeleton } from '@/shared/components/ui'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  MetaChip,
+  MetaField,
+  PAGE_CARD_ARTICLE,
+  Pagination,
+  TableSkeleton,
+} from '@/shared/components/ui'
 import { IconRoute, IconWhatsApp } from '@/shared/components/icons'
-import { formatDateBR } from '@/shared/utils/format'
+import { cn } from '@/shared/utils/cn'
+import { formatDateBR, formatTimeBR } from '@/shared/utils/format'
 import { toast } from '@/shared/stores/toast.store'
 import {
   WhatsAppSendModal,
@@ -93,11 +106,11 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
 
   return (
     <>
-      <Card glass>
+      <Card glass className="min-w-0 overflow-hidden">
         <CardHeader>
           <CardTitle>Histórico de rotas</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="min-w-0 space-y-4">
           {historyQuery.isLoading ? (
             <TableSkeleton rows={4} />
           ) : items.length === 0 ? (
@@ -108,67 +121,118 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
             />
           ) : (
             <div className="space-y-3">
-              {items.map((rota) => (
-                <div
+              {items.map((rota) => {
+                const isConcluida = Boolean(rota.concluidaEm)
+
+                return (
+                <article
                   key={rota.id}
-                  className="rounded-xl border border-border/50 bg-surface/20 p-4"
+                  className={cn(PAGE_CARD_ARTICLE)}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium">
-                        {formatDateBR(rota.data)} · {rota.paradas.length} paradas
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {rota.enderecoInicial}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                  <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <MetaField label="Data">
+                      <MetaChip tone="time" className="w-fit">
+                        {formatDateBR(rota.data)}
+                      </MetaChip>
+                    </MetaField>
+
+                    {isConcluida && rota.concluidaEm ? (
+                      <MetaField label="Concluída">
+                        <MetaChip tone="delivery" className="w-fit">
+                          {formatDateBR(rota.concluidaEm)} ·{' '}
+                          {formatTimeBR(rota.concluidaEm)}
+                        </MetaChip>
+                      </MetaField>
+                    ) : null}
+
+                    <MetaField label="Paradas">
+                      <MetaChip tone="delivery" className="w-fit tabular-nums">
+                        {rota.paradas.length}
+                      </MetaChip>
+                    </MetaField>
+
+                    <MetaField label="Trajeto" className="sm:col-span-2">
+                      <MetaChip
+                        tone="time"
+                        className="w-fit"
+                        title={
+                          rota.aproximada ? 'Rota aproximada' : undefined
+                        }
+                      >
                         {formatDistance(Number(rota.distanciaTotal))} ·{' '}
                         {formatDuration(rota.tempoTotal)}
                         {rota.aproximada ? ' · aproximada' : ''}
+                      </MetaChip>
+                    </MetaField>
+
+                    <MetaField label="Partida" className="sm:col-span-2 lg:col-span-4">
+                      <MetaChip
+                        tone="address"
+                        className="w-full max-w-full items-start whitespace-normal"
+                        title={rota.enderecoInicial}
+                      >
+                        <span className="line-clamp-2 text-left leading-relaxed">
+                          {rota.enderecoInicial}
+                        </span>
+                      </MetaChip>
+                    </MetaField>
+                  </div>
+
+                  <div className="mt-3 flex w-full min-w-0 flex-wrap gap-2 border-t border-border/40 pt-3">
+                    {isConcluida ? (
+                      <p className="w-full text-xs text-muted-foreground">
+                        Rota concluída — use Duplicar para montar uma nova com
+                        as mesmas paradas.
                       </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
+                    ) : (
                       <Button
                         size="sm"
                         variant="secondary"
                         onClick={async () => {
                           const full = await routingService.getById(rota.id)
+                          if (full.concluidaEm) {
+                            toast(
+                              'Esta rota já foi concluída. Use Duplicar para planejar outra.',
+                              'info',
+                            )
+                            return
+                          }
                           onLoadRoute(full)
                         }}
                       >
-                        Visualizar / Planejar
+                        Abrir no planejador
                       </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="whatsapp"
+                      isLoading={sendingId === rota.id}
+                      onClick={() => handleSendWhatsApp(rota.id)}
+                    >
+                      <IconWhatsApp className="size-3.5" />
+                      WhatsApp
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="copy"
+                      isLoading={duplicateMutation.isPending}
+                      onClick={() => duplicateMutation.mutate(rota.id)}
+                    >
+                      Duplicar
+                    </Button>
+                    {canDelete ? (
                       <Button
                         size="sm"
-                        variant="secondary"
-                        isLoading={sendingId === rota.id}
-                        onClick={() => handleSendWhatsApp(rota.id)}
+                        variant="danger"
+                        isLoading={deleteMutation.isPending}
+                        onClick={() => deleteMutation.mutate(rota.id)}
                       >
-                        <IconWhatsApp className="mr-1 size-4" />
-                        WhatsApp
+                        Excluir
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        isLoading={duplicateMutation.isPending}
-                        onClick={() => duplicateMutation.mutate(rota.id)}
-                      >
-                        Duplicar
-                      </Button>
-                      {canDelete ? (
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          isLoading={deleteMutation.isPending}
-                          onClick={() => deleteMutation.mutate(rota.id)}
-                        >
-                          Excluir
-                        </Button>
-                      ) : null}
-                    </div>
+                    ) : null}
                   </div>
-                </div>
-              ))}
+                </article>
+              )})}
             </div>
           )}
 

@@ -14,13 +14,29 @@ import {
   rejectPrestacaoMotoboySchema,
   submitPrestacaoMotoboySchema,
   updatePrestacaoMotoboySchema,
+  prestacaoMotoboyEventosQuerySchema,
   type ListPendentesQuery,
   type ListPrestacoesMotoboyInput,
   type PreviewPrestacaoMotoboyQuery,
+  type PrestacaoMotoboyEventosQuery,
 } from '../schemas/prestacao-motoboy.schema.js'
 import { prestacaoMotoboyService } from '../services/prestacao-motoboy.service.js'
 
 export const prestacaoMotoboyRoutes = Router()
+
+prestacaoMotoboyRoutes.get(
+  '/eventos',
+  requireRole('MOTOBOY'),
+  validateQuery(prestacaoMotoboyEventosQuerySchema),
+  asyncHandler(async (req, res) => {
+    const query = getValidatedQuery<PrestacaoMotoboyEventosQuery>(req)
+    const eventos = await prestacaoMotoboyService.getEventosStatus(
+      req.user!,
+      new Date(query.since),
+    )
+    res.json({ eventos })
+  }),
+)
 
 prestacaoMotoboyRoutes.get(
   '/pendentes',

@@ -22,6 +22,7 @@ const motoboyPublicSelect = {
   nome: true,
   email: true,
   pix: true,
+  fotoPerfil: true,
   role: true,
   ativo: true,
   criadoEm: true,
@@ -120,6 +121,13 @@ export const usuarioRepository = {
       where: { id },
       data: { pix },
       select: motoboyPublicSelect,
+    })
+  },
+
+  updateFotoPerfil(id: string, fotoPerfil: string | null) {
+    return prisma.usuario.update({
+      where: { id },
+      data: { fotoPerfil },
     })
   },
 

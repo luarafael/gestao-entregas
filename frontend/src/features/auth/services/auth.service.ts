@@ -23,4 +23,11 @@ export const authService = {
       body: JSON.stringify({ pix }),
     })
   },
+
+  updateFoto(fotoPerfil: string | null) {
+    return apiFetch<AuthUser>('/api/auth/me/foto', {
+      method: 'PATCH',
+      body: JSON.stringify({ fotoPerfil }),
+    })
+  },
 }

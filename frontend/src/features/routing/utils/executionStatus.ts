@@ -119,6 +119,38 @@ export function isAllStopsDelivered(stops: PlannerStop[]): boolean {
   return stops.length > 0 && stops.every((stop) => getStopStatus(stop) === 'ENTREGUE')
 }
 
+export function isExecucaoConcluida(
+  execucoes: Array<{ status: string }>,
+  paradaCount: number,
+): boolean {
+  if (paradaCount === 0 || execucoes.length === 0) {
+    return false
+  }
+
+  return execucoes.every((execucao) => execucao.status === 'ENTREGUE')
+}
+
+export function shouldClearPlannerRoute(input: {
+  concluidaEm?: string | null
+  paradaCount: number
+  execucoes: Array<{ status: string }>
+  stops?: PlannerStop[]
+}): boolean {
+  if (input.concluidaEm) {
+    return true
+  }
+
+  if (isExecucaoConcluida(input.execucoes, input.paradaCount)) {
+    return true
+  }
+
+  if (input.stops && isAllStopsDelivered(input.stops)) {
+    return true
+  }
+
+  return false
+}
+
 export function sumStopRouteMetrics(stops: PlannerStop[]) {
   return stops.reduce(
     (acc, stop) => {

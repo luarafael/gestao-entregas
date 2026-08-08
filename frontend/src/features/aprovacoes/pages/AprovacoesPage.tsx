@@ -2,18 +2,21 @@ import { useState } from 'react'
 import {
   Badge,
   Button,
-  Card,
-  CardContent,
   EmptyState,
   Input,
+  MetaChip,
+  MetaField,
   Modal,
+  PageShell,
+  PAGE_CARD_ARTICLE,
+  TableSkeleton,
 } from '@/shared/components/ui'
 import { IconReceipt } from '@/shared/components/icons'
 import {
   MotoboySelect,
   type MotoboySelectValue,
 } from '@/shared/components/MotoboySelect'
-import { formatCurrency } from '@/shared/utils/cn'
+import { cn, formatCurrency } from '@/shared/utils/cn'
 import { formatPrestacaoMotoboyDate } from '@/features/motoboy/schemas/prestacaoMotoboy.schema'
 import type { PrestacaoMotoboy } from '@/features/motoboy/types/prestacaoMotoboy.types'
 import {
@@ -25,7 +28,6 @@ import {
 import { aprovacoesService } from '../services/aprovacoes.service'
 import { AprovacoesHistoricoSection } from '../components/AprovacoesHistoricoSection'
 import { toast } from '@/shared/stores/toast.store'
-import { cn } from '@/shared/utils/cn'
 
 type AprovacoesTab = 'pendentes' | 'historico'
 
@@ -68,9 +70,9 @@ export function AprovacoesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+    <PageShell>
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-2xl font-semibold tracking-tight">
             Aprovações de motoboy
           </h2>
@@ -111,11 +113,7 @@ export function AprovacoesPage() {
 
       {tab === 'pendentes' ? (
         pendingQuery.isLoading ? (
-          <Card>
-            <CardContent className="p-6">
-              <div className="h-24 animate-pulse rounded-xl bg-surface/50" />
-            </CardContent>
-          </Card>
+          <TableSkeleton rows={3} />
         ) : items.length === 0 ? (
           <EmptyState
             icon={<IconReceipt className="size-6" />}
@@ -127,57 +125,83 @@ export function AprovacoesPage() {
             }
           />
         ) : (
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-3">
             {items.map((item) => (
-              <Card
+              <article
                 key={item.id}
                 className={cn(
-                  'border-amber-500/20',
-                  'shadow-sm shadow-amber-500/5',
+                  PAGE_CARD_ARTICLE,
+                  'min-w-0 border-amber-500/20 shadow-sm shadow-amber-500/5',
                 )}
               >
-                <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-semibold">
-                        {item.motoboy?.nome ?? 'Motoboy'}
-                      </p>
-                      <Badge variant="warning">Aguardando</Badge>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {formatPrestacaoMotoboyDate(item.data)} · {item.totalEntregas}{' '}
-                      entregas
-                    </p>
-                    <p className="mt-2 text-sm">
-                      Entregas: {formatCurrency(Number(item.valorTotal))} · Repasse:{' '}
-                      {formatCurrency(Number(item.valorPendencias))} ·{' '}
-                      <span className="font-semibold text-primary">
-                        Total: {formatCurrency(Number(item.valorFinal))}
-                      </span>
-                    </p>
-                    {item.observacoes ? (
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        Obs: {item.observacoes}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" onClick={() => handlePreview(item.id)}>
-                      Ver texto
-                    </Button>
-                    <Button
-                      variant="primary"
-                      onClick={() => approveMutation.mutate(item.id)}
-                      isLoading={approveMutation.isPending}
+                <div className="grid min-w-0 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                  <MetaField label="Motoboy" className="min-w-0">
+                    <MetaChip
+                      tone="motoboy"
+                      className="w-full max-w-full"
+                      title={item.motoboy?.nome ?? undefined}
                     >
-                      Aprovar
-                    </Button>
-                    <Button variant="danger" onClick={() => setRejecting(item)}>
-                      Rejeitar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                      {item.motoboy?.nome ?? 'Motoboy'}
+                    </MetaChip>
+                  </MetaField>
+
+                  <MetaField label="Data">
+                    <MetaChip tone="time" className="w-fit">
+                      {formatPrestacaoMotoboyDate(item.data)}
+                    </MetaChip>
+                  </MetaField>
+
+                  <MetaField label="Entregas">
+                    <MetaChip tone="delivery" className="w-fit tabular-nums">
+                      {item.totalEntregas}
+                    </MetaChip>
+                  </MetaField>
+
+                  <MetaField label="Valor entregas">
+                    <MetaChip tone="money" className="w-fit tabular-nums">
+                      {formatCurrency(Number(item.valorTotal))}
+                    </MetaChip>
+                  </MetaField>
+
+                  <MetaField label="Repasse pend.">
+                    <MetaChip tone="pending" className="w-fit tabular-nums">
+                      {formatCurrency(Number(item.valorPendencias))}
+                    </MetaChip>
+                  </MetaField>
+
+                  <MetaField label="Total a receber">
+                    <MetaChip tone="motoboyFee" className="w-fit tabular-nums">
+                      {formatCurrency(Number(item.valorFinal))}
+                    </MetaChip>
+                  </MetaField>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Badge variant="warning">Aguardando</Badge>
+                  {item.observacoes ? (
+                    <p className="min-w-0 text-sm text-muted-foreground">
+                      Obs: {item.observacoes}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="mt-3 flex w-full min-w-0 flex-wrap gap-2 border-t border-border/40 pt-3">
+                  <Button variant="copy" size="sm" onClick={() => handlePreview(item.id)}>
+                    Ver texto
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => approveMutation.mutate(item.id)}
+                    isLoading={approveMutation.isPending}
+                  >
+                    Aprovar
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={() => setRejecting(item)}>
+                    Rejeitar
+                  </Button>
+                </div>
+              </article>
             ))}
           </div>
         )
@@ -225,6 +249,6 @@ export function AprovacoesPage() {
           placeholder="Explique o que precisa ser corrigido..."
         />
       </Modal>
-    </div>
+    </PageShell>
   )
 }

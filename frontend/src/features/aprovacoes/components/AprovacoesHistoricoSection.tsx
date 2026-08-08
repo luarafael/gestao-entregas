@@ -1,12 +1,14 @@
 import {
   Badge,
-  Card,
-  CardContent,
   EmptyState,
+  MetaChip,
+  MetaField,
+  PAGE_CARD_ARTICLE,
   Pagination,
+  TableSkeleton,
 } from '@/shared/components/ui'
 import { IconReceipt } from '@/shared/components/icons'
-import { formatCurrency } from '@/shared/utils/cn'
+import { cn, formatCurrency } from '@/shared/utils/cn'
 import { formatDateBR, formatTimeBR } from '@/shared/utils/format'
 import { formatPrestacaoMotoboyDate } from '@/features/motoboy/schemas/prestacaoMotoboy.schema'
 import { usePrestacoesHistorico } from '../hooks/useAprovacoes'
@@ -32,13 +34,7 @@ export function AprovacoesHistoricoSection({
   const meta = historyQuery.data?.meta
 
   if (historyQuery.isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="h-24 animate-pulse rounded-xl bg-surface/50" />
-        </CardContent>
-      </Card>
-    )
+    return <TableSkeleton rows={4} />
   }
 
   if (items.length === 0) {
@@ -52,56 +48,75 @@ export function AprovacoesHistoricoSection({
   }
 
   return (
-    <div className="space-y-4">
-      {items.map((item) => {
-        const config =
-          item.status === 'APROVADA' || item.status === 'REJEITADA'
-            ? statusConfig[item.status]
-            : null
+    <div className="min-w-0 space-y-4">
+      <div className="space-y-3">
+        {items.map((item) => {
+          const config =
+            item.status === 'APROVADA' || item.status === 'REJEITADA'
+              ? statusConfig[item.status]
+              : null
 
-        const resolvedAt = item.aprovadaEm ?? item.rejeitadaEm
+          const resolvedAt = item.aprovadaEm ?? item.rejeitadaEm
 
-        return (
-          <Card key={item.id}>
-            <CardContent className="p-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-lg font-semibold">
-                      {item.motoboy?.nome ?? 'Motoboy'}
-                    </p>
-                    {config ? (
-                      <Badge variant={config.variant}>{config.label}</Badge>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Prestação de {formatPrestacaoMotoboyDate(item.data)} ·{' '}
-                    {item.totalEntregas} entregas
-                  </p>
-                  <p className="mt-2 text-sm">
-                    Total:{' '}
-                    <span className="font-semibold text-primary">
-                      {formatCurrency(Number(item.valorFinal))}
-                    </span>
-                  </p>
-                  {item.status === 'REJEITADA' && item.motivoRejeicao ? (
-                    <p className="mt-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                      Motivo: {item.motivoRejeicao}
-                    </p>
-                  ) : null}
-                </div>
+          return (
+            <article key={item.id} className={cn(PAGE_CARD_ARTICLE, 'min-w-0')}>
+              <div className="grid min-w-0 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <MetaField label="Motoboy" className="min-w-0">
+                  <MetaChip
+                    tone="motoboy"
+                    className="w-full max-w-full"
+                    title={item.motoboy?.nome ?? undefined}
+                  >
+                    {item.motoboy?.nome ?? 'Motoboy'}
+                  </MetaChip>
+                </MetaField>
 
-                {resolvedAt ? (
-                  <div className="text-sm text-muted-foreground sm:text-right">
-                    <p>{formatDateBR(resolvedAt)}</p>
-                    <p>{formatTimeBR(resolvedAt)}</p>
-                  </div>
-                ) : null}
+                <MetaField label="Prestação de">
+                  <MetaChip tone="time" className="w-fit">
+                    {formatPrestacaoMotoboyDate(item.data)}
+                  </MetaChip>
+                </MetaField>
+
+                <MetaField label="Entregas">
+                  <MetaChip tone="delivery" className="w-fit tabular-nums">
+                    {item.totalEntregas}
+                  </MetaChip>
+                </MetaField>
+
+                <MetaField label="Total">
+                  <MetaChip tone="motoboyFee" className="w-fit tabular-nums">
+                    {formatCurrency(Number(item.valorFinal))}
+                  </MetaChip>
+                </MetaField>
+
+                <MetaField label="Status">
+                  {config ? (
+                    <Badge variant={config.variant}>{config.label}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </MetaField>
+
+                <MetaField label="Decisão em">
+                  {resolvedAt ? (
+                    <MetaChip tone="time" className="w-fit max-w-full">
+                      {formatDateBR(resolvedAt)} · {formatTimeBR(resolvedAt)}
+                    </MetaChip>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </MetaField>
               </div>
-            </CardContent>
-          </Card>
-        )
-      })}
+
+              {item.status === 'REJEITADA' && item.motivoRejeicao ? (
+                <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  Motivo: {item.motivoRejeicao}
+                </p>
+              ) : null}
+            </article>
+          )
+        })}
+      </div>
 
       {meta && meta.totalPages > 1 ? (
         <Pagination

@@ -1,5 +1,5 @@
-import { Badge } from '@/shared/components/ui'
-import { formatCurrency } from '@/shared/utils/cn'
+import { Badge, Button, PAGE_CARD_SECTION } from '@/shared/components/ui'
+import { formatCurrency, cn } from '@/shared/utils/cn'
 import { STATUS_PAGAMENTO_OPTIONS } from '../schemas/delivery.schema'
 import type { Entrega } from '@/shared/types/api.types'
 import { FormaPagamentoBadge } from './FormaPagamentoBadge'
@@ -8,7 +8,7 @@ import {
   DeliveryCardSectionTitle,
 } from './DeliveryCardChips'
 
-type ValueChipTone = 'product' | 'delivery' | 'motoboyFee'
+type ValueChipTone = 'product' | 'money' | 'motoboyFee' | 'delivery'
 
 function statusPagamentoLabel(value: Entrega['statusPagamentoCliente']) {
   if (!value) return 'Não pago'
@@ -52,8 +52,8 @@ function ValueRow({
 
 export function DeliveryValoresCell({ delivery }: { delivery: Entrega }) {
   return (
-    <div className="min-w-0 rounded-lg border border-border/50 bg-surface/25 p-3">
-      <DeliveryCardSectionTitle tone="product">Valores</DeliveryCardSectionTitle>
+    <div className={cn(PAGE_CARD_SECTION)}>
+      <DeliveryCardSectionTitle tone="money">Valores</DeliveryCardSectionTitle>
       <div className="space-y-2">
         <ValueRow
           tone="product"
@@ -65,7 +65,7 @@ export function DeliveryValoresCell({ delivery }: { delivery: Entrega }) {
           }
         />
         <ValueRow
-          tone="delivery"
+          tone="money"
           label="Taxa entrega"
           value={
             Number(delivery.valorEntrega) > 0
@@ -90,7 +90,7 @@ export function DeliveryValoresCell({ delivery }: { delivery: Entrega }) {
 
 export function DeliveryMotoboyValoresCell({ delivery }: { delivery: Entrega }) {
   return (
-    <div className="min-w-0 rounded-lg border border-border/50 bg-surface/25 p-3">
+    <div className={cn(PAGE_CARD_SECTION)}>
       <DeliveryCardSectionTitle tone="motoboyFee">Corrida</DeliveryCardSectionTitle>
       <div className="space-y-2">
         <ValueRow
@@ -108,7 +108,7 @@ export function DeliveryMotoboyValoresCell({ delivery }: { delivery: Entrega }) 
         ) : null}
         {delivery.pagoPeloCliente ? (
           <Badge variant="warning" className="w-full justify-center gap-1.5 px-2 py-1 text-xs">
-            💳 Pago pelo cliente
+            Pago pelo cliente
           </Badge>
         ) : null}
       </div>
@@ -120,7 +120,7 @@ export function DeliveryPagamentoCell({ delivery }: { delivery: Entrega }) {
   const isPago = delivery.statusPagamentoCliente === 'PAGO'
 
   return (
-    <div className="min-w-0 rounded-lg border border-border/50 bg-surface/25 p-3">
+    <div className={cn(PAGE_CARD_SECTION)}>
       <DeliveryCardSectionTitle tone="payment">Pagamento</DeliveryCardSectionTitle>
       <div className="space-y-2">
         <div className="flex flex-col items-center gap-1.5 rounded-lg border border-border/50 bg-surface/30 px-2.5 py-2.5">
@@ -145,7 +145,7 @@ export function DeliveryPagamentoCell({ delivery }: { delivery: Entrega }) {
 export function DeliveryMotoboyPagamentoCell({ delivery }: { delivery: Entrega }) {
   if (!delivery.formaPagamento) {
     return (
-      <div className="min-w-0 rounded-lg border border-border/50 bg-surface/25 p-3">
+      <div className={cn(PAGE_CARD_SECTION)}>
         <DeliveryCardSectionTitle tone="payment">Pagamento</DeliveryCardSectionTitle>
         <p className="text-xs text-muted-foreground">
           Forma de pagamento não informada nesta corrida.
@@ -168,21 +168,19 @@ export function DeliveryRowActions({
 }) {
   return (
     <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5">
-      <button
-        type="button"
-        onClick={onEdit}
-        className="inline-flex h-8 w-full items-center justify-center rounded-lg border border-border/70 bg-surface/60 px-2 text-xs font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
-      >
+      <Button type="button" variant="edit" size="sm" className="w-full" onClick={onEdit}>
         Editar
-      </button>
+      </Button>
       {canDelete ? (
-        <button
+        <Button
           type="button"
+          variant="danger"
+          size="sm"
+          className="w-full"
           onClick={onDelete}
-          className="inline-flex h-8 w-full items-center justify-center rounded-lg border border-danger/25 bg-danger/10 px-2 text-xs font-medium text-danger transition-colors hover:bg-danger/15"
         >
           Excluir
-        </button>
+        </Button>
       ) : null}
     </div>
   )

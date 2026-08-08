@@ -6,6 +6,8 @@ import {
   getStopLegMetrics,
   isProblemStatus,
   isAllStopsDelivered,
+  isExecucaoConcluida,
+  shouldClearPlannerRoute,
   applyStatusUpdate,
   mergeStopsWithStatus,
 } from './executionStatus'
@@ -77,6 +79,31 @@ describe('executionStatus', () => {
         baseStop({ tempId: '2', statusExecucao: 'PENDENTE' }),
       ]),
     ).toBe(false)
+  })
+
+  it('detecta execução concluída e rota legada para limpar planejador', () => {
+    expect(
+      isExecucaoConcluida(
+        [{ status: 'ENTREGUE' }, { status: 'ENTREGUE' }],
+        2,
+      ),
+    ).toBe(true)
+
+    expect(
+      shouldClearPlannerRoute({
+        concluidaEm: null,
+        paradaCount: 2,
+        execucoes: [{ status: 'ENTREGUE' }, { status: 'ENTREGUE' }],
+      }),
+    ).toBe(true)
+
+    expect(
+      shouldClearPlannerRoute({
+        concluidaEm: '2026-08-08T12:00:00.000Z',
+        paradaCount: 2,
+        execucoes: [{ status: 'ENTREGUE' }, { status: 'PENDENTE' }],
+      }),
+    ).toBe(true)
   })
 
   it('congela km e tempo ao marcar entregue', () => {

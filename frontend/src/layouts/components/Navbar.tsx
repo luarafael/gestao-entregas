@@ -54,7 +54,7 @@ export function Navbar({
       </div>
 
       <div className="flex items-center gap-2">
-        {user?.role === 'ADMIN' ? <NotificationBell /> : null}
+        {user ? <NotificationBell /> : null}
         {user ? (
           <UserProfilePanel
             user={user}

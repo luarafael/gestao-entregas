@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js'
+import { motoboyRelationSelect } from './motoboy-select.js'
 import type { SaveRotaInput } from '../schemas/rota.schema.js'
 import { DEFAULT_ENDERECO_PARTIDA } from '../schemas/rota.schema.js'
 import { toUtcDateOnlyFromBusinessTz } from '../utils/date.utils.js'
@@ -77,7 +78,7 @@ export class RotaRepository {
       orderBy: { criadoEm: 'desc' },
       include: {
         paradas: { orderBy: { ordem: 'asc' } },
-        motoboy: { select: { id: true, nome: true } },
+        motoboy: { select: motoboyRelationSelect },
       },
     })
   }
@@ -86,6 +87,49 @@ export class RotaRepository {
     return prisma.rotaPlanejada.findMany({
       where: { motoboyId, data: date },
       include: { execucoes: { select: { status: true } } },
+    })
+  }
+
+  async findByDateWithExecucoes(date: Date) {
+    return prisma.rotaPlanejada.findMany({
+      where: { data: date },
+      include: {
+        paradas: { select: { entregaId: true } },
+        execucoes: { select: { status: true } },
+      },
+    })
+  }
+
+  async findActiveForMotoboyToday(motoboyId: string, date: Date) {
+    return prisma.rotaPlanejada.findFirst({
+      where: {
+        motoboyId,
+        data: date,
+        concluidaEm: null,
+      },
+      orderBy: { criadoEm: 'desc' },
+      include: { paradas: { orderBy: { ordem: 'asc' } } },
+    })
+  }
+
+  async markConcluded(id: string, concluidaEm: Date) {
+    return prisma.rotaPlanejada.update({
+      where: { id },
+      data: { concluidaEm },
+    })
+  }
+
+  async findCreatedSince(motoboyId: string, since: Date) {
+    return prisma.rotaPlanejada.findMany({
+      where: {
+        motoboyId,
+        criadoEm: { gt: since },
+      },
+      include: {
+        _count: { select: { paradas: true } },
+        motoboy: { select: { id: true, nome: true } },
+      },
+      orderBy: { criadoEm: 'asc' },
     })
   }
 
@@ -102,6 +146,13 @@ export class RotaRepository {
         },
       },
       orderBy: { ordem: 'asc' },
+    })
+  }
+
+  async linkParadaEntrega(paradaId: string, entregaId: string) {
+    return prisma.rotaParada.update({
+      where: { id: paradaId },
+      data: { entregaId },
     })
   }
 

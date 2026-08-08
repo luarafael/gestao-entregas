@@ -20,7 +20,12 @@ export function UserProfilePanel({
   if (layout === 'navbar') {
     return (
       <div className={cn('flex items-center gap-2', className)}>
-        <UserAvatar userId={user.id} nome={user.nome} size="sm" />
+        <UserAvatar
+          userId={user.id}
+          nome={user.nome}
+          fotoUrl={user.fotoPerfil}
+          size="sm"
+        />
         <span className="max-w-40 truncate text-xs font-medium text-foreground">
           {user.nome}
         </span>
@@ -34,7 +39,12 @@ export function UserProfilePanel({
   return (
     <div className={cn('space-y-3', className)}>
       <div className="flex items-center gap-3">
-        <UserAvatar userId={user.id} nome={user.nome} size="md" />
+        <UserAvatar
+          userId={user.id}
+          nome={user.nome}
+          fotoUrl={user.fotoPerfil}
+          size="md"
+        />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-foreground">{user.nome}</p>
           <p className="truncate text-xs text-muted-foreground">{user.email}</p>

@@ -1,33 +1,35 @@
 import { useRef } from 'react'
 import { cn } from '@/shared/utils/cn'
 import { toast } from '@/shared/stores/toast.store'
+import { authService } from '../services/auth.service'
+import { useAuthStore } from '../stores/auth.store'
 import { useProfileStore } from '../stores/profile.store'
-import { getInitials } from '../utils/getInitials'
+import { ProfileAvatar } from './ProfileAvatar'
 
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024
 
 interface UserAvatarProps {
   userId: string
   nome: string
+  fotoUrl?: string | null
   size?: 'sm' | 'md'
   className?: string
 }
 
-const sizeStyles = {
-  sm: 'size-9 text-xs',
-  md: 'size-12 text-sm',
+const buttonSizeStyles = {
+  sm: 'size-9',
+  md: 'size-12',
 } as const
 
 export function UserAvatar({
   userId,
   nome,
+  fotoUrl,
   size = 'md',
   className,
 }: UserAvatarProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const avatarUrl = useProfileStore((state) => state.avatars[userId] ?? null)
   const setAvatar = useProfileStore((state) => state.setAvatar)
-  const initials = getInitials(nome)
 
   const handleSelectImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -49,10 +51,19 @@ export function UserAvatar({
 
     try {
       const dataUrl = await readFileAsDataUrl(file)
-      setAvatar(userId, dataUrl)
+      const updated = await authService.updateFoto(dataUrl)
+      setAvatar(userId, updated.fotoPerfil ?? dataUrl)
+
+      const currentUser = useAuthStore.getState().user
+      if (currentUser?.id === userId) {
+        useAuthStore.setState({
+          user: { ...currentUser, fotoPerfil: updated.fotoPerfil ?? dataUrl },
+        })
+      }
+
       toast('Foto atualizada com sucesso', 'success')
     } catch {
-      toast('Não foi possível carregar a imagem', 'error')
+      toast('Não foi possível salvar a foto', 'error')
     }
   }
 
@@ -64,24 +75,20 @@ export function UserAvatar({
         title="Clique para alterar a foto"
         aria-label="Alterar foto do perfil"
         className={cn(
-          'group relative shrink-0 overflow-hidden rounded-full border border-border/70',
-          'bg-primary/15 text-primary transition-transform hover:scale-[1.02]',
+          'group relative shrink-0 overflow-hidden rounded-full',
+          'transition-transform hover:scale-[1.02]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-          sizeStyles[size],
+          buttonSizeStyles[size],
           className,
         )}
       >
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={`Foto de ${nome}`}
-            className="size-full object-cover"
-          />
-        ) : (
-          <span className="flex size-full items-center justify-center font-semibold">
-            {initials}
-          </span>
-        )}
+        <ProfileAvatar
+          userId={userId}
+          nome={nome}
+          fotoUrl={fotoUrl}
+          size={size}
+          className="size-full"
+        />
 
         <span
           className={cn(

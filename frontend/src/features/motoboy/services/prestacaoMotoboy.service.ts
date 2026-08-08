@@ -72,4 +72,18 @@ export const prestacaoMotoboyService = {
   delete(id: string) {
     return apiFetch<void>(`/api/prestacoes-motoboy/${id}`, { method: 'DELETE' })
   },
+
+  getEventos(since: string) {
+    const params = new URLSearchParams({ since })
+    return apiFetch<{
+      eventos: Array<{
+        id: string
+        prestacaoId: string
+        status: 'APROVADA' | 'REJEITADA'
+        data: string
+        dataHora: string
+        motivoRejeicao: string | null
+      }>
+    }>(`/api/prestacoes-motoboy/eventos?${params.toString()}`)
+  },
 }

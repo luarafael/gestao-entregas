@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ReportPeriod } from '@/shared/types/api.types'
-import { Button } from '@/shared/components/ui'
+import { Button, PageShell } from '@/shared/components/ui'
 import {
   MotoboySelect,
   type MotoboySelectValue,
@@ -82,9 +82,9 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+    <PageShell>
+      <section className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-2xl font-semibold tracking-tight">Relatórios</h2>
           <p className="text-sm text-muted-foreground">
             {isAdmin
@@ -94,7 +94,7 @@ export function ReportsPage() {
               : 'Seus indicadores, gráficos e detalhamento das prestações no período.'}
           </p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
           {isAdmin ? (
             <MotoboySelect
               id="reports-motoboy"
@@ -105,7 +105,7 @@ export function ReportsPage() {
             />
           ) : null}
           <Button
-            variant="secondary"
+            variant="pdf"
             onClick={handleExportPdf}
             disabled={!canExportPdf}
           >
@@ -120,7 +120,7 @@ export function ReportsPage() {
         isLoading={summaryQuery.isLoading}
       />
 
-      <section className="grid gap-4 xl:grid-cols-2">
+      <section className="grid min-w-0 gap-4 xl:grid-cols-2">
         <DailyTrendChart
           data={dailyBreakdown}
           isLoading={dailyBreakdownQuery.isLoading}
@@ -133,13 +133,13 @@ export function ReportsPage() {
         />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-2">
+      <section className="grid min-w-0 gap-4 xl:grid-cols-2">
         <PrestacaoTrendChart
           data={prestacaoTrendQuery.data}
           isLoading={prestacaoTrendQuery.isLoading}
         />
         <DailyBreakdownTable data={dailyBreakdown} />
       </section>
-    </div>
+    </PageShell>
   )
 }

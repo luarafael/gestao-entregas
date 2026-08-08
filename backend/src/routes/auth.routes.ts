@@ -4,7 +4,7 @@ import {
   asyncHandler,
   validateBody,
 } from '../middleware/index.js'
-import { loginSchema, updatePixSchema } from '../schemas/auth.schema.js'
+import { loginSchema, updatePixSchema, updateFotoPerfilSchema } from '../schemas/auth.schema.js'
 import { authService } from '../services/auth.service.js'
 import { requireAuth, requireRole } from '../middleware/auth.middleware.js'
 
@@ -47,6 +47,19 @@ authRoutes.patch(
   validateBody(updatePixSchema),
   asyncHandler(async (req, res) => {
     const user = await authService.updatePix(req.user!.id, req.body.pix)
+    res.json(user)
+  }),
+)
+
+authRoutes.patch(
+  '/me/foto',
+  requireAuth,
+  validateBody(updateFotoPerfilSchema),
+  asyncHandler(async (req, res) => {
+    const user = await authService.updateFotoPerfil(
+      req.user!.id,
+      req.body.fotoPerfil,
+    )
     res.json(user)
   }),
 )

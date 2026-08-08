@@ -50,6 +50,10 @@ export const listPendentesQuerySchema = z.object({
   motoboyId: z.string().trim().min(1).optional(),
 })
 
+export const prestacaoMotoboyEventosQuerySchema = z.object({
+  since: z.string().datetime({ message: 'Data/hora inválida' }),
+})
+
 export type SubmitPrestacaoMotoboyInput = z.infer<typeof submitPrestacaoMotoboySchema>
 export type ListPrestacoesMotoboyInput = z.infer<typeof listPrestacoesMotoboySchema>
 export type ListPendentesQuery = z.infer<typeof listPendentesQuerySchema>
@@ -58,3 +62,6 @@ export type PreviewPrestacaoMotoboyQuery = z.infer<
 >
 export type RejectPrestacaoMotoboyInput = z.infer<typeof rejectPrestacaoMotoboySchema>
 export type UpdatePrestacaoMotoboyInput = z.infer<typeof updatePrestacaoMotoboySchema>
+export type PrestacaoMotoboyEventosQuery = z.infer<
+  typeof prestacaoMotoboyEventosQuerySchema
+>

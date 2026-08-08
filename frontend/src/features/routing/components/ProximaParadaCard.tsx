@@ -1,4 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  MetaChip,
+} from '@/shared/components/ui'
+import { IconRoute } from '@/shared/components/icons'
+import { cn } from '@/shared/utils/cn'
 import type { PlannerStop } from '../schemas/routing.schema'
 import { formatDistance, formatDuration } from '../utils/googleMapsUrl'
 import { STATUS_COLORS, getStopStatus } from '../utils/executionStatus'
@@ -10,9 +18,12 @@ interface ProximaParadaCardProps {
 export function ProximaParadaCard({ stop }: ProximaParadaCardProps) {
   if (!stop) {
     return (
-      <Card glass>
+      <Card glass className="min-w-0 overflow-hidden">
         <CardHeader>
-          <CardTitle>Próxima parada</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <IconRoute className="size-4 text-blue-500" aria-hidden />
+            Próxima parada
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -25,27 +36,45 @@ export function ProximaParadaCard({ stop }: ProximaParadaCardProps) {
 
   const status = getStopStatus(stop)
   const colors = STATUS_COLORS[status]
+  const enderecoLabel = [stop.endereco, stop.bairro].filter(Boolean).join(' — ')
 
   return (
-    <Card glass className={`border ${colors.row}`}>
+    <Card glass className={cn('min-w-0 overflow-hidden border', colors.row)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="text-blue-400">🔵</span>
+          <IconRoute className="size-4 text-blue-500" aria-hidden />
           Próxima parada
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 text-sm">
-        <p className="text-lg font-semibold">
+      <CardContent className="min-w-0 space-y-2">
+        <MetaChip
+          tone="client"
+          className="max-w-full text-sm font-semibold"
+          title={stop.cliente ?? undefined}
+        >
           {stop.cliente?.trim() || 'Sem nome'}
-        </p>
-        <p className="text-muted-foreground">{stop.endereco}</p>
-        {stop.bairro ? <p>Bairro: {stop.bairro}</p> : null}
-        {stop.telefone ? <p>Telefone: {stop.telefone}</p> : null}
+        </MetaChip>
+
+        <MetaChip
+          tone="address"
+          className="w-full items-start whitespace-normal"
+        >
+          <span className="line-clamp-2 text-left leading-relaxed">
+            {enderecoLabel}
+          </span>
+        </MetaChip>
+
+        {stop.telefone ? (
+          <MetaChip tone="phone" className="tabular-nums">
+            {stop.telefone}
+          </MetaChip>
+        ) : null}
+
         {stop.distancia != null || stop.tempo != null ? (
-          <p className="font-medium text-foreground">
+          <MetaChip tone="time" className="w-fit font-medium">
             {stop.distancia != null ? formatDistance(stop.distancia) : '—'} ·{' '}
             {stop.tempo != null ? formatDuration(stop.tempo) : '—'}
-          </p>
+          </MetaChip>
         ) : null}
       </CardContent>
     </Card>

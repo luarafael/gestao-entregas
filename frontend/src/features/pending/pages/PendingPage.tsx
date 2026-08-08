@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { Modal, Pagination, EmptyState } from '@/shared/components/ui'
+import {
+  EmptyState,
+  Modal,
+  PagePanel,
+  PageShell,
+  PageSplit,
+  Pagination,
+} from '@/shared/components/ui'
 import { IconClock } from '@/shared/components/icons'
 import { useDebounce } from '@/shared/hooks'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
@@ -11,7 +18,7 @@ import {
 } from '../hooks/usePending'
 import { PendingForm } from '../components/PendingForm'
 import { PendingFiltersBar } from '../components/PendingFiltersBar'
-import { PendingTable } from '../components/PendingTable'
+import { PendingList } from '../components/PendingList'
 import type { PendingFilters, PendingFormData } from '../schemas/pending.schema'
 import type { Pendencia } from '@/shared/types/api.types'
 
@@ -75,8 +82,8 @@ export function PendingPage() {
   }
 
   return (
-    <div className="space-y-6 min-w-0 max-w-full">
-      <div>
+    <PageShell>
+      <div className="min-w-0">
         <h2 className="text-2xl font-semibold tracking-tight">Pendências</h2>
         <p className="text-sm text-muted-foreground">
           {isAdmin
@@ -85,7 +92,7 @@ export function PendingPage() {
         </p>
       </div>
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+      <PageSplit variant="wide">
         <PendingForm
           editingPending={editingPending}
           onSubmit={handleSubmit}
@@ -93,7 +100,7 @@ export function PendingPage() {
           isSubmitting={createMutation.isPending || updateMutation.isPending}
         />
 
-        <div className="min-w-0 space-y-4 overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-4 backdrop-blur-xl sm:p-5">
+        <PagePanel>
           <PendingFiltersBar
             filters={filters}
             onSearchChange={(search) => updateFilters({ search, page: 1 })}
@@ -117,7 +124,7 @@ export function PendingPage() {
               }
             />
           ) : (
-            <PendingTable
+            <PendingList
               items={items}
               isLoading={isLoading}
               isFetching={isFetching}
@@ -133,8 +140,8 @@ export function PendingPage() {
               onPageChange={(page) => updateFilters({ page })}
             />
           ) : null}
-        </div>
-      </div>
+        </PagePanel>
+      </PageSplit>
 
       <Modal
         open={Boolean(deletingPending)}
@@ -151,6 +158,6 @@ export function PendingPage() {
         isLoading={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
       />
-    </div>
+    </PageShell>
   )
 }

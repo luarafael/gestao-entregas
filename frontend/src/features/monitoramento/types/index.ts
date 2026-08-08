@@ -25,6 +25,7 @@ export interface MonitoramentoRota {
   tempoRestante: number
   motoboyId: string | null
   motoboyNome: string
+  motoboyFotoPerfil: string | null
   totalParadas: number
   stats: {
     pendentes: number

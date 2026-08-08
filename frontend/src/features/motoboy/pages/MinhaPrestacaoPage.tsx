@@ -10,6 +10,12 @@ import {
   CardTitle,
   EmptyState,
   Input,
+  MetaChip,
+  MetaField,
+  MetaSectionTitle,
+  PAGE_CARD_SECTION,
+  PagePanel,
+  PageShell,
   StatCardSkeleton,
   Textarea,
 } from '@/shared/components/ui'
@@ -154,13 +160,13 @@ export function MinhaPrestacaoPage() {
   const historyMeta = historyQuery.data?.meta
 
   return (
-    <div className="space-y-6">
-      <div>
+    <PageShell>
+      <section className="min-w-0">
         <h2 className="text-2xl font-semibold tracking-tight">Minha prestação</h2>
         <p className="text-sm text-muted-foreground">
           Feche o dia e envie para o administrador aprovar.
         </p>
-      </div>
+      </section>
 
       <Card glass>
         <CardHeader>
@@ -188,26 +194,30 @@ export function MinhaPrestacaoPage() {
                 ))}
               </div>
             ) : (
-              <div className="space-y-3 rounded-xl border border-border/60 bg-surface/20 p-4">
-                <p className="text-sm font-medium">
+              <div className={PAGE_CARD_SECTION}>
+                <MetaSectionTitle tone="time">
                   Prévia de {formatPrestacaoMotoboyDate(selectedDate)}
-                </p>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                </MetaSectionTitle>
+                <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <PreviewItem
                     label="Entregas"
                     value={String(preview?.totalEntregas ?? 0)}
+                    tone="delivery"
                   />
                   <PreviewItem
                     label="Valor das entregas"
                     value={formatCurrency(preview?.valorTotal ?? 0)}
+                    tone="money"
                   />
                   <PreviewItem
                     label="Repasse pendente"
                     value={formatCurrency(preview?.valorPendencias ?? 0)}
+                    tone="pending"
                   />
                   <PreviewItem
                     label="Total a receber"
                     value={formatCurrency(preview?.valorFinal ?? 0)}
+                    tone="money"
                     highlight
                   />
                 </div>
@@ -258,8 +268,8 @@ export function MinhaPrestacaoPage() {
         />
       ) : null}
 
-      <section className="rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
-        <div className="mb-4">
+      <PagePanel density="default" className="min-w-0">
+        <div className="mb-1 min-w-0">
           <h3 className="text-lg font-semibold tracking-tight">Histórico</h3>
           <p className="text-sm text-muted-foreground">
             Prestações enviadas, aprovadas ou rejeitadas.
@@ -286,38 +296,40 @@ export function MinhaPrestacaoPage() {
             sendingId={sendingId}
           />
         )}
-      </section>
+      </PagePanel>
 
       <WhatsAppSendModal
         open={sendModalOpen}
         onClose={() => setSendModalOpen(false)}
         payload={sendPayload}
       />
-    </div>
+    </PageShell>
   )
 }
 
 function PreviewItem({
   label,
   value,
+  tone,
   highlight = false,
 }: {
   label: string
   value: string
+  tone: 'delivery' | 'money' | 'pending'
   highlight?: boolean
 }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-surface/30 p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p
+    <MetaField label={label}>
+      <MetaChip
+        tone={tone}
         className={
           highlight
-            ? 'mt-1 text-xl font-semibold text-primary'
-            : 'mt-1 text-lg font-semibold'
+            ? 'w-fit text-base font-semibold tabular-nums'
+            : 'w-fit tabular-nums'
         }
       >
         {value}
-      </p>
-    </div>
+      </MetaChip>
+    </MetaField>
   )
 }

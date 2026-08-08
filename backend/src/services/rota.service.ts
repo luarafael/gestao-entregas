@@ -1,4 +1,4 @@
-import { NotFoundError } from '../errors/app.error.js'
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/app.error.js'
 import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 import { entregaRepository } from '../repositories/entrega.repository.js'
 import { rotaRepository } from '../repositories/rota.repository.js'
@@ -24,6 +24,12 @@ import { toUtcDateOnlyFromBusinessTz } from '../utils/date.utils.js'
 import { googleRoutesService } from './googleRoutes.service.js'
 import { osrmService } from './osrm.service.js'
 import { isAdminUser } from '../utils/auth-scope.utils.js'
+import {
+  isRouteActiveFromExecucoes,
+  resolveMotoboyIdFromRota as resolveMotoboyIdFromRotaUtil,
+  routeBelongsToMotoboy,
+  routeHasExecutionProgress,
+} from '../utils/route-motoboy.utils.js'
 
 async function resolveMotoboyIdForSave(
   user: AuthenticatedUser,
@@ -48,6 +54,12 @@ async function resolveMotoboyIdForSave(
       .filter((id): id is string => Boolean(id)),
   )
 
+  if (motoboyIds.size > 1) {
+    throw new ValidationError(
+      'A rota só pode conter entregas de um único motoboy',
+    )
+  }
+
   if (motoboyIds.size === 1) {
     return [...motoboyIds][0]!
   }
@@ -55,21 +67,100 @@ async function resolveMotoboyIdForSave(
   return null
 }
 
-async function replacePendingRoutesForMotoboy(
+async function buildEntregaMotoboyMap(
+  rotas: Array<{ paradas: Array<{ entregaId: string | null }> }>,
+) {
+  const entregaIds = [
+    ...new Set(
+      rotas.flatMap((rota) =>
+        rota.paradas
+          .map((parada) => parada.entregaId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ),
+  ]
+
+  if (entregaIds.length === 0) {
+    return new Map<string, string | null>()
+  }
+
+  const entregas = await entregaRepository.findByIds(entregaIds)
+  return new Map(entregas.map((entrega) => [entrega.id, entrega.motoboyId ?? null]))
+}
+
+async function prepareMotoboyRouteSlot(
   motoboyId: string,
   day: Date,
+  substituirRotaId?: string | null,
 ) {
-  const existingRotas = await rotaRepository.findByMotoboyAndDate(motoboyId, day)
+  const rotas = await rotaRepository.findByDateWithExecucoes(day)
+  const entregaMotoboyById = await buildEntregaMotoboyMap(rotas)
 
-  for (const existing of existingRotas) {
-    const hasProgress = existing.execucoes.some(
-      (execucao) => execucao.status !== 'PENDENTE',
-    )
+  let rotaSubstituidaId = substituirRotaId ?? null
 
-    if (!hasProgress) {
-      await rotaRepository.delete(existing.id)
+  if (rotaSubstituidaId) {
+    const toReplace = rotas.find((rota) => rota.id === rotaSubstituidaId)
+    if (
+      toReplace &&
+      routeBelongsToMotoboy(toReplace, motoboyId, entregaMotoboyById) &&
+      isRouteActiveFromExecucoes(
+        toReplace.execucoes,
+        toReplace.paradas.length,
+      )
+    ) {
+      await rotaRepository.delete(rotaSubstituidaId)
+    } else {
+      rotaSubstituidaId = null
     }
   }
+
+  const remaining = rotaSubstituidaId
+    ? rotas.filter((rota) => rota.id !== rotaSubstituidaId)
+    : rotas
+
+  for (const rota of remaining) {
+    if (rota.concluidaEm) {
+      continue
+    }
+
+    if (!routeBelongsToMotoboy(rota, motoboyId, entregaMotoboyById)) {
+      continue
+    }
+
+    if (
+      !isRouteActiveFromExecucoes(rota.execucoes, rota.paradas.length)
+    ) {
+      continue
+    }
+
+    if (routeHasExecutionProgress(rota.execucoes)) {
+      throw new ConflictError(
+        'Este motoboy já possui uma rota em andamento. Conclua a rota atual antes de montar outra.',
+      )
+    }
+
+    await rotaRepository.delete(rota.id)
+  }
+}
+
+async function resolveMotoboyIdFromRota(rota: {
+  motoboyId: string | null
+  paradas: Array<{ entregaId: string | null }>
+}) {
+  const entregaIds = rota.paradas
+    .map((parada) => parada.entregaId)
+    .filter((id): id is string => Boolean(id))
+
+  const entregaMotoboyById = new Map<string, string | null>()
+
+  if (entregaIds.length > 0) {
+    const entregas = await entregaRepository.findByIds(entregaIds)
+    for (const entrega of entregas) {
+      entregaMotoboyById.set(entrega.id, entrega.motoboyId ?? null)
+    }
+  }
+
+  return resolveMotoboyIdFromRotaUtil(rota, entregaMotoboyById)
 }
 
 function buildSuggestions(params: {
@@ -337,6 +428,7 @@ export class RotaService {
       tempoTotal: optimized.tempoTotal,
       aproximada: optimized.aproximada,
       paradas: optimized.paradas,
+      substituirRotaId: input.substituirRotaId,
     })
 
     const paradas = optimized.paradas.map((parada) => {
@@ -365,7 +457,11 @@ export class RotaService {
     const day = input.data ?? toUtcDateOnlyFromBusinessTz()
 
     if (motoboyId) {
-      await replacePendingRoutesForMotoboy(motoboyId, day)
+      await prepareMotoboyRouteSlot(
+        motoboyId,
+        day,
+        input.substituirRotaId,
+      )
     }
 
     const rota = await rotaRepository.create({ ...input, data: day, motoboyId })
@@ -381,10 +477,38 @@ export class RotaService {
     return buildPaginatedResult(data, total, filters.page, filters.limit)
   }
 
+  async getEventosPlanejamento(user: AuthenticatedUser, since: Date) {
+    if (isAdminUser(user)) {
+      throw new ForbiddenError(
+        'Eventos de rota planejada são exclusivos para motoboys',
+      )
+    }
+
+    const rotas = await rotaRepository.findCreatedSince(user.id, since)
+
+    return rotas.map((rota) => ({
+      id: rota.id,
+      motoboyId: rota.motoboyId,
+      totalParadas: rota._count.paradas,
+      enderecoInicial: rota.enderecoInicial,
+      criadoEm: rota.criadoEm.toISOString(),
+    }))
+  }
+
   async findById(id: string) {
     const rota = await rotaRepository.findById(id)
     if (!rota) throw new NotFoundError('Rota planejada não encontrada')
     return rota
+  }
+
+  async getActiveToday(user: AuthenticatedUser) {
+    if (isAdminUser(user)) {
+      return { rota: null }
+    }
+
+    const day = toUtcDateOnlyFromBusinessTz()
+    const rota = await rotaRepository.findActiveForMotoboyToday(user.id, day)
+    return { rota: rota ?? null }
   }
 
   async delete(id: string) {
@@ -392,8 +516,15 @@ export class RotaService {
     return rotaRepository.delete(id)
   }
 
-  async duplicate(id: string) {
+  async duplicate(user: AuthenticatedUser, id: string) {
     const rota = await this.findById(id)
+    const motoboyId = await resolveMotoboyIdFromRota(rota)
+    const day = rota.data ?? toUtcDateOnlyFromBusinessTz()
+
+    if (motoboyId) {
+      await prepareMotoboyRouteSlot(motoboyId, day)
+    }
+
     return rotaRepository.create({
       motoboyId: rota.motoboyId,
       enderecoInicial: rota.enderecoInicial,

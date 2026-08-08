@@ -31,6 +31,7 @@ export function WhatsAppPreview({
         />
         <div className="flex flex-wrap gap-3">
           <Button
+            variant="whatsapp"
             size="lg"
             className="w-full sm:w-auto"
             onClick={onSend}
@@ -39,7 +40,7 @@ export function WhatsAppPreview({
             Enviar no WhatsApp
           </Button>
           <Button
-            variant="secondary"
+            variant="copy"
             size="lg"
             className="w-full sm:w-auto"
             onClick={onCopy}
@@ -49,7 +50,7 @@ export function WhatsAppPreview({
           </Button>
           {onExportPdf ? (
             <Button
-              variant="secondary"
+              variant="pdf"
               size="lg"
               className="w-full sm:w-auto"
               onClick={onExportPdf}

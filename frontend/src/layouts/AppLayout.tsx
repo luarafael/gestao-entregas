@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Sidebar } from './components/Sidebar'
 import { Navbar } from './components/Navbar'
-import { AdminNotificationsListener } from '@/features/notifications/components/AdminNotificationsListener'
+import { AppNotificationsListener } from '@/features/notifications/components/AppNotificationsListener'
 
 const pageTitles: Record<string, { title: string; subtitle?: string }> = {
   '/': {
@@ -62,7 +62,7 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AdminNotificationsListener />
+      <AppNotificationsListener />
       <div className="hidden w-64 shrink-0 md:block">
         <Sidebar />
       </div>

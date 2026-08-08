@@ -1,6 +1,16 @@
-import { useMemo, useState } from 'react'
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  MetaChip,
+  PageShell,
+} from '@/shared/components/ui'
 import { IconRoute } from '@/shared/components/icons'
+import { formatCurrency } from '@/shared/utils/cn'
 import { toast } from '@/shared/stores/toast.store'
 import { WhatsAppPreview } from '@/features/accounting/components/WhatsAppPreview'
 import {
@@ -24,7 +34,10 @@ import {
   useOptimizeRoute,
   usePlanRoute,
   useSaveRoute,
+  ROTAS_QUERY_KEY,
 } from '../hooks/useRouting'
+import { usePlannerBootstrap } from '../hooks/usePlannerBootstrap'
+import { usePlannerStore } from '../stores/planner.store'
 import { usePlannerEntregas, useUpdateEntregaPaymentStatus } from '../hooks/usePlannerEntregas'
 import { routingService } from '../services/routing.service'
 import { createPlannerStop } from '../utils/parseAddresses'
@@ -60,35 +73,51 @@ import {
   restoreStopRouteMetrics,
   snapshotStopRouteMetrics,
   sumStopRouteMetrics,
-  withDefaultStatus,
-  type ExecucaoHistoricoItem,
 } from '../utils/executionStatus'
+import { invalidateDeliveryRelated } from '@/shared/lib/invalidate-related'
 import { DEFAULT_START_ADDRESS } from '../schemas/routing.schema'
 
 export function PlannerPage() {
+  usePlannerBootstrap()
+  const queryClient = useQueryClient()
+
   const { data: enderecoPartidaData } = useEnderecoPartida()
   const enderecoInicial =
     enderecoPartidaData?.enderecoPartidaPadrao ?? DEFAULT_START_ADDRESS
-  const [stops, setStops] = useState<PlannerStop[]>([])
-  const [result, setResult] = useState<OptimizedRouteResult | null>(null)
+
+  const {
+    stops,
+    setStops,
+    result,
+    setResult,
+    tab,
+    setTab,
+    selectedTempId,
+    setSelectedTempId,
+    autoRecalc,
+    setAutoRecalc,
+    reorderLocked,
+    setReorderLocked,
+    orderDirty,
+    setOrderDirty,
+    savedRotaId,
+    setSavedRotaId,
+    progressUpdatedAt,
+    setProgressUpdatedAt,
+    historicoExecucao,
+    setHistoricoExecucao,
+    syncStops,
+    resetRoutePlanning,
+    clearActiveRoute,
+    hydrateFromRota,
+  } = usePlannerStore()
+
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<PlannerStop | null>(null)
   const [importOpen, setImportOpen] = useState(false)
-  const [selectedTempId, setSelectedTempId] = useState<string | null>(null)
-  const [tab, setTab] = useState<'planejar' | 'historico'>('planejar')
   const [sendModalOpen, setSendModalOpen] = useState(false)
   const [sendPayload, setSendPayload] = useState<WhatsAppSendPayload | null>(null)
   const [progressModalOpen, setProgressModalOpen] = useState(false)
-  const [autoRecalc, setAutoRecalc] = useState(true)
-  const [reorderLocked, setReorderLocked] = useState(false)
-  const [orderDirty, setOrderDirty] = useState(false)
-  const [savedRotaId, setSavedRotaId] = useState<string | null>(null)
-  const [progressUpdatedAt, setProgressUpdatedAt] = useState<string>(
-    new Date().toISOString(),
-  )
-  const [historicoExecucao, setHistoricoExecucao] = useState<
-    ExecucaoHistoricoItem[]
-  >([])
   const [paymentStatusUpdatingId, setPaymentStatusUpdatingId] = useState<
     string | null
   >(null)
@@ -155,6 +184,41 @@ export function PlannerPage() {
     [displayStops],
   )
 
+  const staleRouteHandledRef = useRef(false)
+
+  useEffect(() => {
+    staleRouteHandledRef.current = false
+  }, [savedRotaId])
+
+  useEffect(() => {
+    if (!savedRotaId || !routeCompleted || staleRouteHandledRef.current) {
+      return
+    }
+
+    staleRouteHandledRef.current = true
+
+    void (async () => {
+      try {
+        await routingService.reconcileRouteConclusion(savedRotaId)
+      } catch {
+        // Rota legada ou já sincronizada — limpar mesmo assim.
+      }
+
+      clearActiveRoute()
+      invalidateDeliveryRelated(queryClient)
+      queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
+      toast(
+        'Rota já estava concluída — removida do planejador e enviada ao histórico.',
+        'info',
+      )
+    })()
+  }, [
+    savedRotaId,
+    routeCompleted,
+    clearActiveRoute,
+    queryClient,
+  ])
+
   const nextStop = useMemo(
     () => (result ? getNextStop(displayStops) : null),
     [displayStops, result],
@@ -173,14 +237,6 @@ export function PlannerPage() {
   const canEditOrder = !executionActive
   const reorderEnabled = canEditOrder && (!routePlanned || !reorderLocked)
 
-  const syncStops = (updated: PlannerStop[]) => {
-    const normalized = updated.map(withDefaultStatus)
-    setStops(normalized)
-    setResult((current) =>
-      current ? { ...current, paradas: normalized } : current,
-    )
-  }
-
   const existingEntregaIds = useMemo(
     () =>
       new Set(
@@ -190,13 +246,6 @@ export function PlannerPage() {
       ),
     [stops],
   )
-
-  const resetRoutePlanning = () => {
-    setResult(null)
-    setOrderDirty(false)
-    setReorderLocked(false)
-    setSavedRotaId(null)
-  }
 
   const applySavedParadaIds = (
     saved: RotaPlanejada,
@@ -226,6 +275,7 @@ export function PlannerPage() {
       tempoTotal: optimized.tempoTotal,
       aproximada: optimized.aproximada,
       paradas: optimized.paradas,
+      substituirRotaId: routeCompleted ? null : savedRotaId,
       silent: options?.silent ?? true,
     })
 
@@ -313,6 +363,7 @@ export function PlannerPage() {
       enderecoInicial,
       paradas: currentStops,
       preservarOrdem: true,
+      substituirRotaId: routeCompleted ? null : savedRotaId,
     })
     applyOptimizedResult(currentStops, planned)
     setSavedRotaId(planned.rotaId ?? null)
@@ -331,6 +382,7 @@ export function PlannerPage() {
     const planned = await planMutation.mutateAsync({
       enderecoInicial,
       paradas: stops,
+      substituirRotaId: routeCompleted ? null : savedRotaId,
     })
     applyOptimizedResult(stops, planned)
     setSavedRotaId(planned.rotaId ?? null)
@@ -454,15 +506,33 @@ export function PlannerPage() {
     ])
     setSelectedTempId(updated.tempId)
 
+    let rotaConcluida = false
+
     if (savedRotaId && stop.paradaId) {
       try {
-        await routingService.updateExecucaoParada(savedRotaId, stop.paradaId, {
-          status,
-          observacao: observacao ?? null,
-        })
+        const response = await routingService.updateExecucaoParada(
+          savedRotaId,
+          stop.paradaId,
+          {
+            status,
+            observacao: observacao ?? null,
+          },
+        )
+        rotaConcluida = response.rotaConcluida
       } catch {
         toast('Erro ao salvar status no servidor', 'error')
       }
+    }
+
+    if (rotaConcluida) {
+      clearActiveRoute()
+      invalidateDeliveryRelated(queryClient)
+      queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
+      toast(
+        'Rota concluída — movida para o histórico. Você já pode planejar outra.',
+        'success',
+      )
+      return
     }
 
     if (status === 'ENTREGUE' && autoRecalc) {
@@ -559,73 +629,22 @@ export function PlannerPage() {
   }
 
   const handleLoadRoute = async (rota: RotaPlanejada) => {
-    const loaded: PlannerStop[] = rota.paradas.map((parada) => ({
-      tempId: parada.id,
-      paradaId: parada.id,
-      entregaId: parada.entregaId,
-      cliente: parada.cliente,
-      endereco: parada.endereco,
-      bairro: parada.bairro,
-      telefone: parada.telefone ?? null,
-      observacao: parada.observacao,
-      prioridade: parada.prioridade,
-      ordemUrgencia: parada.ordemUrgencia ?? null,
-      valorEntrega: parada.valorEntrega
-        ? Number(parada.valorEntrega)
-        : null,
-      ordem: parada.ordem,
-      distancia:
-        parada.distancia != null ? Number(parada.distancia) : null,
-      tempo: parada.tempo,
-      latitude: parada.latitude,
-      longitude: parada.longitude,
-      statusExecucao: 'PENDENTE' as StatusExecucao,
-    }))
-
-    setSavedRotaId(rota.id)
+    if (rota.concluidaEm) {
+      toast(
+        'Esta rota já foi concluída. Use Duplicar no histórico para montar outra.',
+        'info',
+      )
+      return
+    }
 
     try {
       const execucoes = await routingService.getExecucao(rota.id)
-      for (const execucao of execucoes) {
-        const index = loaded.findIndex((stop) => stop.paradaId === execucao.paradaId)
-        if (index === -1) continue
-        loaded[index] = {
-          ...loaded[index]!,
-          statusExecucao: execucao.status as StatusExecucao,
-          statusObservacao: execucao.observacao,
-          statusAtualizadoEm: execucao.dataHoraStatus,
-        }
-      }
+      hydrateFromRota(rota, execucoes, { tab: 'planejar' })
     } catch {
+      hydrateFromRota(rota, [], { tab: 'planejar' })
       toast('Não foi possível carregar o andamento salvo', 'info')
     }
 
-    setStops(loaded)
-    setResult({
-      enderecoInicial: rota.enderecoInicial,
-      origem: null,
-      distanciaTotal: Number(rota.distanciaTotal),
-      tempoTotal: rota.tempoTotal,
-      totalEntregas: loaded.length,
-      aproximada: rota.aproximada,
-      polyline: null,
-      sugestoes: [],
-      paradas: loaded,
-    })
-    setReorderLocked(true)
-    setOrderDirty(false)
-    setHistoricoExecucao(
-      loaded
-        .filter((stop) => stop.statusAtualizadoEm)
-        .map((stop) => buildHistoricoEntry(stop)),
-    )
-    const latestStatusUpdate = loaded
-      .map((stop) => stop.statusAtualizadoEm)
-      .filter((value): value is string => Boolean(value))
-      .sort()
-      .at(-1)
-    setProgressUpdatedAt(latestStatusUpdate ?? new Date().toISOString())
-    setTab('planejar')
     toast('Rota carregada no planejador', 'success')
   }
 
@@ -633,9 +652,9 @@ export function PlannerPage() {
     displayStops.find((stop) => stop.tempId === selectedTempId) ?? null
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+    <PageShell>
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-2xl font-semibold tracking-tight">
             Planejador de Rotas
           </h2>
@@ -675,8 +694,8 @@ export function PlannerPage() {
             <BarraProgressoExecucao stops={displayStops} />
           ) : null}
 
-          <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-            <div className="space-y-4">
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            <div className="min-w-0 space-y-4">
               <EnderecoInicial />
 
               <div className="flex flex-wrap items-center gap-2">
@@ -686,7 +705,7 @@ export function PlannerPage() {
                 }}>
                   + Adicionar entrega
                 </Button>
-                <Button variant="secondary" onClick={() => setImportOpen(true)}>
+                <Button variant="import" onClick={() => setImportOpen(true)}>
                   Importar entregas
                 </Button>
                 {routePlanned && !executionActive ? (
@@ -774,7 +793,7 @@ export function PlannerPage() {
               />
             </div>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <MapaRota
                 origem={result?.origem ?? null}
                 paradas={displayStops}
@@ -788,28 +807,43 @@ export function PlannerPage() {
               ) : null}
 
               {selectedStop ? (
-                <Card glass>
+                <Card glass className="min-w-0 overflow-hidden">
                   <CardHeader>
                     <CardTitle>Parada selecionada</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-1 text-sm">
-                    <p className="font-medium">
-                      {selectedStop.cliente || 'Sem nome'}
-                    </p>
-                    <p className="text-muted-foreground">
-                      {selectedStop.endereco}
-                    </p>
-                    {selectedStop.bairro ? (
-                      <p>Bairro: {selectedStop.bairro}</p>
+                  <CardContent className="min-w-0 space-y-2">
+                    <MetaChip
+                      tone="client"
+                      className="max-w-full text-sm font-semibold"
+                      title={selectedStop.cliente ?? undefined}
+                    >
+                      {selectedStop.cliente?.trim() || 'Sem nome'}
+                    </MetaChip>
+                    <MetaChip
+                      tone="address"
+                      className="w-full items-start whitespace-normal"
+                    >
+                      <span className="line-clamp-2 text-left leading-relaxed">
+                        {[selectedStop.endereco, selectedStop.bairro]
+                          .filter(Boolean)
+                          .join(' — ')}
+                      </span>
+                    </MetaChip>
+                    {selectedStop.telefone ? (
+                      <MetaChip tone="phone" className="tabular-nums">
+                        {selectedStop.telefone}
+                      </MetaChip>
                     ) : null}
-                    {selectedStop.valorEntrega != null ? (
-                      <p>
-                        Valor: R${' '}
-                        {Number(selectedStop.valorEntrega).toFixed(2)}
-                      </p>
+                    {selectedStop.valorEntrega != null &&
+                    Number(selectedStop.valorEntrega) > 0 ? (
+                      <MetaChip tone="money" className="tabular-nums">
+                        {formatCurrency(Number(selectedStop.valorEntrega))}
+                      </MetaChip>
                     ) : null}
                     {selectedStop.observacao ? (
-                      <p>{selectedStop.observacao}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedStop.observacao}
+                      </p>
                     ) : null}
                   </CardContent>
                 </Card>
@@ -912,6 +946,6 @@ export function PlannerPage() {
         }}
         payload={sendPayload}
       />
-    </div>
+    </PageShell>
   )
 }

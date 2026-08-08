@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Modal, Pagination, EmptyState, Button } from '@/shared/components/ui'
+import { Modal, Pagination, EmptyState, Button, PageShell, PagePanel, PageSplit } from '@/shared/components/ui'
 import { IconPackage, IconWhatsApp } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
 import { useDebounce } from '@/shared/hooks'
@@ -223,7 +223,7 @@ export function DeliveriesPage() {
       : createClienteMutation.isPending || updateClienteMutation.isPending
 
   return (
-    <div className="min-w-0 space-y-4 overflow-x-hidden">
+    <PageShell density="compact">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Entregas</h2>
@@ -253,13 +253,7 @@ export function DeliveriesPage() {
         </div>
       </div>
 
-      <div
-        className={
-          viewMode === 'cliente'
-            ? 'grid min-w-0 gap-4 xl:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] xl:gap-5'
-            : 'grid min-w-0 gap-4 xl:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] xl:gap-5'
-        }
-      >
+      <PageSplit variant="form">
         {viewMode === 'motoboy' ? (
           <DeliveryMotoboyForm
             editingDelivery={editingDelivery}
@@ -276,7 +270,7 @@ export function DeliveriesPage() {
           />
         )}
 
-        <div className="min-w-0 space-y-3 overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3 backdrop-blur-xl sm:p-4">
+        <PagePanel density="compact">
           <DeliveryFiltersBar
             viewMode={viewMode}
             filters={filters}
@@ -344,8 +338,8 @@ export function DeliveriesPage() {
               onPageChange={(page) => updateFilters({ page })}
             />
           ) : null}
-        </div>
-      </div>
+        </PagePanel>
+      </PageSplit>
 
       <Modal
         open={Boolean(deletingDelivery)}
@@ -388,6 +382,6 @@ export function DeliveriesPage() {
         onClose={() => setWhatsAppPayload(null)}
         payload={whatsAppPayload}
       />
-    </div>
+    </PageShell>
   )
 }

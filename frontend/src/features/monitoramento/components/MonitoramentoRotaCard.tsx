@@ -8,20 +8,12 @@ import {
   formatDistance,
   formatDuration,
 } from '@/features/routing/utils/googleMapsUrl'
-import { IconMapPin, IconRoute } from '@/shared/components/icons'
-import { Badge, Card } from '@/shared/components/ui'
+import { IconMapPin } from '@/shared/components/icons'
+import { Badge, Card, MetaChip } from '@/shared/components/ui'
+import { ProfileAvatar } from '@/features/auth/components/ProfileAvatar'
 import { cn } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
 import type { MonitoramentoParada, MonitoramentoRota } from '../types'
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('')
-}
 
 function StatusBadge({ status }: { status: StatusExecucao }) {
   return (
@@ -46,14 +38,14 @@ function StatBlock({
   tone: 'slate' | 'blue' | 'emerald' | 'amber'
 }) {
   const tones = {
-    slate: 'border-slate-500/30 bg-slate-500/10',
-    blue: 'border-blue-500/30 bg-blue-500/10',
-    emerald: 'border-emerald-500/30 bg-emerald-500/10',
-    amber: 'border-amber-500/30 bg-amber-500/10',
+    slate: 'bg-slate-500/10',
+    blue: 'bg-blue-500/10',
+    emerald: 'bg-emerald-500/10',
+    amber: 'bg-amber-500/10',
   }
 
   return (
-    <div className={cn('rounded-xl border px-3 py-2.5', tones[tone])}>
+    <div className={cn('rounded-xl px-3 py-2.5', tones[tone])}>
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
@@ -72,7 +64,7 @@ function ProximaParadaHighlight({
   const isEmRota = proxima.status === 'EM_ROTA'
 
   return (
-    <div className="rounded-2xl border border-blue-500/40 bg-linear-to-br from-blue-500/15 to-blue-500/5 p-4">
+    <div className="rounded-2xl bg-linear-to-br from-blue-500/15 to-blue-500/5 p-4">
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-300">
         <IconMapPin className="size-3.5" />
         {isPlanejada
@@ -81,32 +73,29 @@ function ProximaParadaHighlight({
             ? 'Entrega em andamento'
             : 'Próxima entrega'}
       </div>
-      <p className="text-lg font-semibold">
-        {proxima.cliente?.trim() || 'Sem nome'}
-        {proxima.bairro ? (
-          <span className="font-normal text-muted-foreground">
-            {' '}
-            · {proxima.bairro}
+
+      <div className="space-y-2">
+        <MetaChip
+          tone="client"
+          className="max-w-full text-sm font-semibold"
+          title={proxima.cliente ?? undefined}
+        >
+          {proxima.cliente?.trim() || 'Sem nome'}
+        </MetaChip>
+
+        <MetaChip tone="address" className="w-full items-start whitespace-normal">
+          <span className="line-clamp-2 text-left leading-relaxed">
+            {[proxima.endereco, proxima.bairro].filter(Boolean).join(' — ')}
           </span>
-        ) : null}
-      </p>
-      <p className="mt-1 text-sm text-muted-foreground">{proxima.endereco}</p>
-      {(proxima.distancia != null || proxima.tempo != null) && (
-        <div className="mt-3 flex flex-wrap gap-4 text-sm">
-          {proxima.distancia != null ? (
-            <span>
-              <span className="text-muted-foreground">Distância: </span>
-              <span className="font-medium">{formatDistance(proxima.distancia)}</span>
-            </span>
-          ) : null}
-          {proxima.tempo != null ? (
-            <span>
-              <span className="text-muted-foreground">Tempo: </span>
-              <span className="font-medium">{formatDuration(proxima.tempo)}</span>
-            </span>
-          ) : null}
-        </div>
-      )}
+        </MetaChip>
+
+        {(proxima.distancia != null || proxima.tempo != null) && (
+          <MetaChip tone="time" className="w-fit">
+            {proxima.distancia != null ? formatDistance(proxima.distancia) : '—'} ·{' '}
+            {proxima.tempo != null ? formatDuration(proxima.tempo) : '—'}
+          </MetaChip>
+        )}
+      </div>
     </div>
   )
 }
@@ -144,42 +133,51 @@ function ParadaTimelineItem({
         )}
       >
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex size-6 items-center justify-center rounded-md bg-black/20 text-xs font-semibold tabular-nums">
-            {parada.ordem}
-          </span>
+          <Badge variant="default" className="tabular-nums">
+            #{parada.ordem}
+          </Badge>
           <StatusBadge status={parada.status} />
           {parada.dataHoraStatus ? (
-            <span className="text-xs text-muted-foreground">
+            <MetaChip tone="time" className="w-fit">
               {formatTimeBR(parada.dataHoraStatus)}
-            </span>
+            </MetaChip>
           ) : null}
         </div>
 
-        <p className="mt-2 font-medium leading-snug">
-          {parada.cliente?.trim() || 'Sem nome'}
-        </p>
-        <p className="mt-0.5 text-sm text-muted-foreground">{parada.endereco}</p>
-        {parada.bairro ? (
-          <p className="mt-1 text-xs text-muted-foreground">Bairro: {parada.bairro}</p>
-        ) : null}
-        {parada.statusObservacao ? (
-          <p className="mt-2 rounded-lg bg-amber-500/10 px-2 py-1 text-xs text-amber-200">
-            {parada.statusObservacao}
-          </p>
-        ) : null}
+        <div className="mt-2 space-y-2">
+          <MetaChip
+            tone="client"
+            className="max-w-full font-medium"
+            title={parada.cliente ?? undefined}
+          >
+            {parada.cliente?.trim() || 'Sem nome'}
+          </MetaChip>
 
-        {(parada.distancia != null || parada.tempo != null) && (
-          <div className="mt-2 flex gap-3 text-xs text-muted-foreground">
-            {parada.distancia != null ? (
-              <span>{formatDistance(parada.distancia)}</span>
-            ) : null}
-            {parada.tempo != null ? (
-              <span className="font-medium text-foreground">
-                {formatDuration(parada.tempo)}
-              </span>
-            ) : null}
-          </div>
-        )}
+          <MetaChip tone="address" className="w-full items-start whitespace-normal">
+            <span className="line-clamp-2 text-left leading-relaxed">
+              {[parada.endereco, parada.bairro].filter(Boolean).join(' — ')}
+            </span>
+          </MetaChip>
+
+          {parada.telefone ? (
+            <MetaChip tone="phone" className="tabular-nums">
+              {parada.telefone}
+            </MetaChip>
+          ) : null}
+
+          {parada.statusObservacao ? (
+            <p className="rounded-lg bg-amber-500/10 px-2 py-1 text-xs text-amber-200">
+              {parada.statusObservacao}
+            </p>
+          ) : null}
+
+          {(parada.distancia != null || parada.tempo != null) && (
+            <MetaChip tone="time" className="w-fit">
+              {parada.distancia != null ? formatDistance(parada.distancia) : '—'} ·{' '}
+              {parada.tempo != null ? formatDuration(parada.tempo) : '—'}
+            </MetaChip>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -201,9 +199,18 @@ export function MonitoramentoRotaCard({ rota }: { rota: MonitoramentoRota }) {
       <div className="border-b border-border/60 bg-surface/25 px-5 py-4 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-sm font-semibold text-primary">
-              {getInitials(rota.motoboyNome)}
-            </div>
+            {rota.motoboyId ? (
+              <ProfileAvatar
+                userId={rota.motoboyId}
+                nome={rota.motoboyNome}
+                fotoUrl={rota.motoboyFotoPerfil}
+                size="md"
+              />
+            ) : (
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-sm font-semibold text-primary">
+                ?
+              </div>
+            )}
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-lg font-semibold tracking-tight">
@@ -217,10 +224,17 @@ export function MonitoramentoRotaCard({ rota }: { rota: MonitoramentoRota }) {
                   <Badge variant="success">Em execução</Badge>
                 )}
               </div>
-              <p className="mt-1 flex items-start gap-1.5 text-sm text-muted-foreground">
-                <IconRoute className="mt-0.5 size-3.5 shrink-0" />
-                <span className="line-clamp-2">{rota.enderecoInicial}</span>
-              </p>
+              <div className="mt-1">
+                <MetaChip
+                  tone="address"
+                  className="max-w-full items-start whitespace-normal"
+                  title={rota.enderecoInicial}
+                >
+                  <span className="line-clamp-2 text-left leading-relaxed">
+                    {rota.enderecoInicial}
+                  </span>
+                </MetaChip>
+              </div>
             </div>
           </div>
 

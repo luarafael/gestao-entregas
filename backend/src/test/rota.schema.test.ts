@@ -43,4 +43,19 @@ describe('rota schemas', () => {
     expect(parsed.preservarOrdem).toBe(true)
     expect(parsed.paradas[0]?.ordem).toBe(2)
   })
+
+  it('aceita substituirRotaId no planejar/salvar', () => {
+    const parsed = optimizeRotaSchema.parse({
+      enderecoInicial: 'Rua A, 1',
+      substituirRotaId: 'rota-1',
+      paradas: [
+        {
+          tempId: '1',
+          endereco: 'Rua B, 2',
+        },
+      ],
+    })
+
+    expect(parsed.substituirRotaId).toBe('rota-1')
+  })
 })

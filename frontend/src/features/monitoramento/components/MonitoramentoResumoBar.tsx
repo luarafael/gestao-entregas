@@ -22,16 +22,16 @@ function ResumoItem({
   tone: 'neutral' | 'blue' | 'green' | 'red'
 }) {
   const toneStyles = {
-    neutral: 'border-border/60 bg-surface/30 text-foreground',
-    blue: 'border-blue-500/30 bg-blue-500/10 text-blue-300',
-    green: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-    red: 'border-red-500/30 bg-red-500/10 text-red-300',
+    neutral: 'bg-surface/30 text-foreground',
+    blue: 'bg-blue-500/10 text-blue-300',
+    green: 'bg-emerald-500/10 text-emerald-300',
+    red: 'bg-red-500/10 text-red-300',
   }
 
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-2xl border px-4 py-3',
+        'flex min-w-0 items-center gap-3 rounded-2xl px-4 py-3',
         toneStyles[tone],
       )}
     >
@@ -53,8 +53,8 @@ export function MonitoramentoResumoBar({
   formatTime,
 }: MonitoramentoResumoBarProps) {
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="min-w-0 space-y-3">
+      <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
         <ResumoItem
           label="Rotas ativas"
           value={resumo.totalRotas}

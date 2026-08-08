@@ -140,6 +140,19 @@ export class PrestacaoMotoboyRepository {
     })
   }
 
+  async findStatusEventsSince(motoboyId: string, since: Date) {
+    return prisma.prestacaoMotoboy.findMany({
+      where: {
+        motoboyId,
+        OR: [{ aprovadaEm: { gt: since } }, { rejeitadaEm: { gt: since } }],
+      },
+      orderBy: [{ aprovadaEm: 'asc' }, { rejeitadaEm: 'asc' }],
+      include: {
+        motoboy: { select: { id: true, nome: true } },
+      },
+    })
+  }
+
   async delete(id: string) {
     return prisma.prestacaoMotoboy.delete({ where: { id } })
   }

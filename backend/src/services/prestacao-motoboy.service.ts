@@ -339,6 +339,54 @@ export class PrestacaoMotoboyService {
 
     return prestacaoMotoboyRepository.delete(id)
   }
+
+  async getEventosStatus(user: AuthenticatedUser, since: Date) {
+    if (isAdminUser(user)) {
+      throw new ForbiddenError(
+        'Eventos de prestação são exclusivos para motoboys',
+      )
+    }
+
+    const prestacoes = await prestacaoMotoboyRepository.findStatusEventsSince(
+      user.id,
+      since,
+    )
+
+    const eventos: Array<{
+      id: string
+      prestacaoId: string
+      status: 'APROVADA' | 'REJEITADA'
+      data: string
+      dataHora: string
+      motivoRejeicao: string | null
+    }> = []
+
+    for (const prestacao of prestacoes) {
+      if (prestacao.aprovadaEm && prestacao.aprovadaEm > since) {
+        eventos.push({
+          id: `${prestacao.id}-aprovada`,
+          prestacaoId: prestacao.id,
+          status: 'APROVADA',
+          data: formatDateOnlyISO(prestacao.data),
+          dataHora: prestacao.aprovadaEm.toISOString(),
+          motivoRejeicao: null,
+        })
+      }
+
+      if (prestacao.rejeitadaEm && prestacao.rejeitadaEm > since) {
+        eventos.push({
+          id: `${prestacao.id}-rejeitada`,
+          prestacaoId: prestacao.id,
+          status: 'REJEITADA',
+          data: formatDateOnlyISO(prestacao.data),
+          dataHora: prestacao.rejeitadaEm.toISOString(),
+          motivoRejeicao: prestacao.motivoRejeicao,
+        })
+      }
+    }
+
+    return eventos.sort((a, b) => a.dataHora.localeCompare(b.dataHora))
+  }
 }
 
 export const prestacaoMotoboyService = new PrestacaoMotoboyService()

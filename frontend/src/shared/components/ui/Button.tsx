@@ -9,6 +9,9 @@ type ButtonVariant =
   | 'dangerSolid'
   | 'whatsapp'
   | 'import'
+  | 'edit'
+  | 'pdf'
+  | 'copy'
 type ButtonSize = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -31,6 +34,9 @@ const variantStyles: Record<ButtonVariant, string> = {
     'border border-[#25D366] bg-[#25D366] text-white shadow-sm shadow-[#25D366]/25 hover:bg-[#20bd5a] hover:border-[#20bd5a]',
   import:
     'border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 shadow-sm shadow-primary/10',
+  edit: 'border-sky-500/30 bg-sky-500/10 text-sky-800 hover:bg-sky-500/15 dark:text-sky-200',
+  pdf: 'border-rose-500/30 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:text-rose-200',
+  copy: 'border-teal-500/30 bg-teal-500/10 text-teal-800 hover:bg-teal-500/15 dark:text-teal-200',
 }
 
 const sizeStyles: Record<ButtonSize, string> = {

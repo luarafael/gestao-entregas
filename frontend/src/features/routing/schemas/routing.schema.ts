@@ -85,6 +85,7 @@ export interface RotaPlanejada {
   distanciaTotal: string
   tempoTotal: number
   aproximada: boolean
+  concluidaEm?: string | null
   criadoEm: string
   paradas: Array<{
     id: string

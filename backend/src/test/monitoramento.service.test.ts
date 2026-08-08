@@ -9,6 +9,7 @@ import {
 
 const rotaRepository = vi.hoisted(() => ({
   findByDate: vi.fn(),
+  delete: vi.fn(),
 }))
 
 const rotaExecucaoRepository = vi.hoisted(() => ({
@@ -61,6 +62,7 @@ describe('MonitoramentoService', () => {
     vi.clearAllMocks()
     entregaRepository.findByIds.mockResolvedValue([])
     rotaExecucaoRepository.initForRota.mockResolvedValue([])
+    rotaRepository.delete.mockResolvedValue(undefined)
   })
 
   it('identifica rota em execução e concluída', () => {
@@ -219,14 +221,13 @@ describe('MonitoramentoService', () => {
 
     const result = await service.getMonitoramento('2026-08-05', 'm1')
 
-    expect(result.rotas).toHaveLength(2)
-    expect(result.rotas.map((rota) => rota.rotaId)).toEqual(
-      expect.arrayContaining(['rota-ativa', 'rota-salva']),
-    )
+    expect(result.rotas).toHaveLength(1)
+    expect(result.rotas[0]?.rotaId).toBe('rota-ativa')
     expect(result.historico).toHaveLength(1)
     expect(result.historico[0]?.rotaId).toBe('rota-concluida')
-    expect(result.resumo.totalRotas).toBe(2)
+    expect(result.resumo.totalRotas).toBe(1)
     expect(result.resumo.rotasConcluidas).toBe(1)
+    expect(rotaRepository.delete).toHaveBeenCalledWith('rota-salva')
   })
 
   it('filtra monitoramento por motoboy', async () => {
@@ -422,5 +423,97 @@ describe('MonitoramentoService', () => {
     expect(result.rotas).toHaveLength(1)
     expect(result.rotas[0]?.rotaId).toBe('rota-manual')
     expect(result.rotas[0]?.motoboyNome).toBe('João')
+  })
+
+  it('remove rota duplicada planejada quando o motoboy já tem rota concluída', async () => {
+    rotaRepository.findByDate.mockResolvedValue([
+      {
+        id: 'rota-concluida',
+        enderecoInicial: 'Depósito',
+        distanciaTotal: 2000,
+        tempoTotal: 600,
+        motoboyId: 'm1',
+        motoboy: { id: 'm1', nome: 'João', fotoPerfil: null },
+        paradas: [
+          {
+            id: 'p1',
+            ordem: 1,
+            entregaId: 'e1',
+            cliente: 'Cliente A',
+            endereco: 'Rua A',
+            bairro: 'Centro',
+            telefone: null,
+            observacao: null,
+            distancia: 2000,
+            tempo: 600,
+          },
+        ],
+      },
+      {
+        id: 'rota-fantasma',
+        enderecoInicial: 'Depósito',
+        distanciaTotal: 1000,
+        tempoTotal: 300,
+        motoboyId: 'm1',
+        motoboy: { id: 'm1', nome: 'João', fotoPerfil: null },
+        paradas: [
+          {
+            id: 'p2',
+            ordem: 1,
+            entregaId: 'e2',
+            cliente: 'Cliente B',
+            endereco: 'Rua B',
+            bairro: 'Jardim',
+            telefone: null,
+            observacao: null,
+            distancia: 1000,
+            tempo: 300,
+          },
+        ],
+      },
+    ])
+
+    rotaExecucaoRepository.findByRotaId.mockImplementation(async (rotaId: string) => {
+      if (rotaId === 'rota-concluida') {
+        return [
+          {
+            paradaId: 'p1',
+            entregaId: 'e1',
+            status: 'ENTREGUE',
+            observacao: null,
+            dataHoraStatus: new Date('2026-08-08T12:00:00Z'),
+          },
+        ]
+      }
+
+      return [
+        {
+          paradaId: 'p2',
+          entregaId: 'e2',
+          status: 'PENDENTE',
+          observacao: null,
+          dataHoraStatus: null,
+        },
+      ]
+    })
+
+    entregaRepository.findAllByDate.mockResolvedValue([
+      {
+        id: 'e1',
+        motoboyId: 'm1',
+        motoboy: { id: 'm1', nome: 'João', fotoPerfil: null },
+      },
+      {
+        id: 'e2',
+        motoboyId: 'm1',
+        motoboy: { id: 'm1', nome: 'João', fotoPerfil: null },
+      },
+    ])
+
+    const result = await service.getMonitoramento('2026-08-08', 'm1')
+
+    expect(result.rotas).toHaveLength(0)
+    expect(result.historico).toHaveLength(1)
+    expect(rotaRepository.delete).toHaveBeenCalledWith('rota-fantasma')
   })
 })

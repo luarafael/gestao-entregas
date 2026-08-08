@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   EmptyState,
   Input,
+  PageShell,
   Skeleton,
 } from '@/shared/components/ui'
 import { IconEye, IconRoute } from '@/shared/components/icons'
@@ -59,9 +60,9 @@ export function MonitoramentoPage() {
   const isEmpty = monitoramento && !hasRotasAtivas && !hasHistorico
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+    <PageShell className="mx-auto max-w-3xl">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-2xl font-semibold tracking-tight">
             Monitoramento
           </h2>
@@ -125,7 +126,7 @@ export function MonitoramentoPage() {
               }
             />
           ) : (
-            <div className="space-y-6">
+            <div className="min-w-0 space-y-6">
               {hasRotasAtivas ? (
                 <section className="space-y-4">
                   {monitoramento?.rotas.map((rota) => (
@@ -149,6 +150,6 @@ export function MonitoramentoPage() {
           )}
         </>
       )}
-    </div>
+    </PageShell>
   )
 }

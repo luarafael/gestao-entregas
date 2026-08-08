@@ -7,6 +7,8 @@ import {
 } from '../auth-token'
 import { authService } from '../services/auth.service'
 import type { AuthUser } from '../schemas/auth.schema'
+import { syncUserAvatar } from '../utils/syncUserAvatar'
+import { useProfileStore } from '../stores/profile.store'
 
 function normalizeUser(user: AuthUser): AuthUser {
   if ((user.role as string) === 'OPERADOR') {
@@ -37,7 +39,9 @@ export const useAuthStore = create<AuthState>()(
 
       setSession: (token, user) => {
         setAccessToken(token)
-        set({ token, user: normalizeUser(user) })
+        const normalized = normalizeUser(user)
+        syncUserAvatar(normalized.id, normalized.fotoPerfil)
+        set({ token, user: normalized })
       },
 
       clearSession: () => {
@@ -66,8 +70,21 @@ export const useAuthStore = create<AuthState>()(
         setAccessToken(token)
 
         try {
-          const user = await authService.me()
-          set({ token, user: normalizeUser(user) })
+          let user = await authService.me()
+          let normalized = normalizeUser(user)
+
+          const localAvatar = useProfileStore.getState().getAvatar(normalized.id)
+          if (!normalized.fotoPerfil && localAvatar) {
+            try {
+              user = await authService.updateFoto(localAvatar)
+              normalized = normalizeUser(user)
+            } catch {
+              // Mantém foto local se a sincronização falhar.
+            }
+          }
+
+          syncUserAvatar(normalized.id, normalized.fotoPerfil)
+          set({ token, user: normalized })
           return true
         } catch {
           get().clearSession()

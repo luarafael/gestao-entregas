@@ -11,6 +11,8 @@ import {
   EmptyState,
   Input,
   Modal,
+  PagePanel,
+  PageShell,
   StatCardSkeleton,
   Textarea,
 } from '@/shared/components/ui'
@@ -493,9 +495,9 @@ export function PrestacaoPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+    <PageShell>
+      <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
           <h2 className="text-2xl font-semibold tracking-tight">
             Prestação de Contas
           </h2>
@@ -504,7 +506,7 @@ export function PrestacaoPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <PrestacaoScopeSelect value={prestacaoScope} onChange={handleScopeChange} />
           {prestacaoScope === 'motoboy' ? (
             <MotoboySelect
@@ -733,9 +735,9 @@ export function PrestacaoPage() {
         />
       ) : null}
 
-      <section className="rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+      <PagePanel density="default" className="min-w-0">
+        <div className="mb-1 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
             <h3 className="text-lg font-semibold tracking-tight">Histórico</h3>
             <p className="text-sm text-muted-foreground">
               Prestações de empresa, motoboys e clientes.
@@ -779,7 +781,7 @@ export function PrestacaoPage() {
             }
           />
         )}
-      </section>
+      </PagePanel>
 
       <PrestacaoEditModal
         isOpen={Boolean(editingItem)}
@@ -822,7 +824,7 @@ export function PrestacaoPage() {
           deleteMotoboyMutation.isPending
         }
       />
-    </div>
+    </PageShell>
   )
 }
 
@@ -890,7 +892,7 @@ function MotoboyPreviewSection({
         </p>
       ) : (
         <div className="flex justify-end">
-          <Button type="button" variant="secondary" onClick={onExportPdf}>
+          <Button type="button" variant="pdf" onClick={onExportPdf}>
             Exportar PDF
           </Button>
         </div>
@@ -937,7 +939,7 @@ function ClientePreviewSection({
         </p>
       ) : nomeCliente ? (
         <div className="flex justify-end">
-          <Button type="button" variant="secondary" onClick={onExportPdf}>
+          <Button type="button" variant="pdf" onClick={onExportPdf}>
             Exportar PDF
           </Button>
         </div>
@@ -1002,7 +1004,7 @@ function EmpresaPreviewSection({
         </p>
       ) : (
         <div className="flex justify-end">
-          <Button type="button" variant="secondary" onClick={onExportPdf}>
+          <Button type="button" variant="pdf" onClick={onExportPdf}>
             Exportar PDF
           </Button>
         </div>

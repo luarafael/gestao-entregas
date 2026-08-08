@@ -172,6 +172,7 @@ model RotaPlanejada {
   tempoTotal       Int
   aproximada       Boolean      @default(false)
   motoboyId        String?      @map("motoboy_id")
+  concluidaEm      DateTime?    @map("concluida_em")
   criadoEm         DateTime     @default(now())
   paradas          RotaParada[]
   execucoes        RotaExecucao[]
@@ -238,6 +239,7 @@ model Usuario {
   email        String      @unique
   senhaHash    String      @map("senha_hash")
   pix          String?
+  fotoPerfil   String?     @map("foto_perfil")
   role         UsuarioRole @default(MOTOBOY)
   ativo        Boolean     @default(true)
   criadoEm     DateTime    @default(now()) @map("criado_em")

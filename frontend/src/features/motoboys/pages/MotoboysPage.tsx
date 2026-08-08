@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { Modal, Pagination, EmptyState } from '@/shared/components/ui'
+import {
+  EmptyState,
+  Modal,
+  PagePanel,
+  PageShell,
+  PageSplit,
+  Pagination,
+} from '@/shared/components/ui'
 import { IconUsers } from '@/shared/components/icons'
 import { useDebounce } from '@/shared/hooks'
 import {
@@ -11,7 +18,7 @@ import {
 } from '../hooks/useMotoboys'
 import { MotoboyForm } from '../components/MotoboyForm'
 import { MotoboyFiltersBar } from '../components/MotoboyFiltersBar'
-import { MotoboyTable } from '../components/MotoboyTable'
+import { MotoboyList } from '../components/MotoboyList'
 import type {
   MotoboyAtivoFilter,
   MotoboyFilters,
@@ -95,8 +102,8 @@ export function MotoboysPage() {
   }
 
   return (
-    <div className="space-y-6 min-w-0 max-w-full">
-      <div>
+    <PageShell>
+      <div className="min-w-0">
         <h2 className="text-2xl font-semibold tracking-tight">Motoboys</h2>
         <p className="text-sm text-muted-foreground">
           Gerencie os funcionários da empresa: crie, edite, desative, reative ou
@@ -104,7 +111,7 @@ export function MotoboysPage() {
         </p>
       </div>
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+      <PageSplit variant="wide">
         <MotoboyForm
           editingMotoboy={editingMotoboy}
           onSubmit={handleSubmit}
@@ -112,7 +119,7 @@ export function MotoboysPage() {
           isSubmitting={createMutation.isPending || updateMutation.isPending}
         />
 
-        <div className="min-w-0 space-y-4 overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-4 backdrop-blur-xl sm:p-5">
+        <PagePanel>
           <MotoboyFiltersBar
             filters={filters}
             onSearchChange={(search) => updateFilters({ search, page: 1 })}
@@ -137,7 +144,7 @@ export function MotoboysPage() {
               }
             />
           ) : (
-            <MotoboyTable
+            <MotoboyList
               items={items}
               isLoading={isLoading}
               isFetching={isFetching}
@@ -154,8 +161,8 @@ export function MotoboysPage() {
               onPageChange={(page) => updateFilters({ page })}
             />
           ) : null}
-        </div>
-      </div>
+        </PagePanel>
+      </PageSplit>
 
       <Modal
         open={Boolean(togglingMotoboy)}
@@ -188,6 +195,6 @@ export function MotoboysPage() {
         isLoading={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
       />
-    </div>
+    </PageShell>
   )
 }

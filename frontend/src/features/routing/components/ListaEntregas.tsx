@@ -1,7 +1,19 @@
 import { useState } from 'react'
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Input } from '@/shared/components/ui'
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Input,
+  MetaChip,
+  MetaSectionTitle,
+  PAGE_CARD_SECTION,
+} from '@/shared/components/ui'
 import { IconPackage } from '@/shared/components/icons'
-import { formatCurrency } from '@/shared/utils/cn'
+import { cn, formatCurrency } from '@/shared/utils/cn'
 import { FormaPagamentoBadge } from '@/features/deliveries/components/FormaPagamentoBadge'
 import type { StatusPagamentoCliente } from '@/features/deliveries/schemas/delivery.schema'
 import type { PlannerStop, PrioridadeParada } from '../schemas/routing.schema'
@@ -92,10 +104,10 @@ export function ListaEntregas({
   }
 
   return (
-    <Card glass>
+    <Card glass className="min-w-0 overflow-hidden">
       <CardHeader className="flex-col items-start gap-3 sm:flex-row sm:items-center">
         <CardTitle>Lista de entregas ({stops.length})</CardTitle>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row">
           <Input
             placeholder="Cliente, bairro ou endereço"
             value={search}
@@ -115,7 +127,7 @@ export function ListaEntregas({
           </select>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-w-0">
         {orderDirty ? (
           <p className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
             Ordem alterada. Recalcule a rota para atualizar distâncias e tempos.
@@ -135,6 +147,9 @@ export function ListaEntregas({
               const legMetrics = getStopLegMetrics(stop)
               const colors = STATUS_COLORS[status]
               const isNext = stop.tempId === nextStopTempId
+              const enderecoLabel = [stop.endereco, stop.bairro]
+                .filter(Boolean)
+                .join(' — ')
 
               return (
                 <div
@@ -149,20 +164,25 @@ export function ListaEntregas({
                     event.preventDefault()
                   }}
                   onDrop={() => {
-                    if (!reorderEnabled || dragIndex === null || dragIndex === index) return
+                    if (!reorderEnabled || dragIndex === null || dragIndex === index)
+                      return
                     onReorder(dragIndex, index)
                     setDragIndex(null)
                   }}
-                  className={`rounded-xl border bg-surface/30 p-3 ${colors.row} ${
-                    reorderEnabled ? 'cursor-grab active:cursor-grabbing' : ''
-                  } ${isNext ? 'ring-2 ring-blue-500/40' : ''}`}
+                  className={cn(
+                    'min-w-0 rounded-xl border bg-surface/30 p-3 sm:p-4',
+                    colors.row,
+                    reorderEnabled ? 'cursor-grab active:cursor-grabbing' : '',
+                    isNext ? 'ring-2 ring-blue-500/40' : '',
+                  )}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
                         {optimized || stop.ordem ? (
                           <Badge variant="default">
-                            Parada {String(stop.ordem ?? index + 1).padStart(2, '0')}
+                            Parada{' '}
+                            {String(stop.ordem ?? index + 1).padStart(2, '0')}
                           </Badge>
                         ) : null}
                         <span
@@ -176,28 +196,34 @@ export function ListaEntregas({
                           </Badge>
                         ) : null}
                         {stop.entregaId ? (
-                          <Badge variant="success">Do cadastro</Badge>
+                          <MetaChip tone="imported">Do cadastro</MetaChip>
                         ) : null}
-                        {isNext ? (
-                          <Badge variant="default">Próxima</Badge>
-                        ) : null}
+                        {isNext ? <Badge variant="default">Próxima</Badge> : null}
                       </div>
-                      <p className="font-medium">
+
+                      <MetaChip
+                        tone="client"
+                        className="max-w-full text-sm font-semibold"
+                        title={stop.cliente ?? undefined}
+                      >
                         {stop.cliente?.trim() || 'Sem nome'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {stop.endereco}
-                      </p>
-                      {stop.bairro ? (
-                        <p className="text-sm text-muted-foreground">
-                          Bairro: {stop.bairro}
-                        </p>
-                      ) : null}
+                      </MetaChip>
+
+                      <MetaChip
+                        tone="address"
+                        className="w-full items-start whitespace-normal"
+                      >
+                        <span className="line-clamp-2 text-left leading-relaxed">
+                          {enderecoLabel}
+                        </span>
+                      </MetaChip>
+
                       {stop.telefone ? (
-                        <p className="text-sm text-muted-foreground">
-                          Telefone: {stop.telefone}
-                        </p>
+                        <MetaChip tone="phone" className="tabular-nums">
+                          {stop.telefone}
+                        </MetaChip>
                       ) : null}
+
                       {stop.observacao ? (
                         <p className="text-xs text-muted-foreground">
                           {stop.observacao}
@@ -208,8 +234,9 @@ export function ListaEntregas({
                           Status: {stop.statusObservacao}
                         </p>
                       ) : null}
+
                       {legMetrics.distancia != null || legMetrics.tempo != null ? (
-                        <p className="text-xs text-muted-foreground">
+                        <MetaChip tone="time" className="w-fit">
                           {legMetrics.distancia != null
                             ? formatDistance(legMetrics.distancia)
                             : '—'}{' '}
@@ -217,13 +244,14 @@ export function ListaEntregas({
                           {legMetrics.tempo != null
                             ? formatDuration(legMetrics.tempo)
                             : '—'}
-                        </p>
+                        </MetaChip>
                       ) : null}
+
                       {stopHasPaymentDetails(stop) || stop.entregaId ? (
-                        <div className="mt-2 rounded-lg border border-border/50 bg-surface/20 p-2.5">
-                          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        <div className={cn(PAGE_CARD_SECTION, 'mt-1')}>
+                          <MetaSectionTitle tone="payment">
                             Pagamento
-                          </p>
+                          </MetaSectionTitle>
                           <div className="flex flex-wrap items-center gap-2">
                             {stop.formaPagamento ? (
                               <FormaPagamentoBadge
@@ -233,15 +261,20 @@ export function ListaEntregas({
                             ) : null}
                             {stop.valorProduto != null &&
                             !Number.isNaN(Number(stop.valorProduto)) ? (
-                              <span className="text-xs tabular-nums text-foreground">
-                                Produto: {formatCurrency(Number(stop.valorProduto))}
-                              </span>
+                              <MetaChip
+                                tone="product"
+                                className="tabular-nums"
+                              >
+                                Produto:{' '}
+                                {formatCurrency(Number(stop.valorProduto))}
+                              </MetaChip>
                             ) : null}
                             {stop.valorEntrega != null &&
                             Number(stop.valorEntrega) > 0 ? (
-                              <span className="text-xs tabular-nums text-muted-foreground">
-                                Corrida: {formatCurrency(Number(stop.valorEntrega))}
-                              </span>
+                              <MetaChip tone="money" className="tabular-nums">
+                                Corrida:{' '}
+                                {formatCurrency(Number(stop.valorEntrega))}
+                              </MetaChip>
                             ) : null}
                           </div>
                           {onPaymentStatusChange ? (
@@ -252,7 +285,9 @@ export function ListaEntregas({
                               <select
                                 className="h-8 min-w-[8.5rem] rounded-lg border border-border/70 bg-surface/50 px-2 text-xs"
                                 value={stop.statusPagamentoCliente ?? 'NAO_PAGO'}
-                                disabled={paymentStatusUpdatingId === stop.tempId}
+                                disabled={
+                                  paymentStatusUpdatingId === stop.tempId
+                                }
                                 onChange={(event) =>
                                   onPaymentStatusChange(
                                     stop,
@@ -280,7 +315,8 @@ export function ListaEntregas({
                         </div>
                       ) : null}
                     </div>
-                    <div className="flex flex-col gap-2 sm:items-end">
+
+                    <div className="flex shrink-0 flex-col gap-2 sm:items-end">
                       {showStatusControls && onStatusChange ? (
                         <select
                           className="h-9 min-w-40 rounded-xl border border-border/70 bg-surface/50 px-2 text-sm"
@@ -302,7 +338,7 @@ export function ListaEntregas({
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="edit"
                           onClick={() => onEdit(stop)}
                         >
                           Editar
@@ -364,7 +400,8 @@ export function ListaEntregas({
             })}
             {!reorderEnabled && optimized && !deliveryStarted ? (
               <p className="pt-1 text-xs text-muted-foreground">
-                A ordem está protegida. Ative &quot;Permitir alterar ordem&quot; para reorganizar as paradas.
+                A ordem está protegida. Ative &quot;Permitir alterar ordem&quot; para
+                reorganizar as paradas.
               </p>
             ) : null}
             {reorderEnabled ? (

@@ -23,7 +23,7 @@ export function FormaPagamentoBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-center rounded-lg border px-3 py-1.5 text-sm font-semibold',
+        'inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-semibold',
         styles.badge,
         className,
       )}

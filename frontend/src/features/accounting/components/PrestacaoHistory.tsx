@@ -1,11 +1,14 @@
 import {
   Button,
   EmptyState,
+  MetaChip,
+  MetaField,
+  PAGE_CARD_ARTICLE,
   Pagination,
   TableSkeleton,
 } from '@/shared/components/ui'
-import { IconReceipt } from '@/shared/components/icons'
-import { formatCurrency } from '@/shared/utils/cn'
+import { IconReceipt, IconWhatsApp } from '@/shared/components/icons'
+import { cn, formatCurrency } from '@/shared/utils/cn'
 import { formatPrestacaoDate } from '../schemas/prestacao.schema'
 import type { PrestacaoContas } from '../types'
 
@@ -55,84 +58,77 @@ export function PrestacaoHistory({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-245 text-left text-sm">
-          <thead>
-            <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="px-3 py-3 font-medium">Data</th>
-              <th className="px-3 py-3 font-medium">Entregas</th>
-              <th className="px-3 py-3 font-medium text-right">Total</th>
-              <th className="px-3 py-3 font-medium text-right">Pendências</th>
-              <th className="px-3 py-3 font-medium text-right">Valor final</th>
-              <th className="px-3 py-3 font-medium text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr
-                key={item.id}
-                className="border-b border-border/40 transition-colors hover:bg-surface/40"
-              >
-                <td className="px-3 py-3 font-medium">
+    <div className="min-w-0 space-y-4">
+      <div className="space-y-3">
+        {items.map((item) => (
+          <article key={item.id} className={cn(PAGE_CARD_ARTICLE)}>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <MetaField label="Data">
+                <MetaChip tone="time" className="w-fit">
                   {formatPrestacaoDate(item.data)}
-                </td>
-                <td className="px-3 py-3">{item.totalEntregas}</td>
-                <td className="px-3 py-3 text-right">
+                </MetaChip>
+              </MetaField>
+              <MetaField label="Entregas">
+                <MetaChip tone="delivery" className="w-fit tabular-nums">
+                  {item.totalEntregas}
+                </MetaChip>
+              </MetaField>
+              <MetaField label="Total">
+                <MetaChip tone="money" className="w-fit tabular-nums">
                   {formatCurrency(Number(item.valorTotal))}
-                </td>
-                <td className="px-3 py-3 text-right">
+                </MetaChip>
+              </MetaField>
+              <MetaField label="Pendências">
+                <MetaChip tone="pending" className="w-fit tabular-nums">
                   {formatCurrency(Number(item.valorPendencias))}
-                </td>
-                <td className="px-3 py-3 text-right font-medium">
+                </MetaChip>
+              </MetaField>
+              <MetaField label="Valor final">
+                <MetaChip tone="money" className="w-fit tabular-nums">
                   {formatCurrency(Number(item.valorFinal))}
-                </td>
-                <td className="px-3 py-3">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(item)}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => onExportPdf(item)}
-                    >
-                      PDF
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => onCopy(item.id)}
-                      isLoading={copyingId === item.id}
-                    >
-                      Copiar
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => onSend(item)}
-                      isLoading={sendingId === item.id}
-                    >
-                      WhatsApp
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => onDelete(item)}
-                      isLoading={deletingId === item.id}
-                    >
-                      Excluir
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </MetaChip>
+              </MetaField>
+            </div>
+
+            <div className="mt-3 flex w-full min-w-0 flex-wrap gap-2 border-t border-border/40 pt-3">
+              <Button variant="edit" size="sm" onClick={() => onEdit(item)}>
+                Editar
+              </Button>
+              <Button
+                variant="pdf"
+                size="sm"
+                onClick={() => onExportPdf(item)}
+              >
+                PDF
+              </Button>
+              <Button
+                variant="copy"
+                size="sm"
+                onClick={() => onCopy(item.id)}
+                isLoading={copyingId === item.id}
+              >
+                Copiar
+              </Button>
+              <Button
+                variant="whatsapp"
+                size="sm"
+                onClick={() => onSend(item)}
+                isLoading={sendingId === item.id}
+              >
+                <IconWhatsApp className="size-3.5" />
+                WhatsApp
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => onDelete(item)}
+                isLoading={deletingId === item.id}
+              >
+                Excluir
+              </Button>
+            </div>
+          </article>
+        ))}
       </div>
 
       <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />

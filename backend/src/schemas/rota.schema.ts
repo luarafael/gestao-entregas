@@ -41,6 +41,7 @@ export const optimizeRotaSchema = z.object({
   enderecoInicial: z.string().trim().min(1, 'Endereço inicial é obrigatório'),
   paradas: z.array(optimizeParadaSchema).min(1, 'Informe ao menos uma entrega'),
   preservarOrdem: z.boolean().optional().default(false),
+  substituirRotaId: z.string().trim().min(1).optional().nullable(),
 })
 
 export const saveRotaSchema = z.object({
@@ -60,11 +61,16 @@ export const saveRotaSchema = z.object({
   polyline: z.string().optional().nullable(),
   sugestoes: z.array(z.string()).optional(),
   paradas: z.array(saveParadaSchema).min(1),
+  substituirRotaId: z.string().trim().min(1).optional().nullable(),
 })
 
 export const listRotasSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
+})
+
+export const rotaEventosQuerySchema = z.object({
+  since: z.string().datetime({ message: 'Data/hora inválida' }),
 })
 
 export const syncParadaFromEntregaSchema = z.object({
@@ -89,6 +95,7 @@ export const DEFAULT_ENDERECO_PARTIDA =
 export type OptimizeRotaInput = z.infer<typeof optimizeRotaSchema>
 export type SaveRotaInput = z.infer<typeof saveRotaSchema>
 export type ListRotasInput = z.infer<typeof listRotasSchema>
+export type RotaEventosQuery = z.infer<typeof rotaEventosQuerySchema>
 export type SyncParadaFromEntregaInput = z.infer<
   typeof syncParadaFromEntregaSchema
 >

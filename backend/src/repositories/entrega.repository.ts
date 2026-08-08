@@ -1,5 +1,6 @@
 import type { Prisma, StatusEntrega } from '../../generated/prisma/client.js'
 import { prisma } from '../lib/prisma.js'
+import { motoboyRelationSelect } from './motoboy-select.js'
 import type { DateFilter } from '../utils/date.utils.js'
 import { getUtcDateOnlyRange, toUtcDateOnly, toUtcDateOnlyFromBusinessTz, formatDateOnlyISO } from '../utils/date.utils.js'
 import type { CreateEntregaInput, UpdateEntregaInput } from '../schemas/entrega.schema.js'
@@ -32,7 +33,7 @@ export class EntregaRepository {
         horario: now,
       },
       include: {
-        motoboy: { select: { id: true, nome: true } },
+        motoboy: { select: motoboyRelationSelect },
       },
     })
   }
@@ -79,7 +80,7 @@ export class EntregaRepository {
         take: filters.limit,
         orderBy: { [filters.sortBy]: filters.sortOrder },
         include: {
-          motoboy: { select: { id: true, nome: true } },
+          motoboy: { select: motoboyRelationSelect },
         },
       }),
       prisma.entrega.count({ where }),
@@ -128,7 +129,7 @@ export class EntregaRepository {
       },
       orderBy: { horario: 'asc' },
       include: {
-        motoboy: { select: { id: true, nome: true } },
+        motoboy: { select: motoboyRelationSelect },
       },
     })
   }
@@ -144,7 +145,7 @@ export class EntregaRepository {
       orderBy: { horario: 'desc' },
       take: limit,
       include: {
-        motoboy: { select: { id: true, nome: true } },
+        motoboy: { select: motoboyRelationSelect },
       },
     })
   }
@@ -156,7 +157,7 @@ export class EntregaRepository {
       where: { data: day },
       orderBy: { horario: 'asc' },
       include: {
-        motoboy: { select: { id: true, nome: true } },
+        motoboy: { select: motoboyRelationSelect },
       },
     })
   }
@@ -167,7 +168,7 @@ export class EntregaRepository {
     return prisma.entrega.findMany({
       where: { id: { in: ids } },
       include: {
-        motoboy: { select: { id: true, nome: true } },
+        motoboy: { select: motoboyRelationSelect },
       },
     })
   }
@@ -256,6 +257,16 @@ export class EntregaRepository {
 
   async update(id: string, data: UpdateEntregaInput) {
     return prisma.entrega.update({ where: { id }, data })
+  }
+
+  async markDelivered(id: string, horario: Date) {
+    return prisma.entrega.update({
+      where: { id },
+      data: {
+        status: 'ENTREGUE',
+        horario,
+      },
+    })
   }
 
   async updateStatusPagamento(id: string, status: 'PAGO' | 'NAO_PAGO') {

@@ -22,7 +22,7 @@ export function ReportSummaryCards({
 }: ReportSummaryCardsProps) {
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
           <StatCardSkeleton key={index} />
         ))}
@@ -33,7 +33,7 @@ export function ReportSummaryCards({
   const periodLabel = getPeriodLabel(summary?.period ?? 'week')
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <StatCard
         title="Entregas no período"
         value={String(summary?.totalEntregas ?? 0)}

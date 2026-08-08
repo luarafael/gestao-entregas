@@ -214,6 +214,16 @@ export function IconCreditCard(props: IconProps) {
   )
 }
 
+export function IconBuilding(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+      <path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16" strokeLinejoin="round" />
+      <path d="M14 10h5a1 1 0 0 1 1 1v10" strokeLinejoin="round" />
+      <path d="M8 8h.01M11 8h.01M8 12h.01M11 12h.01M8 16h.01M11 16h.01M17 14h.01M17 17h.01" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function IconEyeOff(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>

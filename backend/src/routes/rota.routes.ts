@@ -10,10 +10,12 @@ import {
 import {
   listRotasSchema,
   optimizeRotaSchema,
+  rotaEventosQuerySchema,
   saveRotaSchema,
   syncParadaFromEntregaSchema,
   updateEnderecoPartidaSchema,
   type ListRotasInput,
+  type RotaEventosQuery,
 } from '../schemas/rota.schema.js'
 import { rotaService } from '../services/rota.service.js'
 import { rotaExecucaoService } from '../services/rota-execucao.service.js'
@@ -54,6 +56,28 @@ rotaRoutes.get(
 )
 
 rotaRoutes.get(
+  '/eventos',
+  requireRole('MOTOBOY'),
+  validateQuery(rotaEventosQuerySchema),
+  asyncHandler(async (req, res) => {
+    const query = getValidatedQuery<RotaEventosQuery>(req)
+    const eventos = await rotaService.getEventosPlanejamento(
+      req.user!,
+      new Date(query.since),
+    )
+    res.json({ eventos })
+  }),
+)
+
+rotaRoutes.get(
+  '/ativa-hoje',
+  asyncHandler(async (req, res) => {
+    const result = await rotaService.getActiveToday(req.user!)
+    res.json(result)
+  }),
+)
+
+rotaRoutes.get(
   '/by-entrega/:entregaId',
   asyncHandler(async (req, res) => {
     const result = await rotaService.findByEntregaId(
@@ -80,6 +104,16 @@ rotaRoutes.put(
       req.body.enderecoPartidaPadrao,
     )
     res.json(result)
+  }),
+)
+
+rotaRoutes.post(
+  '/:id/reconciliar-conclusao',
+  asyncHandler(async (req, res) => {
+    const rotaConcluida = await rotaExecucaoService.reconcileRouteConclusion(
+      getRouteParam(req, 'id'),
+    )
+    res.json({ rotaConcluida })
   }),
 )
 
@@ -136,7 +170,7 @@ rotaRoutes.post(
 rotaRoutes.post(
   '/:id/duplicate',
   asyncHandler(async (req, res) => {
-    const rota = await rotaService.duplicate(getRouteParam(req, 'id'))
+    const rota = await rotaService.duplicate(req.user!, getRouteParam(req, 'id'))
     res.status(201).json(rota)
   }),
 )

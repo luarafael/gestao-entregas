@@ -1,20 +1,43 @@
-import { Card, CardContent, CardHeader, CardTitle, EmptyState } from '@/shared/components/ui'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  MetaChip,
+  PAGE_CARD_ARTICLE,
+} from '@/shared/components/ui'
 import { IconClock } from '@/shared/components/icons'
+import { cn } from '@/shared/utils/cn'
 import { formatDateTimeBR } from '@/shared/utils/format'
-import type { ExecucaoHistoricoItem } from '../utils/executionStatus'
-import { STATUS_COLORS, STATUS_LABELS } from '../utils/executionStatus'
+import type { ExecucaoHistoricoItem, StatusExecucao } from '../utils/executionStatus'
+import { STATUS_LABELS } from '../utils/executionStatus'
 
 interface HistoricoExecucaoProps {
   items: ExecucaoHistoricoItem[]
 }
 
+const STATUS_TEXT: Record<StatusExecucao, string> = {
+  PENDENTE: 'text-muted-foreground',
+  EM_ROTA: 'text-blue-600 dark:text-blue-300',
+  ENTREGUE: 'text-emerald-600 dark:text-emerald-300',
+  CLIENTE_AUSENTE: 'text-amber-700 dark:text-amber-300',
+  NAO_LOCALIZADO: 'text-orange-700 dark:text-orange-300',
+  CANCELADA: 'text-muted-foreground',
+  FALHA_ENTREGA: 'text-red-600 dark:text-red-300',
+}
+
+function formatEnderecoLabel(endereco: string, bairro?: string | null) {
+  return [endereco, bairro?.trim()].filter(Boolean).join(' · ')
+}
+
 export function HistoricoExecucao({ items }: HistoricoExecucaoProps) {
   return (
-    <Card glass>
+    <Card glass className="min-w-0 overflow-hidden">
       <CardHeader>
         <CardTitle>Histórico da execução</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-w-0">
         {items.length === 0 ? (
           <EmptyState
             icon={<IconClock className="size-6" />}
@@ -22,39 +45,47 @@ export function HistoricoExecucao({ items }: HistoricoExecucaoProps) {
             description="O histórico será preenchido automaticamente ao atualizar as paradas."
           />
         ) : (
-          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-            {[...items].reverse().map((item) => {
-              const colors = STATUS_COLORS[item.status]
-              return (
-                <div
-                  key={item.id}
-                  className={`rounded-xl border bg-surface/20 p-3 ${colors.row}`}
+          <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
+            {[...items].reverse().map((item) => (
+              <article
+                key={item.id}
+                className={cn(PAGE_CARD_ARTICLE, 'min-w-0 space-y-2')}
+              >
+                <MetaChip
+                  tone="client"
+                  className="max-w-full text-sm font-semibold"
+                  title={item.cliente ?? undefined}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium">
-                        {item.cliente?.trim() || item.endereco}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.endereco}
-                        {item.bairro ? ` · ${item.bairro}` : ''}
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-xs font-medium ${colors.badge}`}
-                    >
-                      {STATUS_LABELS[item.status]}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {formatDateTimeBR(item.dataHora)}
-                  </p>
-                  {item.observacao ? (
-                    <p className="mt-1 text-xs">{item.observacao}</p>
-                  ) : null}
-                </div>
-              )
-            })}
+                  {item.cliente?.trim() || 'Sem nome'}
+                </MetaChip>
+
+                <MetaChip
+                  tone="address"
+                  className="w-full items-start whitespace-normal"
+                >
+                  <span className="line-clamp-2 text-left leading-relaxed">
+                    {formatEnderecoLabel(item.endereco, item.bairro)}
+                  </span>
+                </MetaChip>
+
+                <p
+                  className={cn(
+                    'text-sm font-medium',
+                    STATUS_TEXT[item.status],
+                  )}
+                >
+                  {STATUS_LABELS[item.status]}
+                </p>
+
+                <MetaChip tone="time" className="w-fit tabular-nums">
+                  {formatDateTimeBR(item.dataHora)}
+                </MetaChip>
+
+                {item.observacao ? (
+                  <p className="text-xs text-muted-foreground">{item.observacao}</p>
+                ) : null}
+              </article>
+            ))}
           </div>
         )}
       </CardContent>

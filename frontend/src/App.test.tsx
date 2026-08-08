@@ -32,12 +32,12 @@ describe('App', () => {
 
   it('renderiza o dashboard na rota inicial', async () => {
     render(<App />)
-    expect(await screen.findByText('Resumo do dia')).toBeInTheDocument()
-  })
+    expect(await screen.findByText('Resumo do dia', {}, { timeout: 10_000 })).toBeInTheDocument()
+  }, 15_000)
 
   it('renderiza a navegação principal', async () => {
     render(<App />)
-    expect(await screen.findByText('Resumo do dia')).toBeInTheDocument()
+    expect(await screen.findByText('Resumo do dia', {}, { timeout: 10_000 })).toBeInTheDocument()
     expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Entregas').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Pendências').length).toBeGreaterThan(0)

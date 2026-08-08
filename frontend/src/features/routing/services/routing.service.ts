@@ -25,7 +25,7 @@ export const routingService = {
   planRoute(
     enderecoInicial: string,
     paradas: PlannerStop[],
-    options?: { preservarOrdem?: boolean },
+    options?: { preservarOrdem?: boolean; substituirRotaId?: string | null },
   ) {
     return apiFetch<OptimizedRouteResult>('/api/rotas/planejar', {
       method: 'POST',
@@ -33,6 +33,7 @@ export const routingService = {
         enderecoInicial,
         paradas,
         preservarOrdem: options?.preservarOrdem ?? false,
+        substituirRotaId: options?.substituirRotaId ?? null,
       }),
     })
   },
@@ -43,6 +44,7 @@ export const routingService = {
     tempoTotal: number
     aproximada: boolean
     paradas: PlannerStop[]
+    substituirRotaId?: string | null
   }) {
     return apiFetch<RotaPlanejada>('/api/rotas', {
       method: 'POST',
@@ -94,6 +96,17 @@ export const routingService = {
     })
   },
 
+  reconcileRouteConclusion(rotaId: string) {
+    return apiFetch<{ rotaConcluida: boolean }>(
+      `/api/rotas/${rotaId}/reconciliar-conclusao`,
+      { method: 'POST' },
+    )
+  },
+
+  getActiveToday() {
+    return apiFetch<{ rota: RotaPlanejada | null }>('/api/rotas/ativa-hoje')
+  },
+
   getEnderecoPartida() {
     return apiFetch<{ enderecoPartidaPadrao: string }>(
       '/api/rotas/config/endereco-partida',
@@ -130,9 +143,34 @@ export const routingService = {
     paradaId: string,
     payload: { status: string; observacao?: string | null },
   ) {
-    return apiFetch<unknown>(`/api/rotas/${rotaId}/execucao/paradas/${paradaId}`, {
+    return apiFetch<{
+      execucoes: Array<{
+        id: string
+        rotaId: string
+        paradaId: string | null
+        entregaId: string | null
+        ordem: number
+        status: string
+        dataHoraStatus: string | null
+        observacao: string | null
+      }>
+      rotaConcluida: boolean
+    }>(`/api/rotas/${rotaId}/execucao/paradas/${paradaId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     })
+  },
+
+  getEventos(since: string) {
+    const params = new URLSearchParams({ since })
+    return apiFetch<{
+      eventos: Array<{
+        id: string
+        motoboyId: string | null
+        totalParadas: number
+        enderecoInicial: string
+        criadoEm: string
+      }>
+    }>(`/api/rotas/eventos?${params.toString()}`)
   },
 }

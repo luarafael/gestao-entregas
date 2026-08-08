@@ -5,10 +5,9 @@ import { aprovacoesService } from '@/features/aprovacoes/services/aprovacoes.ser
 import { monitoramentoService } from '@/features/monitoramento/services/monitoramento.service'
 import { pendingService } from '@/features/pending/services/pending.service'
 import { useNotificationStore } from '@/shared/stores/notification.store'
-import { toast } from '@/shared/stores/toast.store'
 import { formatPrestacaoMotoboyDate } from '@/features/motoboy/schemas/prestacaoMotoboy.schema'
-import { formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
+import { notifyUser } from '../utils/notifyUser'
 
 const POLL_INTERVAL = 10_000
 
@@ -75,13 +74,15 @@ export function useAdminNotifications(enabled: boolean) {
       if (knownPendingIdsRef.current.has(item.id)) continue
 
       const message = `${item.motoboy?.nome ?? 'Motoboy'} enviou prestação de ${formatPrestacaoMotoboyDate(item.data)}`
-      addNotification({
+      notifyUser(addNotification, {
         type: 'approval',
         title: 'Nova solicitação de aprovação',
         message,
         href: '/aprovacoes',
+        tag: `approval-${item.id}`,
+        showToast: true,
+        toastVariant: 'info',
       })
-      toast(message, 'info')
     }
 
     knownPendingIdsRef.current = currentPendingIds
@@ -95,17 +96,16 @@ export function useAdminNotifications(enabled: boolean) {
       }
 
       const cliente = evento.cliente?.trim() || 'Cliente'
-      const message = `${evento.motoboyNome} concluiu entrega: ${cliente}`
-      addNotification({
+      const message = `${evento.motoboyNome} concluiu entrega: ${cliente} · ${formatTimeBR(evento.dataHoraStatus)}`
+      notifyUser(addNotification, {
         type: 'delivery',
         title: 'Entrega concluída',
-        message: `${message} · ${formatTimeBR(evento.dataHoraStatus)}`,
+        message,
         href: '/monitoramento',
+        tag: `delivery-${evento.id}`,
+        showToast: location.pathname === '/monitoramento',
+        toastVariant: 'success',
       })
-
-      if (location.pathname === '/monitoramento') {
-        toast(message, 'success')
-      }
     }
 
     for (const evento of pendenciaEventosQuery.data.eventos) {
@@ -116,17 +116,16 @@ export function useAdminNotifications(enabled: boolean) {
         pendenciaSinceRef.current = evento.criadoEm
       }
 
-      const message = `${evento.motoboyNome} registrou pendência: ${evento.descricao} · ${formatCurrency(evento.valor)}`
-      addNotification({
+      const message = `${evento.motoboyNome} registrou pendência: ${evento.descricao} · ${formatTimeBR(evento.criadoEm)}`
+      notifyUser(addNotification, {
         type: 'pendencia',
         title: 'Nova pendência do motoboy',
-        message: `${message} · ${formatTimeBR(evento.criadoEm)}`,
+        message,
         href: '/pendencias',
+        tag: `pendencia-${evento.id}`,
+        showToast: location.pathname !== '/pendencias',
+        toastVariant: 'info',
       })
-
-      if (location.pathname !== '/pendencias') {
-        toast(message, 'info')
-      }
     }
   }, [
     addNotification,

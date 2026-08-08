@@ -15,7 +15,7 @@ export function ChartCard({
   action,
 }: ChartCardProps) {
   return (
-    <Card className="h-full">
+    <Card className="h-full min-w-0 overflow-hidden">
       <CardHeader className="items-start gap-3 sm:flex-row sm:items-center">
         <div>
           <CardTitle className="text-base font-semibold text-foreground">

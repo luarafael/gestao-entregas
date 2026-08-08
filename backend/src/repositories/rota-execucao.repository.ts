@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js'
+import { motoboyRelationSelect } from './motoboy-select.js'
 import type { StatusExecucaoParada } from '../schemas/rota-execucao.schema.js'
 
 export class RotaExecucaoRepository {
@@ -10,20 +11,32 @@ export class RotaExecucaoRepository {
 
     if (!rota) return null
 
-    const existing = await prisma.rotaExecucao.count({ where: { rotaId } })
-    if (existing > 0) {
-      return this.findByRotaId(rotaId)
-    }
-
-    await prisma.rotaExecucao.createMany({
-      data: rota.paradas.map((parada) => ({
-        rotaId,
-        paradaId: parada.id,
-        entregaId: parada.entregaId,
-        ordem: parada.ordem,
-        status: 'PENDENTE',
-      })),
+    const existing = await prisma.rotaExecucao.findMany({
+      where: { rotaId },
+      select: { paradaId: true },
     })
+
+    const coveredParadaIds = new Set(
+      existing
+        .map((item) => item.paradaId)
+        .filter((id): id is string => Boolean(id)),
+    )
+
+    const missingParadas = rota.paradas.filter(
+      (parada) => !coveredParadaIds.has(parada.id),
+    )
+
+    if (missingParadas.length > 0) {
+      await prisma.rotaExecucao.createMany({
+        data: missingParadas.map((parada) => ({
+          rotaId,
+          paradaId: parada.id,
+          entregaId: parada.entregaId,
+          ordem: parada.ordem,
+          status: 'PENDENTE',
+        })),
+      })
+    }
 
     return this.findByRotaId(rotaId)
   }
@@ -93,7 +106,7 @@ export class RotaExecucaoRepository {
         rota: {
           select: {
             motoboyId: true,
-            motoboy: { select: { id: true, nome: true } },
+            motoboy: { select: motoboyRelationSelect },
           },
         },
       },

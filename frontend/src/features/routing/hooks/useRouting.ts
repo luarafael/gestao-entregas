@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/shared/stores/toast.store'
+import { ApiError } from '@/shared/services/api'
 import { routingService } from '../services/routing.service'
 import type { PlannerStop } from '../schemas/routing.schema'
 
@@ -37,16 +38,27 @@ export function usePlanRoute() {
       enderecoInicial,
       paradas,
       preservarOrdem = false,
+      substituirRotaId = null,
     }: {
       enderecoInicial: string
       paradas: PlannerStop[]
       preservarOrdem?: boolean
-    }) => routingService.planRoute(enderecoInicial, paradas, { preservarOrdem }),
+      substituirRotaId?: string | null
+    }) =>
+      routingService.planRoute(enderecoInicial, paradas, {
+        preservarOrdem,
+        substituirRotaId,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
     },
-    onError: () => {
-      toast('Erro ao calcular e registrar rota no monitoramento', 'error')
+    onError: (error) => {
+      toast(
+        error instanceof ApiError
+          ? error.message
+          : 'Erro ao calcular e registrar rota no monitoramento',
+        'error',
+      )
     },
   })
 }
@@ -62,6 +74,7 @@ export function useSaveRoute() {
         tempoTotal: variables.tempoTotal,
         aproximada: variables.aproximada,
         paradas: variables.paradas,
+        substituirRotaId: variables.substituirRotaId ?? null,
       }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
@@ -69,8 +82,13 @@ export function useSaveRoute() {
         toast('Rota registrada no monitoramento!', 'success')
       }
     },
-    onError: () => {
-      toast('Erro ao registrar rota no monitoramento', 'error')
+    onError: (error) => {
+      toast(
+        error instanceof ApiError
+          ? error.message
+          : 'Erro ao registrar rota no monitoramento',
+        'error',
+      )
     },
   })
 }
