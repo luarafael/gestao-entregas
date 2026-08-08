@@ -16,7 +16,6 @@ export function canAccessAdminArea(role: UserRole): boolean {
 
 export const ADMIN_ONLY_ROUTES = [
   '/prestacao',
-  '/relatorios',
   '/aprovacoes',
   '/monitoramento',
   '/motoboys',

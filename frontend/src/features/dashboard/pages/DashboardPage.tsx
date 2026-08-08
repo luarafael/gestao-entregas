@@ -236,10 +236,10 @@ export function DashboardPage() {
             </Link>
           ) : (
             <Link
-              to="/meu-dia"
+              to="/relatorios"
               className="text-sm font-medium text-primary hover:underline"
             >
-              Ver meu dia
+              Ver relatórios
             </Link>
           )}
         </div>

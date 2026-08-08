@@ -36,7 +36,7 @@ const navItems: Array<{
   { to: '/aprovacoes', label: 'Aprovações', icon: IconReceipt, roles: ['ADMIN'] },
   { to: '/monitoramento', label: 'Monitoramento', icon: IconEye, roles: ['ADMIN'] },
   { to: '/prestacao', label: 'Prestação', icon: IconReceipt, roles: ['ADMIN'] },
-  { to: '/relatorios', label: 'Relatórios', icon: IconChart, roles: ['ADMIN'] },
+  { to: '/relatorios', label: 'Relatórios', icon: IconChart, roles: ['ADMIN', 'MOTOBOY'] },
   {
     to: '/planejador',
     label: 'Planejador de Rotas',
