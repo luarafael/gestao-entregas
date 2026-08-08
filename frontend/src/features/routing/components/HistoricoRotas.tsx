@@ -13,11 +13,13 @@ import {
   useRouteHistory,
 } from '../hooks/useRouting'
 import { routingService } from '../services/routing.service'
+import { deliveryService } from '@/features/deliveries/services/delivery.service'
 import { formatDistance, formatDuration } from '../utils/googleMapsUrl'
 import {
   buildRouteWhatsAppPayload,
   formatRouteWhatsAppText,
 } from '../utils/whatsappRouteMessage'
+import { mergeStopsWithLiveEntregas } from '../utils/routeStopPayment'
 import type { RotaPlanejada } from '../schemas/routing.schema'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 
@@ -68,7 +70,18 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
     try {
       setSendingId(rotaId)
       const rota = await routingService.getById(rotaId)
-      const text = formatRouteWhatsAppText(mapRotaToWhatsAppPayload(rota))
+      const payload = mapRotaToWhatsAppPayload(rota)
+      const entregaIds = payload.paradas
+        .map((parada) => parada.entregaId)
+        .filter((id): id is string => Boolean(id))
+
+      let paradas = payload.paradas
+      if (entregaIds.length > 0) {
+        const live = await deliveryService.listByIds(entregaIds)
+        paradas = mergeStopsWithLiveEntregas(paradas, live.data)
+      }
+
+      const text = formatRouteWhatsAppText({ ...payload, paradas })
       setSendPayload({ baseText: text })
       setSendModalOpen(true)
     } catch {

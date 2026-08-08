@@ -47,6 +47,23 @@ export class EntregaService {
     return entrega
   }
 
+  async findByIds(user: AuthenticatedUser, ids: string[]) {
+    const uniqueIds = [...new Set(ids)]
+    const entregas = await entregaRepository.findByIds(uniqueIds)
+
+    return entregas.filter((entrega) => {
+      if (entrega.origemCadastro === 'CLIENTE') {
+        return true
+      }
+      try {
+        assertOwnsResource(user, entrega.motoboyId)
+        return true
+      } catch {
+        return false
+      }
+    })
+  }
+
   async list(user: AuthenticatedUser, filters: ListEntregasInput) {
     const motoboyId = resolveMotoboyScope(user, filters.motoboyId)
 
@@ -87,6 +104,15 @@ export class EntregaService {
     return entregaRepository.updateCliente(id, input)
   }
 
+  async updateStatusPagamento(
+    user: AuthenticatedUser,
+    id: string,
+    status: 'PAGO' | 'NAO_PAGO',
+  ) {
+    await this.findById(user, id)
+    return entregaRepository.updateStatusPagamento(id, status)
+  }
+
   async importClienteToMotoboy(
     user: AuthenticatedUser,
     input: ImportEntregasClienteInput,
@@ -120,6 +146,7 @@ export class EntregaService {
             ? Number(entrega.valorProduto)
             : undefined,
           formaPagamento: entrega.formaPagamento ?? undefined,
+          statusPagamentoCliente: entrega.statusPagamentoCliente ?? undefined,
           valorEntrega: valorMotoboy > 0 ? valorMotoboy : 1,
           observacao: entrega.observacao ?? undefined,
           pagoPeloCliente: false,

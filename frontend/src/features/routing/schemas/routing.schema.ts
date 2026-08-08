@@ -48,6 +48,9 @@ export interface PlannerStop {
   prioridade: PrioridadeParada
   ordemUrgencia?: number | null
   valorEntrega?: number | null
+  valorProduto?: number | null
+  formaPagamento?: 'DINHEIRO' | 'PIX' | 'CARTAO' | null
+  statusPagamentoCliente?: 'PAGO' | 'NAO_PAGO' | null
   ordem?: number
   distancia?: number | null
   tempo?: number | null

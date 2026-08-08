@@ -8,6 +8,7 @@ import {
   STATUS_PAGAMENTO_OPTIONS,
   type DeliveryClienteFormData,
 } from '../schemas/delivery.schema'
+import { FormaPagamentoBadge } from './FormaPagamentoBadge'
 import type { Entrega } from '@/shared/types/api.types'
 
 interface DeliveryClienteFormProps {
@@ -40,6 +41,7 @@ export function DeliveryClienteForm({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<DeliveryClienteFormData>({
     resolver: zodResolver(deliveryClienteFormSchema),
@@ -67,6 +69,8 @@ export function DeliveryClienteForm({
       reset(defaultValues)
     }
   }, [editingDelivery, reset])
+
+  const formaPagamento = watch('formaPagamento')
 
   const handleFormSubmit = handleSubmit(async (data) => {
     await onSubmit(data)
@@ -135,6 +139,9 @@ export function DeliveryClienteForm({
             {errors.formaPagamento?.message ? (
               <p className="text-xs text-destructive">{errors.formaPagamento.message}</p>
             ) : null}
+            <div className="pt-1">
+              <FormaPagamentoBadge value={formaPagamento} />
+            </div>
           </label>
 
           <label className="block space-y-1.5">

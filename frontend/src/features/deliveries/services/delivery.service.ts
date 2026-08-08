@@ -68,6 +68,20 @@ export const deliveryService = {
     return apiFetch<PaginatedResponse<Entrega>>(`/api/entregas?${buildQuery(filters)}`)
   },
 
+  listByIds(ids: string[]) {
+    return apiFetch<{ data: Entrega[] }>('/api/entregas/por-ids', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    })
+  },
+
+  updatePaymentStatus(id: string, statusPagamento: 'PAGO' | 'NAO_PAGO') {
+    return apiFetch<Entrega>(`/api/entregas/${id}/status-pagamento`, {
+      method: 'PATCH',
+      body: JSON.stringify({ statusPagamento }),
+    })
+  },
+
   getById(id: string) {
     return apiFetch<Entrega>(`/api/entregas/${id}`)
   },

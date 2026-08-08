@@ -17,10 +17,14 @@ import {
   createEntregaClienteSchema,
   updateEntregaClienteSchema,
   importEntregasClienteSchema,
+  entregasPorIdsSchema,
+  updateStatusPagamentoSchema,
   type DashboardStatsQuery,
   type ListEntregasInput,
   type MonitoramentoQuery,
   type MonitoramentoEventosQuery,
+  type EntregasPorIdsInput,
+  type UpdateStatusPagamentoInput,
 } from '../schemas/entrega.schema.js'
 import { entregaService } from '../services/entrega.service.js'
 import { resolveMotoboyScope } from '../utils/auth-scope.utils.js'
@@ -123,6 +127,16 @@ entregaRoutes.put(
   }),
 )
 
+entregaRoutes.post(
+  '/por-ids',
+  validateBody(entregasPorIdsSchema),
+  asyncHandler(async (req, res) => {
+    const { ids } = req.body as EntregasPorIdsInput
+    const data = await entregaService.findByIds(req.user!, ids)
+    res.json({ data })
+  }),
+)
+
 entregaRoutes.get(
   '/',
   validateQuery(listEntregasSchema),
@@ -132,6 +146,20 @@ entregaRoutes.get(
       getValidatedQuery<ListEntregasInput>(req),
     )
     res.json(result)
+  }),
+)
+
+entregaRoutes.patch(
+  '/:id/status-pagamento',
+  validateBody(updateStatusPagamentoSchema),
+  asyncHandler(async (req, res) => {
+    const { statusPagamento } = req.body as UpdateStatusPagamentoInput
+    const entrega = await entregaService.updateStatusPagamento(
+      req.user!,
+      getRouteParam(req, 'id'),
+      statusPagamento,
+    )
+    res.json(entrega)
   }),
 )
 

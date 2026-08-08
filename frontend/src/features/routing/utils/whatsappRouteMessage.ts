@@ -2,6 +2,7 @@ import { formatCurrency } from '@/shared/utils/cn'
 import { WA } from '@/features/accounting/utils/whatsappEmoji'
 import { formatUrgentLabel } from './urgentPriority'
 import { formatDistance, formatDuration } from './googleMapsUrl'
+import { appendStopPaymentWhatsAppLines } from './routeStopPayment'
 import type { PlannerStop } from '../schemas/routing.schema'
 
 export interface RouteWhatsAppInput {
@@ -65,6 +66,8 @@ export function formatRouteWhatsAppText(input: RouteWhatsAppInput): string {
     if (stop.observacao?.trim()) {
       lines.push(`   ${WA.memo} ${stop.observacao.trim()}`)
     }
+
+    appendStopPaymentWhatsAppLines(lines, stop)
 
     if (stop.valorEntrega != null && Number(stop.valorEntrega) > 0) {
       lines.push(`   ${WA.money} ${formatCurrency(Number(stop.valorEntrega))}`)

@@ -42,6 +42,7 @@ const entregaBaseSchema = z.object({
   cidade: z.string().trim().optional(),
   valorProduto: z.coerce.number().min(0, 'Valor do produto inválido').optional(),
   formaPagamento: formaPagamentoSchema.optional(),
+  statusPagamentoCliente: statusPagamentoClienteSchema.optional(),
   valorEntrega: z.coerce.number().positive('Valor da taxa de entrega deve ser maior que zero'),
   observacao: z.string().trim().optional(),
   pagoPeloCliente: z.boolean().optional().default(false),
@@ -110,9 +111,19 @@ export const importEntregasClienteSchema = z.object({
   motoboyId: z.string().trim().min(1).optional(),
 })
 
+export const entregasPorIdsSchema = z.object({
+  ids: z.array(z.string().trim().min(1)).min(1).max(100),
+})
+
+export const updateStatusPagamentoSchema = z.object({
+  statusPagamento: statusPagamentoClienteSchema,
+})
+
 export type CreateEntregaClienteInput = z.infer<typeof createEntregaClienteSchema>
 export type UpdateEntregaClienteInput = z.infer<typeof updateEntregaClienteSchema>
 export type ImportEntregasClienteInput = z.infer<typeof importEntregasClienteSchema>
+export type EntregasPorIdsInput = z.infer<typeof entregasPorIdsSchema>
+export type UpdateStatusPagamentoInput = z.infer<typeof updateStatusPagamentoSchema>
 
 export type CreateEntregaInput = z.infer<typeof createEntregaSchema>
 export type UpdateEntregaInput = z.infer<typeof updateEntregaSchema>

@@ -25,6 +25,7 @@ import {
   usePlanRoute,
   useSaveRoute,
 } from '../hooks/useRouting'
+import { usePlannerEntregas, useUpdateEntregaPaymentStatus } from '../hooks/usePlannerEntregas'
 import { routingService } from '../services/routing.service'
 import { createPlannerStop } from '../utils/parseAddresses'
 import { normalizePlannerStopForm } from '../utils/urgentPriority'
@@ -38,11 +39,15 @@ import type {
   RotaPlanejada,
   StatusExecucao,
 } from '../schemas/routing.schema'
+import type { StatusPagamentoCliente } from '@/features/deliveries/schemas/delivery.schema'
 import {
   buildRouteWhatsAppPayload,
   formatRouteWhatsAppText,
 } from '../utils/whatsappRouteMessage'
 import { formatRouteProgressWhatsAppText } from '../utils/whatsappRouteProgressMessage'
+import {
+  mergeStopsWithLiveEntregas,
+} from '../utils/routeStopPayment'
 import {
   applyStatusUpdate,
   buildHistoricoEntry,
@@ -84,27 +89,51 @@ export function PlannerPage() {
   const [historicoExecucao, setHistoricoExecucao] = useState<
     ExecucaoHistoricoItem[]
   >([])
+  const [paymentStatusUpdatingId, setPaymentStatusUpdatingId] = useState<
+    string | null
+  >(null)
 
   const optimizeMutation = useOptimizeRoute()
   const planMutation = usePlanRoute()
   const saveMutation = useSaveRoute()
   const copyMutation = useCopyWhatsAppText()
+  const updatePaymentMutation = useUpdateEntregaPaymentStatus()
 
   const displayStops = result?.paradas ?? stops
 
+  const entregaIds = useMemo(
+    () =>
+      displayStops
+        .map((stop) => stop.entregaId)
+        .filter((id): id is string => Boolean(id)),
+    [displayStops],
+  )
+
+  const { data: liveEntregasData } = usePlannerEntregas(
+    entregaIds,
+    entregaIds.length > 0,
+  )
+
+  const enrichedStops = useMemo(
+    () => mergeStopsWithLiveEntregas(displayStops, liveEntregasData?.data ?? []),
+    [displayStops, liveEntregasData?.data],
+  )
+
   const whatsappText = useMemo(() => {
     if (!result) return ''
-    return formatRouteWhatsAppText(buildRouteWhatsAppPayload(result))
-  }, [result])
+    return formatRouteWhatsAppText(
+      buildRouteWhatsAppPayload({ ...result, paradas: enrichedStops }),
+    )
+  }, [result, enrichedStops])
 
   const progressWhatsappText = useMemo(() => {
     if (!result) return ''
-    const metrics = sumStopRouteMetrics(displayStops)
+    const metrics = sumStopRouteMetrics(enrichedStops)
     const activeMetrics = sumStopRouteMetrics(
-      getActiveStopsForRoute(displayStops),
+      getActiveStopsForRoute(enrichedStops),
     )
     return formatRouteProgressWhatsAppText({
-      stops: displayStops,
+      stops: enrichedStops,
       enderecoInicial: result.enderecoInicial,
       distanciaTotal: metrics.distancia || result.distanciaTotal,
       tempoTotal: metrics.tempo || result.tempoTotal,
@@ -114,7 +143,7 @@ export function PlannerPage() {
       data: new Date().toISOString(),
       atualizadoEm: progressUpdatedAt,
     })
-  }, [displayStops, progressUpdatedAt, result])
+  }, [enrichedStops, progressUpdatedAt, result])
 
   const hasExecutionUpdates = useMemo(
     () => displayStops.some((stop) => getStopStatus(stop) !== 'PENDENTE'),
@@ -441,6 +470,43 @@ export function PlannerPage() {
     }
   }
 
+  const handlePaymentStatusChange = async (
+    stop: PlannerStop,
+    status: StatusPagamentoCliente,
+  ) => {
+    const nextStops = displayStops.map((item) =>
+      item.tempId === stop.tempId
+        ? { ...item, statusPagamentoCliente: status }
+        : item,
+    )
+    syncStops(nextStops)
+    setProgressUpdatedAt(new Date().toISOString())
+
+    if (!stop.entregaId) return
+
+    setPaymentStatusUpdatingId(stop.tempId)
+    try {
+      await updatePaymentMutation.mutateAsync({
+        id: stop.entregaId,
+        status,
+      })
+    } catch {
+      syncStops(
+        displayStops.map((item) =>
+          item.tempId === stop.tempId
+            ? {
+                ...item,
+                statusPagamentoCliente: stop.statusPagamentoCliente ?? null,
+              }
+            : item,
+        ),
+      )
+      toast('Erro ao atualizar status de pagamento', 'error')
+    } finally {
+      setPaymentStatusUpdatingId(null)
+    }
+  }
+
   const handleSave = async () => {
     if (!result) {
       toast('Calcule a rota antes de registrar', 'error')
@@ -673,7 +739,7 @@ export function PlannerPage() {
               </div>
 
               <ListaEntregas
-                stops={displayStops}
+                stops={enrichedStops}
                 optimized={routePlanned}
                 showStatusControls={routePlanned}
                 deliveryStarted={executionActive}
@@ -681,6 +747,8 @@ export function PlannerPage() {
                 orderDirty={orderDirty}
                 nextStopTempId={nextStop?.tempId}
                 onStatusChange={handleStatusChange}
+                onPaymentStatusChange={handlePaymentStatusChange}
+                paymentStatusUpdatingId={paymentStatusUpdatingId}
                 onEdit={(stop) => {
                   setEditing(stop)
                   setFormOpen(true)

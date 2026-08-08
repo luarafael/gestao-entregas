@@ -164,6 +164,56 @@ export function IconUsers(props: IconProps) {
   )
 }
 
+export function IconUser(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4 3.6-6 8-6s8 2 8 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function IconPhone(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+      <path
+        d="M6.5 3h2l1.5 5.5-2 1.2a11 11 0 0 0 5.3 5.3l1.2-2L20.5 15v2a2 2 0 0 1-2.1 2 16 16 0 0 1-12-12A2 2 0 0 1 6.5 3Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function IconTruck(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+      <path d="M3 7h11v8H3V7Z" strokeLinejoin="round" />
+      <path d="M14 10h4l3 3v2h-7v-5Z" strokeLinejoin="round" />
+      <circle cx="7" cy="17" r="2" />
+      <circle cx="17" cy="17" r="2" />
+    </svg>
+  )
+}
+
+export function IconTag(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+      <path d="M3 7.5V5a2 2 0 0 1 2-2h2.5L21 16.5 16.5 21 3 7.5Z" strokeLinejoin="round" />
+      <circle cx="7.5" cy="7.5" r="1.25" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+export function IconCreditCard(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M2 10h20" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function IconEyeOff(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" {...props}>

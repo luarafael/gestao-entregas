@@ -223,7 +223,7 @@ export class EntregaRepository {
   ) {
     const { statusPagamento, ...rest } = data
 
-    return prisma.entrega.update({
+    const updated = await prisma.entrega.update({
       where: { id },
       data: {
         ...rest,
@@ -232,6 +232,19 @@ export class EntregaRepository {
           : {}),
       },
     })
+
+    if (updated.entregaMotoboyId) {
+      await prisma.entrega.update({
+        where: { id: updated.entregaMotoboyId },
+        data: {
+          valorProduto: updated.valorProduto,
+          formaPagamento: updated.formaPagamento,
+          statusPagamentoCliente: updated.statusPagamentoCliente,
+        },
+      })
+    }
+
+    return updated
   }
 
   async linkEntregaMotoboy(clienteId: string, motoboyEntregaId: string) {
@@ -243,6 +256,27 @@ export class EntregaRepository {
 
   async update(id: string, data: UpdateEntregaInput) {
     return prisma.entrega.update({ where: { id }, data })
+  }
+
+  async updateStatusPagamento(id: string, status: 'PAGO' | 'NAO_PAGO') {
+    const updated = await prisma.entrega.update({
+      where: { id },
+      data: { statusPagamentoCliente: status },
+    })
+
+    await prisma.entrega.updateMany({
+      where: { entregaMotoboyId: id },
+      data: { statusPagamentoCliente: status },
+    })
+
+    if (updated.entregaMotoboyId) {
+      await prisma.entrega.update({
+        where: { id: updated.entregaMotoboyId },
+        data: { statusPagamentoCliente: status },
+      })
+    }
+
+    return updated
   }
 
   async delete(id: string) {

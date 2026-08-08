@@ -121,7 +121,7 @@ export function DeliveryMotoboyForm({
             {...register('endereco')}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3">
             <Input
               label="Bairro"
               placeholder="Ex: Centro"

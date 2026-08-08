@@ -14,6 +14,7 @@ import {
   STATUS_LABELS,
   type StatusExecucao,
 } from './executionStatus'
+import { appendStopPaymentWhatsAppLines } from './routeStopPayment'
 import type { PlannerStop } from '../schemas/routing.schema'
 
 export interface RouteProgressWhatsAppInput {
@@ -81,8 +82,9 @@ function appendTrecho(lines: string[], stop: PlannerStop) {
 }
 
 function appendValor(lines: string[], stop: PlannerStop) {
+  appendStopPaymentWhatsAppLines(lines, stop)
   if (stop.valorEntrega != null && Number(stop.valorEntrega) > 0) {
-    lines.push(`   ${WA.money} ${formatCurrency(Number(stop.valorEntrega))}`)
+    lines.push(`   ${WA.money} Corrida: ${formatCurrency(Number(stop.valorEntrega))}`)
   }
 }
 
@@ -127,6 +129,7 @@ function appendPendenteDetails(lines: string[], stop: PlannerStop) {
   if (stop.prioridade === 'URGENTE') {
     lines.push(`   ⚠️ ${formatUrgentLabel(stop.ordemUrgencia)}`)
   }
+  appendStopPaymentWhatsAppLines(lines, stop)
   appendTrecho(lines, stop)
   lines.push('')
 }

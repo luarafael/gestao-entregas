@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Input } from '@/shared/components/ui'
 import { IconPackage } from '@/shared/components/icons'
+import { formatCurrency } from '@/shared/utils/cn'
+import { FormaPagamentoBadge } from '@/features/deliveries/components/FormaPagamentoBadge'
+import type { StatusPagamentoCliente } from '@/features/deliveries/schemas/delivery.schema'
 import type { PlannerStop, PrioridadeParada } from '../schemas/routing.schema'
 import { formatDistance, formatDuration } from '../utils/googleMapsUrl'
 import { formatUrgentLabel } from '../utils/urgentPriority'
+import { stopHasPaymentDetails } from '../utils/routeStopPayment'
 import {
   STATUS_COLORS,
   STATUS_EXECUCAO_OPTIONS,
@@ -23,6 +27,11 @@ interface ListaEntregasProps {
     status: StatusExecucao,
     observacao?: string | null,
   ) => void
+  onPaymentStatusChange?: (
+    stop: PlannerStop,
+    status: StatusPagamentoCliente,
+  ) => void
+  paymentStatusUpdatingId?: string | null
   optimized?: boolean
   showStatusControls?: boolean
   deliveryStarted?: boolean
@@ -37,6 +46,8 @@ export function ListaEntregas({
   onRemove,
   onReorder,
   onStatusChange,
+  onPaymentStatusChange,
+  paymentStatusUpdatingId = null,
   optimized = false,
   showStatusControls = false,
   deliveryStarted = false,
@@ -207,6 +218,66 @@ export function ListaEntregas({
                             ? formatDuration(legMetrics.tempo)
                             : '—'}
                         </p>
+                      ) : null}
+                      {stopHasPaymentDetails(stop) || stop.entregaId ? (
+                        <div className="mt-2 rounded-lg border border-border/50 bg-surface/20 p-2.5">
+                          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Pagamento
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {stop.formaPagamento ? (
+                              <FormaPagamentoBadge
+                                value={stop.formaPagamento}
+                                className="text-xs py-1"
+                              />
+                            ) : null}
+                            {stop.valorProduto != null &&
+                            !Number.isNaN(Number(stop.valorProduto)) ? (
+                              <span className="text-xs tabular-nums text-foreground">
+                                Produto: {formatCurrency(Number(stop.valorProduto))}
+                              </span>
+                            ) : null}
+                            {stop.valorEntrega != null &&
+                            Number(stop.valorEntrega) > 0 ? (
+                              <span className="text-xs tabular-nums text-muted-foreground">
+                                Corrida: {formatCurrency(Number(stop.valorEntrega))}
+                              </span>
+                            ) : null}
+                          </div>
+                          {onPaymentStatusChange ? (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <label className="text-xs text-muted-foreground">
+                                Status:
+                              </label>
+                              <select
+                                className="h-8 min-w-[8.5rem] rounded-lg border border-border/70 bg-surface/50 px-2 text-xs"
+                                value={stop.statusPagamentoCliente ?? 'NAO_PAGO'}
+                                disabled={paymentStatusUpdatingId === stop.tempId}
+                                onChange={(event) =>
+                                  onPaymentStatusChange(
+                                    stop,
+                                    event.target.value as StatusPagamentoCliente,
+                                  )
+                                }
+                              >
+                                <option value="PAGO">Pago</option>
+                                <option value="NAO_PAGO">Não pago</option>
+                              </select>
+                              <Badge
+                                variant={
+                                  stop.statusPagamentoCliente === 'PAGO'
+                                    ? 'success'
+                                    : 'warning'
+                                }
+                                className="text-[10px]"
+                              >
+                                {stop.statusPagamentoCliente === 'PAGO'
+                                  ? 'Pago'
+                                  : 'Não pago'}
+                              </Badge>
+                            </div>
+                          ) : null}
+                        </div>
                       ) : null}
                     </div>
                     <div className="flex flex-col gap-2 sm:items-end">

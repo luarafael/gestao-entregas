@@ -46,4 +46,30 @@ describe('formatRouteWhatsAppText', () => {
     expect(text).toContain('8.3 km')
     expect(text).toMatch(/R\$\s*43,00/)
   })
+
+  it('inclui produto, forma e status de pagamento quando informados', () => {
+    const text = formatRouteWhatsAppText({
+      enderecoInicial: 'Depósito',
+      distanciaTotal: 1000,
+      tempoTotal: 300,
+      aproximada: false,
+      paradas: [
+        {
+          tempId: '1',
+          cliente: 'Ana',
+          endereco: 'Rua C, 50',
+          prioridade: 'NORMAL',
+          ordem: 1,
+          valorProduto: 120,
+          formaPagamento: 'PIX',
+          statusPagamentoCliente: 'NAO_PAGO',
+          valorEntrega: 15,
+        },
+      ],
+    })
+
+    expect(text).toContain('Produto:')
+    expect(text).toContain('PIX')
+    expect(text).toContain('Não pago')
+  })
 })

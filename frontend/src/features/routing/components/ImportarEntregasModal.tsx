@@ -77,8 +77,13 @@ export function ImportarEntregasModal({
           cliente: delivery.nomeCliente,
           endereco: delivery.endereco,
           bairro: delivery.bairro,
+          telefone: delivery.telefoneCliente,
           observacao: delivery.observacao,
           valorEntrega: Number(delivery.valorEntrega),
+          valorProduto:
+            delivery.valorProduto != null ? Number(delivery.valorProduto) : null,
+          formaPagamento: delivery.formaPagamento ?? null,
+          statusPagamentoCliente: delivery.statusPagamentoCliente ?? null,
         }),
       )
 

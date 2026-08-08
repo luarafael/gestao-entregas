@@ -58,7 +58,7 @@ export function DataTable<T>({
     )
   }
 
-  const cellPadding = compact ? 'px-2 py-2' : 'px-3 py-3'
+  const cellPadding = compact ? 'px-2.5 py-2.5' : 'px-3 py-3'
 
   return (
     <div
@@ -77,7 +77,7 @@ export function DataTable<T>({
         )}
       >
         <thead>
-          <tr className="border-b border-border/60 text-[10px] uppercase tracking-wide text-muted-foreground">
+          <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
             {columns.map((column) => (
               <th
                 key={column.key}
@@ -97,7 +97,7 @@ export function DataTable<T>({
               {columns.map((column) => (
                 <td
                   key={column.key}
-                  className={cn(cellPadding, column.cellClassName)}
+                  className={cn(cellPadding, 'max-w-0', column.cellClassName)}
                 >
                   {column.render(row)}
                 </td>

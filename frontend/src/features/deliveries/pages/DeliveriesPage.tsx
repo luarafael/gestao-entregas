@@ -253,7 +253,13 @@ export function DeliveriesPage() {
         </div>
       </div>
 
-      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] xl:gap-5">
+      <div
+        className={
+          viewMode === 'cliente'
+            ? 'grid min-w-0 gap-4 xl:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] xl:gap-5'
+            : 'grid min-w-0 gap-4 xl:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] xl:gap-5'
+        }
+      >
         {viewMode === 'motoboy' ? (
           <DeliveryMotoboyForm
             editingDelivery={editingDelivery}
@@ -308,25 +314,25 @@ export function DeliveriesPage() {
           )}
 
           {viewMode === 'cliente' ? (
-            <div className="flex flex-wrap gap-2 border-t border-border/50 pt-3">
+            <div className="flex flex-wrap gap-2 border-t border-border/50 pt-4">
               <Button
-                variant="secondary"
+                variant="whatsapp"
                 size="sm"
                 onClick={() => void handleWhatsAppClick()}
                 isLoading={isPreparingWhatsApp}
                 disabled={deliveries.length === 0}
               >
-                <IconWhatsApp className="mr-1.5 size-3.5" />
-                WhatsApp
+                <IconWhatsApp className="size-4" />
+                Enviar WhatsApp
               </Button>
               <Button
-                variant="secondary"
+                variant="import"
                 size="sm"
                 onClick={() => void handleImportClick()}
                 isLoading={importMutation.isPending || isPreparingImport}
                 disabled={importableCount === 0 && !isPreparingImport}
               >
-                Importar
+                Importar para Motoboy
               </Button>
             </div>
           ) : null}
