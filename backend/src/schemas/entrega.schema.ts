@@ -84,6 +84,10 @@ export const listEntregasSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
   motoboyId: z.string().trim().min(1).optional(),
   nomeCliente: z.string().trim().min(1).optional(),
+  apenasComCliente: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
 })
 
 export type CreateEntregaInput = z.infer<typeof createEntregaSchema>

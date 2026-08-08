@@ -48,7 +48,7 @@ describe('deliveryService', () => {
   it('cria entrega', async () => {
     vi.mocked(apiFetch).mockResolvedValue({ id: '1' })
 
-    await deliveryService.create({
+    await deliveryService.create('motoboy', {
       endereco: 'Rua A',
       bairro: 'Centro',
       valorEntrega: 10,
@@ -61,7 +61,7 @@ describe('deliveryService', () => {
   it('atualiza entrega', async () => {
     vi.mocked(apiFetch).mockResolvedValue({ id: '1' })
 
-    await deliveryService.update('1', {
+    await deliveryService.update('motoboy', '1', {
       endereco: 'Rua B',
       bairro: 'Centro',
       valorEntrega: 15,

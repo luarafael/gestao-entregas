@@ -14,6 +14,7 @@ export interface ListEntregasFilters {
   sortOrder: 'asc' | 'desc'
   motoboyId?: string
   nomeCliente?: string
+  apenasComCliente?: boolean
 }
 
 export class EntregaRepository {
@@ -55,6 +56,8 @@ export class EntregaRepository {
 
     if (filters.nomeCliente) {
       where.nomeCliente = { equals: filters.nomeCliente, mode: 'insensitive' }
+    } else if (filters.apenasComCliente) {
+      where.nomeCliente = { not: null }
     }
 
     if (filters.search) {

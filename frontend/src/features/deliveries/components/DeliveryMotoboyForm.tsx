@@ -5,38 +5,35 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Input, Textarea } fro
 import { MotoboySelect } from '@/shared/components/MotoboySelect'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import {
-  deliveryFormSchema,
-  FORMA_PAGAMENTO_OPTIONS,
-  type DeliveryFormData,
+  deliveryMotoboyFormSchema,
+  type DeliveryMotoboyFormData,
 } from '../schemas/delivery.schema'
 import type { Entrega } from '@/shared/types/api.types'
 
-interface DeliveryFormProps {
+interface DeliveryMotoboyFormProps {
   editingDelivery: Entrega | null
-  onSubmit: (data: DeliveryFormData) => Promise<void>
+  onSubmit: (data: DeliveryMotoboyFormData) => Promise<void>
   onCancelEdit: () => void
   isSubmitting: boolean
 }
 
-const defaultValues: DeliveryFormData = {
+const defaultValues: DeliveryMotoboyFormData = {
   nomeCliente: '',
   endereco: '',
   bairro: '',
   cidade: '',
-  valorProduto: undefined,
-  formaPagamento: undefined,
   valorEntrega: 0,
   observacao: '',
   pagoPeloCliente: false,
   motoboyId: '',
 }
 
-export function DeliveryForm({
+export function DeliveryMotoboyForm({
   editingDelivery,
   onSubmit,
   onCancelEdit,
   isSubmitting,
-}: DeliveryFormProps) {
+}: DeliveryMotoboyFormProps) {
   const isAdmin = useIsAdmin()
 
   const {
@@ -46,8 +43,8 @@ export function DeliveryForm({
     control,
     setError,
     formState: { errors },
-  } = useForm<DeliveryFormData>({
-    resolver: zodResolver(deliveryFormSchema),
+  } = useForm<DeliveryMotoboyFormData>({
+    resolver: zodResolver(deliveryMotoboyFormSchema),
     defaultValues,
   })
 
@@ -58,10 +55,6 @@ export function DeliveryForm({
         endereco: editingDelivery.endereco,
         bairro: editingDelivery.bairro,
         cidade: editingDelivery.cidade ?? '',
-        valorProduto: editingDelivery.valorProduto
-          ? Number(editingDelivery.valorProduto)
-          : undefined,
-        formaPagamento: editingDelivery.formaPagamento ?? undefined,
         valorEntrega: Number(editingDelivery.valorEntrega),
         observacao: editingDelivery.observacao ?? '',
         pagoPeloCliente: editingDelivery.pagoPeloCliente,
@@ -92,7 +85,7 @@ export function DeliveryForm({
   return (
     <Card glass className="h-fit">
       <CardHeader>
-        <CardTitle>{editingDelivery ? 'Editar Entrega' : 'Nova Entrega'}</CardTitle>
+        <CardTitle>{editingDelivery ? 'Editar Entrega' : 'Nova Entrega — Motoboy'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleFormSubmit} className="space-y-4">
@@ -115,7 +108,7 @@ export function DeliveryForm({
           ) : null}
 
           <Input
-            label="Nome do Cliente"
+            label="Nome do Cliente (opcional)"
             placeholder="Ex: João Silva"
             error={errors.nomeCliente?.message}
             {...register('nomeCliente')}
@@ -144,39 +137,7 @@ export function DeliveryForm({
           </div>
 
           <Input
-            label="Valor do produto (opcional)"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0,00"
-            error={errors.valorProduto?.message as string | undefined}
-            {...register('valorProduto', {
-              setValueAs: (value) =>
-                value === '' || Number.isNaN(Number(value))
-                  ? undefined
-                  : Number(value),
-            })}
-          />
-
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-foreground">
-              Forma de pagamento (opcional)
-            </span>
-            <select
-              className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3 text-sm text-foreground"
-              {...register('formaPagamento')}
-            >
-              <option value="">Selecione...</option>
-              {FORMA_PAGAMENTO_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <Input
-            label="Taxa de entrega"
+            label="Valor da entrega"
             type="number"
             step="0.01"
             min="0"

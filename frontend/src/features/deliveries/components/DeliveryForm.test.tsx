@@ -1,15 +1,15 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { DeliveryForm } from './DeliveryForm'
+import { DeliveryMotoboyForm } from './DeliveryMotoboyForm'
 
-describe('DeliveryForm', () => {
+describe('DeliveryMotoboyForm', () => {
   it('exibe erros de validação ao enviar formulário vazio', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()
 
     render(
-      <DeliveryForm
+      <DeliveryMotoboyForm
         editingDelivery={null}
         onSubmit={onSubmit}
         onCancelEdit={() => undefined}

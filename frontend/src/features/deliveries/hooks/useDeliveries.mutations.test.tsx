@@ -53,7 +53,7 @@ describe('useDeliveries mutations', () => {
       criadoEm: '',
     })
 
-    const { result } = renderHook(() => useUpdateDelivery(), {
+    const { result } = renderHook(() => useUpdateDelivery('motoboy'), {
       wrapper: createWrapper(),
     })
 

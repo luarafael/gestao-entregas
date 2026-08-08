@@ -73,7 +73,7 @@ describe('useDeliveries', () => {
       criadoEm: '',
     })
 
-    const { result } = renderHook(() => useCreateDelivery(), {
+    const { result } = renderHook(() => useCreateDelivery('motoboy'), {
       wrapper: createWrapper(),
     })
 

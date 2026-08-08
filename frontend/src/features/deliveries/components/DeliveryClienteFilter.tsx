@@ -4,7 +4,6 @@ import type { DateFilter } from '../schemas/delivery.schema'
 
 interface DeliveryClienteFilterProps {
   filter: DateFilter
-  motoboyId?: string
   value: string
   onChange: (value: string) => void
   className?: string
@@ -12,12 +11,11 @@ interface DeliveryClienteFilterProps {
 
 export function DeliveryClienteFilter({
   filter,
-  motoboyId,
   value,
   onChange,
   className,
 }: DeliveryClienteFilterProps) {
-  const clientesQuery = useDeliveryClientes({ filter, motoboyId })
+  const clientesQuery = useDeliveryClientes({ filter })
   const clientes = clientesQuery.data?.clientes ?? []
 
   return (
@@ -34,7 +32,7 @@ export function DeliveryClienteFilter({
         onChange={(event) => onChange(event.target.value)}
         className="h-9 min-w-44 rounded-lg border border-border/70 bg-surface/50 px-2 text-sm text-foreground disabled:opacity-60"
       >
-        <option value="">Todos</option>
+        <option value="">Todos os clientes</option>
         {clientes.map((cliente) => (
           <option key={cliente} value={cliente}>
             {cliente}

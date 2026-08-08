@@ -10,12 +10,14 @@ import {
   SORT_OPTIONS,
   type DateFilter,
   type DeliveryFilters,
+  type DeliveryViewMode,
   type SortField,
   type SortOrder,
 } from '../schemas/delivery.schema'
 import { DeliveryClienteFilter } from './DeliveryClienteFilter'
 
 interface DeliveryFiltersBarProps {
+  viewMode: DeliveryViewMode
   filters: DeliveryFilters
   onSearchChange: (search: string) => void
   onFilterChange: (filter: DateFilter) => void
@@ -26,6 +28,7 @@ interface DeliveryFiltersBarProps {
 }
 
 export function DeliveryFiltersBar({
+  viewMode,
   filters,
   onSearchChange,
   onFilterChange,
@@ -40,7 +43,11 @@ export function DeliveryFiltersBar({
   return (
     <div className="space-y-4">
       <Input
-        placeholder="Pesquisar por cliente, endereço ou bairro..."
+        placeholder={
+          viewMode === 'cliente'
+            ? 'Pesquisar por cliente, endereço ou bairro...'
+            : 'Pesquisar por cliente, endereço ou bairro...'
+        }
         value={filters.search}
         onChange={(event) => onSearchChange(event.target.value)}
       />
@@ -64,23 +71,23 @@ export function DeliveryFiltersBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        {isAdmin ? (
-          <>
-            <MotoboySelect
-              id="filtro-motoboy-entregas"
-              value={motoboyValue}
-              allowAll
-              onChange={(value) =>
-                onMotoboyChange(value === 'all' ? undefined : value)
-              }
-            />
-            <DeliveryClienteFilter
-              filter={filters.filter}
-              motoboyId={filters.motoboyId}
-              value={filters.nomeCliente ?? ''}
-              onChange={(value) => onClienteChange(value || undefined)}
-            />
-          </>
+        {viewMode === 'motoboy' && isAdmin ? (
+          <MotoboySelect
+            id="filtro-motoboy-entregas"
+            value={motoboyValue}
+            allowAll
+            onChange={(value) =>
+              onMotoboyChange(value === 'all' ? undefined : value)
+            }
+          />
+        ) : null}
+
+        {viewMode === 'cliente' ? (
+          <DeliveryClienteFilter
+            filter={filters.filter}
+            value={filters.nomeCliente ?? ''}
+            onChange={(value) => onClienteChange(value || undefined)}
+          />
         ) : null}
 
         <label className="flex items-center gap-2 text-sm text-muted-foreground">

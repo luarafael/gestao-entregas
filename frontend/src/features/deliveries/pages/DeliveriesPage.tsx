@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal, Pagination, EmptyState } from '@/shared/components/ui'
 import { IconPackage } from '@/shared/components/icons'
+import { cn } from '@/shared/utils/cn'
 import { useDebounce } from '@/shared/hooks'
 import {
   useCreateDelivery,
@@ -8,11 +9,17 @@ import {
   useDeliveries,
   useUpdateDelivery,
 } from '../hooks/useDeliveries'
-import { DeliveryForm } from '../components/DeliveryForm'
+import { DeliveryMotoboyForm } from '../components/DeliveryMotoboyForm'
+import { DeliveryClienteForm } from '../components/DeliveryClienteForm'
 import { DeliveryFiltersBar } from '../components/DeliveryFiltersBar'
 import { DeliveryTable } from '../components/DeliveryTable'
 import { routingService } from '@/features/routing/services/routing.service'
-import type { DeliveryFilters, DeliveryFormData } from '../schemas/delivery.schema'
+import type {
+  DeliveryClienteFormData,
+  DeliveryFilters,
+  DeliveryMotoboyFormData,
+  DeliveryViewMode,
+} from '../schemas/delivery.schema'
 import type { Entrega } from '@/shared/types/api.types'
 
 const initialFilters: DeliveryFilters = {
@@ -24,7 +31,13 @@ const initialFilters: DeliveryFilters = {
   sortOrder: 'desc',
 }
 
+const VIEW_MODE_OPTIONS: { value: DeliveryViewMode; label: string }[] = [
+  { value: 'motoboy', label: 'Motoboy' },
+  { value: 'cliente', label: 'Cliente' },
+]
+
 export function DeliveriesPage() {
+  const [viewMode, setViewMode] = useState<DeliveryViewMode>('motoboy')
   const [filters, setFilters] = useState<DeliveryFilters>(initialFilters)
   const [editingDelivery, setEditingDelivery] = useState<Entrega | null>(null)
   const [deletingDelivery, setDeletingDelivery] = useState<Entrega | null>(null)
@@ -34,11 +47,14 @@ export function DeliveriesPage() {
   const queryFilters: DeliveryFilters = {
     ...filters,
     search: debouncedSearch,
+    ...(viewMode === 'cliente'
+      ? { apenasComCliente: true, motoboyId: undefined }
+      : { nomeCliente: undefined, apenasComCliente: undefined }),
   }
 
   const { data, isLoading, isFetching, isError, refetch } = useDeliveries(queryFilters)
-  const createMutation = useCreateDelivery()
-  const updateMutation = useUpdateDelivery()
+  const createMutation = useCreateDelivery(viewMode)
+  const updateMutation = useUpdateDelivery(viewMode)
   const deleteMutation = useDeleteDelivery()
 
   const deliveries = data?.data ?? []
@@ -59,40 +75,62 @@ export function DeliveriesPage() {
     }))
   }
 
-  const handleSubmit = async (formData: DeliveryFormData) => {
+  const handleViewModeChange = (mode: DeliveryViewMode) => {
+    setViewMode(mode)
+    setEditingDelivery(null)
+    setFilters((current) => ({
+      ...current,
+      page: 1,
+      motoboyId: undefined,
+      nomeCliente: undefined,
+    }))
+  }
+
+  const handleMotoboySubmit = async (formData: DeliveryMotoboyFormData) => {
     if (editingDelivery) {
       await updateMutation.mutateAsync({ id: editingDelivery.id, data: formData })
-
-      try {
-        const linked = await routingService.findByEntrega(editingDelivery.id)
-        if (linked.length > 0) {
-          const shouldSync = window.confirm(
-            'Esta entrega faz parte de uma rota planejada. Deseja atualizar também no Planejador?',
-          )
-          if (shouldSync) {
-            await routingService.syncEntrega({
-              entregaId: editingDelivery.id,
-              cliente: formData.nomeCliente || null,
-              endereco: [
-                formData.endereco,
-                formData.bairro,
-                formData.cidade,
-              ]
-                .filter(Boolean)
-                .join(' - '),
-              bairro: formData.bairro,
-              observacao: formData.observacao || null,
-              valorEntrega: formData.valorEntrega,
-            })
-          }
-        }
-      } catch {
-        // Sync is best-effort; delivery update already succeeded.
-      }
-
+      await syncPlannerIfNeeded(editingDelivery.id, formData)
       setEditingDelivery(null)
     } else {
       await createMutation.mutateAsync(formData)
+    }
+  }
+
+  const handleClienteSubmit = async (formData: DeliveryClienteFormData) => {
+    if (editingDelivery) {
+      await updateMutation.mutateAsync({ id: editingDelivery.id, data: formData })
+      await syncPlannerIfNeeded(editingDelivery.id, formData)
+      setEditingDelivery(null)
+    } else {
+      await createMutation.mutateAsync(formData)
+    }
+  }
+
+  const syncPlannerIfNeeded = async (
+    entregaId: string,
+    formData: DeliveryMotoboyFormData | DeliveryClienteFormData,
+  ) => {
+    try {
+      const linked = await routingService.findByEntrega(entregaId)
+      if (linked.length === 0) return
+
+      const shouldSync = window.confirm(
+        'Esta entrega faz parte de uma rota planejada. Deseja atualizar também no Planejador?',
+      )
+      if (!shouldSync) return
+
+      await routingService.syncEntrega({
+        entregaId,
+        cliente: formData.nomeCliente || null,
+        endereco: [formData.endereco, formData.bairro, formData.cidade]
+          .filter(Boolean)
+          .join(' - '),
+        bairro: formData.bairro,
+        observacao: formData.observacao || null,
+        valorEntrega: formData.valorEntrega,
+      })
+    } catch {
+      // Sync is best-effort; delivery update already succeeded.
     }
   }
 
@@ -107,23 +145,55 @@ export function DeliveriesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Entregas</h2>
-        <p className="text-sm text-muted-foreground">
-          Cadastre, edite e acompanhe as entregas. Filtre por motoboy ou cliente.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">Entregas</h2>
+          <p className="text-sm text-muted-foreground">
+            {viewMode === 'motoboy'
+              ? 'Cadastre corridas do motoboy e filtre por motoboy.'
+              : 'Cadastre entregas para clientes e acompanhe o histórico por cliente.'}
+          </p>
+        </div>
+
+        <div className="flex rounded-xl border border-border/60 bg-surface/40 p-1">
+          {VIEW_MODE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleViewModeChange(option.value)}
+              className={cn(
+                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                viewMode === option.value
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
-        <DeliveryForm
-          editingDelivery={editingDelivery}
-          onSubmit={handleSubmit}
-          onCancelEdit={() => setEditingDelivery(null)}
-          isSubmitting={createMutation.isPending || updateMutation.isPending}
-        />
+        {viewMode === 'motoboy' ? (
+          <DeliveryMotoboyForm
+            editingDelivery={editingDelivery}
+            onSubmit={handleMotoboySubmit}
+            onCancelEdit={() => setEditingDelivery(null)}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+          />
+        ) : (
+          <DeliveryClienteForm
+            editingDelivery={editingDelivery}
+            onSubmit={handleClienteSubmit}
+            onCancelEdit={() => setEditingDelivery(null)}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+          />
+        )}
 
         <div className="space-y-4 rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
           <DeliveryFiltersBar
+            viewMode={viewMode}
             filters={filters}
             onSearchChange={(search) => updateFilters({ search, page: 1 })}
             onFilterChange={(filter) => updateFilters({ filter, page: 1 })}
@@ -152,6 +222,7 @@ export function DeliveriesPage() {
             />
           ) : (
             <DeliveryTable
+              viewMode={viewMode}
               deliveries={deliveries}
               isLoading={isLoading}
               isFetching={isFetching}

@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { invalidateDeliveryRelated } from '@/shared/lib/invalidate-related'
 import { deliveryService } from '../services/delivery.service'
-import type { DeliveryFilters, DeliveryFormData } from '../schemas/delivery.schema'
+import type {
+  DeliveryClienteFormData,
+  DeliveryFilters,
+  DeliveryMotoboyFormData,
+  DeliveryViewMode,
+} from '../schemas/delivery.schema'
 import { toast } from '@/shared/stores/toast.store'
 
 export const DELIVERIES_QUERY_KEY = 'deliveries'
@@ -15,7 +20,7 @@ export function useDeliveries(filters: DeliveryFilters) {
 }
 
 export function useDeliveryClientes(
-  filters: Pick<DeliveryFilters, 'filter' | 'motoboyId'>,
+  filters: Pick<DeliveryFilters, 'filter'>,
   enabled = true,
 ) {
   return useQuery({
@@ -26,11 +31,12 @@ export function useDeliveryClientes(
   })
 }
 
-export function useCreateDelivery() {
+export function useCreateDelivery(viewMode: DeliveryViewMode) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: DeliveryFormData) => deliveryService.create(data),
+    mutationFn: (data: DeliveryMotoboyFormData | DeliveryClienteFormData) =>
+      deliveryService.create(viewMode, data),
     onSuccess: () => {
       invalidateDeliveryRelated(queryClient)
       toast('Entrega salva com sucesso!', 'success')
@@ -41,12 +47,17 @@ export function useCreateDelivery() {
   })
 }
 
-export function useUpdateDelivery() {
+export function useUpdateDelivery(viewMode: DeliveryViewMode) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: DeliveryFormData }) =>
-      deliveryService.update(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string
+      data: DeliveryMotoboyFormData | DeliveryClienteFormData
+    }) => deliveryService.update(viewMode, id, data),
     onSuccess: () => {
       invalidateDeliveryRelated(queryClient)
       toast('Entrega atualizada com sucesso!', 'success')

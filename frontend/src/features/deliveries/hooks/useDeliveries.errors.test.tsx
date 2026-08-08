@@ -35,7 +35,7 @@ describe('useCreateDelivery errors', () => {
   it('exibe toast de erro', async () => {
     vi.mocked(deliveryService.create).mockRejectedValue(new Error('fail'))
 
-    const { result } = renderHook(() => useCreateDelivery(), {
+    const { result } = renderHook(() => useCreateDelivery('motoboy'), {
       wrapper: createWrapper(),
     })
 
