@@ -24,6 +24,10 @@ function buildQuery(filters: DeliveryFilters): string {
     params.set('motoboyId', filters.motoboyId)
   }
 
+  if (filters.nomeCliente) {
+    params.set('nomeCliente', filters.nomeCliente)
+  }
+
   return params.toString()
 }
 
@@ -33,6 +37,8 @@ function toApiPayload(data: DeliveryFormData) {
     endereco: data.endereco,
     bairro: data.bairro,
     cidade: data.cidade,
+    valorProduto: data.valorProduto,
+    formaPagamento: data.formaPagamento,
     valorEntrega: data.valorEntrega,
     observacao: data.observacao,
     pagoPeloCliente: data.pagoPeloCliente ?? false,
@@ -43,6 +49,20 @@ function toApiPayload(data: DeliveryFormData) {
 export const deliveryService = {
   list(filters: DeliveryFilters) {
     return apiFetch<PaginatedResponse<Entrega>>(`/api/entregas?${buildQuery(filters)}`)
+  },
+
+  listClientes(filters: Pick<DeliveryFilters, 'filter' | 'motoboyId' | 'nomeCliente'>) {
+    const params = new URLSearchParams()
+    params.set('page', '1')
+    params.set('limit', '1')
+    params.set('filter', filters.filter)
+    if (filters.filter === 'today') {
+      params.set('referenceDate', getTodayInputDate())
+    }
+    if (filters.motoboyId) {
+      params.set('motoboyId', filters.motoboyId)
+    }
+    return apiFetch<{ clientes: string[] }>(`/api/entregas/clientes?${params.toString()}`)
   },
 
   getById(id: string) {

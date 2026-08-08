@@ -14,6 +14,8 @@ export interface Entrega {
   bairro: string
   cidade: string | null
   observacao: string | null
+  valorProduto: string | null
+  formaPagamento: 'DINHEIRO' | 'PIX' | 'CARTAO' | null
   valorEntrega: string
   pagoPeloCliente: boolean
   status: 'ENTREGUE' | 'CANCELADA'

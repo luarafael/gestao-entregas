@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -16,7 +15,7 @@ import {
   Textarea,
 } from '@/shared/components/ui'
 import { IconReceipt, IconTrending } from '@/shared/components/icons'
-import { MotoboySelect, type MotoboySelectValue } from '@/shared/components/MotoboySelect'
+import { MotoboySelect } from '@/shared/components/MotoboySelect'
 import { ClienteSelect } from '@/shared/components/ClienteSelect'
 import { formatCurrency } from '@/shared/utils/cn'
 import {
@@ -90,8 +89,6 @@ export function PrestacaoPage() {
   const [nomeCliente, setNomeCliente] = useState('')
   const [historyFilter, setHistoryFilter] = useState<PrestacaoHistoricoFilter>('all')
   const [historyPage, setHistoryPage] = useState(1)
-  const [whatsappEntregasScope, setWhatsappEntregasScope] =
-    useState<MotoboySelectValue>('all')
 
   const [generatedResult, setGeneratedResult] =
     useState<GeneratePrestacaoResponse | null>(null)
@@ -185,25 +182,6 @@ export function PrestacaoPage() {
     clienteForm.setValue('data', selectedDate)
   }, [selectedDate, clienteForm])
 
-  const empresaWhatsappQuery = useQuery({
-    queryKey: [
-      'prestacoes',
-      'whatsapp',
-      generatedResult?.prestacao.id,
-      whatsappEntregasScope,
-    ],
-    queryFn: () =>
-      prestacaoService.getWhatsAppText(
-        generatedResult!.prestacao.id,
-        whatsappEntregasScope === 'all' ? undefined : whatsappEntregasScope,
-      ),
-    enabled:
-      prestacaoScope === 'empresa' && Boolean(generatedResult?.prestacao.id),
-  })
-
-  const empresaWhatsappText =
-    empresaWhatsappQuery.data?.text ?? generatedResult?.whatsappText ?? ''
-
   const handleScopeChange = (scope: PrestacaoScope) => {
     const currentDate = empresaDate
     setPrestacaoScope(scope)
@@ -211,7 +189,6 @@ export function PrestacaoPage() {
     setGeneratedResult(null)
     setMotoboyGenerated(null)
     setClienteGenerated(null)
-    setWhatsappEntregasScope('all')
     if (scope !== 'motoboy') setMotoboyId('')
     if (scope !== 'cliente') setNomeCliente('')
     if (scope === 'cliente') {
@@ -240,7 +217,6 @@ export function PrestacaoPage() {
     setGeneratedResult(result)
     setMotoboyGenerated(null)
     setClienteGenerated(null)
-    setWhatsappEntregasScope('all')
     setHistoryPage(1)
   })
 
@@ -268,15 +244,9 @@ export function PrestacaoPage() {
     setHistoryPage(1)
   })
 
-  const resolveEmpresaMotoboyFilter = () =>
-    whatsappEntregasScope === 'all' ? undefined : whatsappEntregasScope
-
   const fetchHistoricoText = async (item: PrestacaoHistoricoItem) => {
     if (item.tipo === 'empresa') {
-      const { text } = await prestacaoService.getWhatsAppText(
-        item.id,
-        resolveEmpresaMotoboyFilter(),
-      )
+      const { text } = await prestacaoService.getWhatsAppText(item.id)
       return text
     }
 
@@ -458,9 +428,10 @@ export function PrestacaoPage() {
         : previewQuery.isError
 
   const scopeDescription = {
-    empresa: 'Feche o dia da empresa com todos os motoboys agrupados na mensagem.',
-    motoboy: 'Gere a prestação de um motoboy específico.',
-    cliente: 'Gere a prestação de entregas para um cliente específico.',
+    empresa:
+      'Feche o dia da empresa para funcionários: pendências, repasses e totais.',
+    motoboy: 'Gere a prestação para o motoboy selecionado.',
+    cliente: 'Gere a prestação para o cliente selecionado.',
   }
 
   return (
@@ -609,16 +580,6 @@ export function PrestacaoPage() {
                 : empresaForm.register('observacoes'))}
             />
 
-            {prestacaoScope === 'empresa' ? (
-              <MotoboySelect
-                id="whatsapp-entregas-scope"
-                value={whatsappEntregasScope}
-                onChange={setWhatsappEntregasScope}
-                label="Entregas na mensagem"
-                allowAll
-              />
-            ) : null}
-
             <Button
               type="submit"
               size="lg"
@@ -660,19 +621,12 @@ export function PrestacaoPage() {
       {generatedResult && prestacaoScope === 'empresa' ? (
         <div className="space-y-4">
           <PrestacaoResultCard result={generatedResult} />
-          <MotoboySelect
-            id="generated-whatsapp-scope"
-            value={whatsappEntregasScope}
-            onChange={setWhatsappEntregasScope}
-            label="Entregas na mensagem"
-            allowAll
-          />
           <WhatsAppPreview
-            text={empresaWhatsappText}
-            onCopy={() => copyMutation.mutate(empresaWhatsappText)}
+            text={generatedResult.whatsappText}
+            onCopy={() => copyMutation.mutate(generatedResult.whatsappText)}
             onSend={() => {
               setSendPayload({
-                baseText: empresaWhatsappText,
+                baseText: generatedResult.whatsappText,
               })
               setSendModalOpen(true)
             }}
@@ -737,18 +691,6 @@ export function PrestacaoPage() {
             }}
           />
         </div>
-
-        {prestacaoScope === 'empresa' ? (
-          <div className="mb-4">
-            <MotoboySelect
-              id="historico-whatsapp-scope"
-              value={whatsappEntregasScope}
-              onChange={setWhatsappEntregasScope}
-              label="Entregas na mensagem (empresa)"
-              allowAll
-            />
-          </div>
-        ) : null}
 
         {historicoQuery.isError ? (
           <EmptyState

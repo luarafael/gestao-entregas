@@ -13,6 +13,7 @@ export interface ListEntregasFilters {
   sortBy: 'horario' | 'nomeCliente' | 'bairro' | 'valorEntrega'
   sortOrder: 'asc' | 'desc'
   motoboyId?: string
+  nomeCliente?: string
 }
 
 export class EntregaRepository {
@@ -52,6 +53,10 @@ export class EntregaRepository {
       where.motoboyId = filters.motoboyId
     }
 
+    if (filters.nomeCliente) {
+      where.nomeCliente = { equals: filters.nomeCliente, mode: 'insensitive' }
+    }
+
     if (filters.search) {
       where.OR = [
         { nomeCliente: { contains: filters.search, mode: 'insensitive' } },
@@ -75,6 +80,28 @@ export class EntregaRepository {
     ])
 
     return { data, total }
+  }
+
+  async findDistinctClientes(filters: Omit<ListEntregasFilters, 'page' | 'limit' | 'sortBy' | 'sortOrder'>) {
+    const reference = filters.referenceDate ?? new Date()
+    const { start, end } = getUtcDateOnlyRange(filters.filter, reference)
+
+    const where: Prisma.EntregaWhereInput = {
+      data: { gte: start, lte: end },
+      nomeCliente: { not: null },
+      ...(filters.motoboyId ? { motoboyId: filters.motoboyId } : {}),
+    }
+
+    const rows = await prisma.entrega.findMany({
+      where,
+      select: { nomeCliente: true },
+      distinct: ['nomeCliente'],
+      orderBy: { nomeCliente: 'asc' },
+    })
+
+    return rows
+      .map((row) => row.nomeCliente?.trim())
+      .filter((nome): nome is string => Boolean(nome))
   }
 
   async findByDate(

@@ -15,20 +15,7 @@ import {
   toUtcDateOnlyFromBusinessTz,
 } from '../utils/date.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
-import { generateWhatsAppText } from './whatsapp.service.js'
-
-function mapEntregasForWhatsApp(
-  entregas: Awaited<ReturnType<typeof entregaRepository.findByDate>>,
-) {
-  return entregas.map((entrega) => ({
-    bairro: entrega.bairro,
-    nomeCliente: entrega.nomeCliente,
-    valorEntrega: entrega.valorEntrega,
-    pagoPeloCliente: entrega.pagoPeloCliente,
-    motoboyNome: entrega.motoboy?.nome ?? null,
-    motoboyId: entrega.motoboyId,
-  }))
-}
+import { generateEmpresaPrestacaoWhatsAppText } from './whatsapp.service.js'
 
 export class PrestacaoService {
   private normalizeDate(input?: Date) {
@@ -137,9 +124,8 @@ export class PrestacaoService {
       prestacao.id,
     )
 
-    const whatsappText = generateWhatsAppText(
-      prestacao,
-      mapEntregasForWhatsApp(entregas),
+    const whatsappText = generateEmpresaPrestacaoWhatsAppText(
+      { ...prestacao, observacoes: prestacao.observacoes },
       totals.pendencias,
       totals.prestacoesMotoboy,
     )
@@ -213,48 +199,30 @@ export class PrestacaoService {
     return prestacaoRepository.delete(id)
   }
 
-  async getWhatsAppText(id: string, options?: PrestacaoWhatsAppQuery) {
+  async getWhatsAppText(id: string, _options?: PrestacaoWhatsAppQuery) {
     const prestacao = await this.findById(id)
 
     const date = this.resolveStoredDate(prestacao.data)
 
-    const [entregas, pendencias, motoboy] = await Promise.all([
-      entregaRepository.findByDate(
-        date,
-        options?.motoboyId ? { motoboyId: options.motoboyId } : undefined,
-      ),
+    const [pendencias, motoboy] = await Promise.all([
       pendenciaRepository.findPendingCliente(),
       prestacaoMotoboyRepository.findByDate(date, 'APROVADA'),
     ])
 
-    const prestacoesMotoboy = motoboy
-      .filter((item) =>
-        options?.motoboyId ? item.motoboyId === options.motoboyId : true,
-      )
-      .map((item) => ({
-        id: item.id,
-        motoboyId: item.motoboyId,
-        motoboyNome: item.motoboy.nome,
-        totalEntregas: item.totalEntregas,
-        valorFinal: Number(item.valorFinal),
-        status: item.status,
-        pix: item.motoboy.pix,
-      }))
+    const prestacoesMotoboy = motoboy.map((item) => ({
+      id: item.id,
+      motoboyId: item.motoboyId,
+      motoboyNome: item.motoboy.nome,
+      totalEntregas: item.totalEntregas,
+      valorFinal: Number(item.valorFinal),
+      status: item.status,
+      pix: item.motoboy.pix,
+    }))
 
-    const allEntregas = await entregaRepository.findByDate(date)
-    const mappedEntregas = mapEntregasForWhatsApp(
-      options?.motoboyId ? entregas : allEntregas,
-    )
-
-    return generateWhatsAppText(
-      prestacao,
-      mappedEntregas,
+    return generateEmpresaPrestacaoWhatsAppText(
+      { ...prestacao, observacoes: prestacao.observacoes },
       pendencias,
       prestacoesMotoboy,
-      {
-        motoboyId: options?.motoboyId,
-        agruparPorMotoboy: !options?.motoboyId,
-      },
     )
   }
 

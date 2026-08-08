@@ -19,8 +19,13 @@ function mapEntregasForWhatsApp(
 ) {
   return entregas.map((entrega) => ({
     bairro: entrega.bairro,
+    endereco: entrega.endereco,
+    cidade: entrega.cidade,
     nomeCliente: entrega.nomeCliente,
     valorEntrega: entrega.valorEntrega,
+    valorProduto: entrega.valorProduto,
+    formaPagamento: entrega.formaPagamento,
+    observacao: entrega.observacao,
     pagoPeloCliente: entrega.pagoPeloCliente,
     motoboyNome: entrega.motoboy?.nome ?? null,
     motoboyId: entrega.motoboyId,
@@ -121,6 +126,7 @@ export class PrestacaoClienteService {
       nomeCliente,
       prestacao,
       mapEntregasForWhatsApp(entregas),
+      prestacao.observacoes,
     )
 
     return {
@@ -149,6 +155,7 @@ export class PrestacaoClienteService {
       prestacao.nomeCliente,
       prestacao,
       mapEntregasForWhatsApp(entregas),
+      prestacao.observacoes,
     )
   }
 

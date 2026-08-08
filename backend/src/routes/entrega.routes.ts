@@ -78,6 +78,18 @@ entregaRoutes.get(
 )
 
 entregaRoutes.get(
+  '/clientes',
+  validateQuery(listEntregasSchema),
+  asyncHandler(async (req, res) => {
+    const result = await entregaService.listClientes(
+      req.user!,
+      getValidatedQuery<ListEntregasInput>(req),
+    )
+    res.json(result)
+  }),
+)
+
+entregaRoutes.get(
   '/',
   validateQuery(listEntregasSchema),
   asyncHandler(async (req, res) => {

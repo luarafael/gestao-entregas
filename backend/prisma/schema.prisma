@@ -12,6 +12,12 @@ enum StatusEntrega {
   CANCELADA
 }
 
+enum FormaPagamentoEntrega {
+  DINHEIRO
+  PIX
+  CARTAO
+}
+
 enum StatusPendencia {
   PENDENTE
   RECEBIDO
@@ -31,7 +37,9 @@ model Entrega {
   bairro          String
   cidade          String?
   observacao      String?
-  valorEntrega    Decimal       @db.Decimal(10, 2)
+  valorProduto    Decimal?              @map("valor_produto") @db.Decimal(10, 2)
+  formaPagamento  FormaPagamentoEntrega? @map("forma_pagamento")
+  valorEntrega    Decimal               @db.Decimal(10, 2)
   pagoPeloCliente Boolean       @default(false)
   status          StatusEntrega @default(ENTREGUE)
   motoboyId       String?       @map("motoboy_id")

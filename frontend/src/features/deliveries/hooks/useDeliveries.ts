@@ -14,6 +14,18 @@ export function useDeliveries(filters: DeliveryFilters) {
   })
 }
 
+export function useDeliveryClientes(
+  filters: Pick<DeliveryFilters, 'filter' | 'motoboyId'>,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: [DELIVERIES_QUERY_KEY, 'clientes', filters],
+    queryFn: () => deliveryService.listClientes(filters),
+    enabled,
+    staleTime: 10_000,
+  })
+}
+
 export function useCreateDelivery() {
   const queryClient = useQueryClient()
 

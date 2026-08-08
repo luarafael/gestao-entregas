@@ -51,6 +51,18 @@ export class EntregaService {
     return buildPaginatedResult(data, total, filters.page, filters.limit)
   }
 
+  async listClientes(user: AuthenticatedUser, filters: ListEntregasInput) {
+    const motoboyId = resolveMotoboyScope(user, filters.motoboyId)
+    const clientes = await entregaRepository.findDistinctClientes({
+      search: filters.search,
+      filter: filters.filter,
+      referenceDate: filters.referenceDate,
+      motoboyId,
+      nomeCliente: filters.nomeCliente,
+    })
+    return { clientes }
+  }
+
   async update(user: AuthenticatedUser, id: string, input: UpdateEntregaInput) {
     const entrega = await this.findById(user, id)
     assertOwnsResource(user, entrega.motoboyId, 'Você não pode editar esta entrega')

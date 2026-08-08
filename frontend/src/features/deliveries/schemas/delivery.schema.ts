@@ -1,14 +1,27 @@
 import { z } from 'zod'
 
+export type FormaPagamentoEntrega = 'DINHEIRO' | 'PIX' | 'CARTAO'
+
+export const FORMA_PAGAMENTO_OPTIONS: {
+  value: FormaPagamentoEntrega
+  label: string
+}[] = [
+  { value: 'DINHEIRO', label: 'Dinheiro' },
+  { value: 'PIX', label: 'PIX' },
+  { value: 'CARTAO', label: 'Cartão' },
+]
+
 export const deliveryFormSchema = z
   .object({
     nomeCliente: z.string().trim().optional(),
     endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
     bairro: z.string().trim().min(1, 'Bairro é obrigatório'),
     cidade: z.string().trim().optional(),
+    valorProduto: z.number().min(0, 'Valor do produto inválido').optional(),
+    formaPagamento: z.enum(['DINHEIRO', 'PIX', 'CARTAO']).optional(),
     valorEntrega: z
       .number({ message: 'Valor é obrigatório' })
-      .positive('Valor deve ser maior que zero'),
+      .positive('Taxa de entrega deve ser maior que zero'),
     observacao: z.string().trim().optional(),
     pagoPeloCliente: z.boolean().optional(),
     motoboyId: z.string().trim().optional(),
@@ -39,6 +52,7 @@ export interface DeliveryFilters {
   sortBy: SortField
   sortOrder: SortOrder
   motoboyId?: string
+  nomeCliente?: string
 }
 
 export const DATE_FILTER_OPTIONS: { value: DateFilter; label: string }[] = [

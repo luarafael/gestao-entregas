@@ -66,6 +66,8 @@ describe('useDeliveries', () => {
       cidade: null,
       observacao: null,
       valorEntrega: '10',
+      valorProduto: null,
+      formaPagamento: null,
       pagoPeloCliente: false,
       status: 'ENTREGUE',
       criadoEm: '',

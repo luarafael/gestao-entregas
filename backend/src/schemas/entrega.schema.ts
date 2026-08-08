@@ -32,12 +32,16 @@ export type MonitoramentoEventosQuery = z.infer<
   typeof monitoramentoEventosQuerySchema
 >
 
+const formaPagamentoSchema = z.enum(['DINHEIRO', 'PIX', 'CARTAO'])
+
 const entregaBaseSchema = z.object({
   nomeCliente: z.string().trim().optional(),
   endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
   bairro: z.string().trim().min(1, 'Bairro é obrigatório'),
   cidade: z.string().trim().optional(),
-  valorEntrega: z.coerce.number().positive('Valor deve ser maior que zero'),
+  valorProduto: z.coerce.number().min(0, 'Valor do produto inválido').optional(),
+  formaPagamento: formaPagamentoSchema.optional(),
+  valorEntrega: z.coerce.number().positive('Valor da taxa de entrega deve ser maior que zero'),
   observacao: z.string().trim().optional(),
   pagoPeloCliente: z.boolean().optional().default(false),
   motoboyId: z.string().trim().min(1).optional(),
@@ -79,6 +83,7 @@ export const listEntregasSchema = z.object({
     .default('horario'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
   motoboyId: z.string().trim().min(1).optional(),
+  nomeCliente: z.string().trim().min(1).optional(),
 })
 
 export type CreateEntregaInput = z.infer<typeof createEntregaSchema>

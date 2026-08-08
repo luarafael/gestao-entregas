@@ -8,7 +8,7 @@ interface PrestacaoScopeSelectProps {
 }
 
 const options: { value: PrestacaoScope; label: string }[] = [
-  { value: 'empresa', label: 'Empresa (contador)' },
+  { value: 'empresa', label: 'Empresa' },
   { value: 'motoboy', label: 'Motoboy' },
   { value: 'cliente', label: 'Cliente' },
 ]

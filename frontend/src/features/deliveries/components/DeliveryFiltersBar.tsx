@@ -13,6 +13,7 @@ import {
   type SortField,
   type SortOrder,
 } from '../schemas/delivery.schema'
+import { DeliveryClienteFilter } from './DeliveryClienteFilter'
 
 interface DeliveryFiltersBarProps {
   filters: DeliveryFilters
@@ -21,6 +22,7 @@ interface DeliveryFiltersBarProps {
   onSortByChange: (sortBy: SortField) => void
   onSortOrderChange: (sortOrder: SortOrder) => void
   onMotoboyChange: (motoboyId?: string) => void
+  onClienteChange: (nomeCliente?: string) => void
 }
 
 export function DeliveryFiltersBar({
@@ -30,6 +32,7 @@ export function DeliveryFiltersBar({
   onSortByChange,
   onSortOrderChange,
   onMotoboyChange,
+  onClienteChange,
 }: DeliveryFiltersBarProps) {
   const isAdmin = useIsAdmin()
   const motoboyValue: MotoboySelectValue = filters.motoboyId ?? 'all'
@@ -62,14 +65,22 @@ export function DeliveryFiltersBar({
 
       <div className="flex flex-wrap items-center gap-3">
         {isAdmin ? (
-          <MotoboySelect
-            id="filtro-motoboy-entregas"
-            value={motoboyValue}
-            allowAll
-            onChange={(value) =>
-              onMotoboyChange(value === 'all' ? undefined : value)
-            }
-          />
+          <>
+            <MotoboySelect
+              id="filtro-motoboy-entregas"
+              value={motoboyValue}
+              allowAll
+              onChange={(value) =>
+                onMotoboyChange(value === 'all' ? undefined : value)
+              }
+            />
+            <DeliveryClienteFilter
+              filter={filters.filter}
+              motoboyId={filters.motoboyId}
+              value={filters.nomeCliente ?? ''}
+              onChange={(value) => onClienteChange(value || undefined)}
+            />
+          </>
         ) : null}
 
         <label className="flex items-center gap-2 text-sm text-muted-foreground">

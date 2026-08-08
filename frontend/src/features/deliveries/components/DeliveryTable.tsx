@@ -2,6 +2,7 @@ import { Button, Badge, DataTable } from '@/shared/components/ui'
 import { IconPackage } from '@/shared/components/icons'
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
+import { FORMA_PAGAMENTO_OPTIONS } from '../schemas/delivery.schema'
 import type { Entrega } from '@/shared/types/api.types'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 
@@ -22,6 +23,11 @@ export function DeliveryTable({
 }: DeliveryTableProps) {
   const canDelete = useIsAdmin()
   const isAdmin = canDelete
+
+  const pagamentoLabel = (value: Entrega['formaPagamento']) => {
+    if (!value) return '—'
+    return FORMA_PAGAMENTO_OPTIONS.find((item) => item.value === value)?.label ?? value
+  }
 
   return (
     <DataTable
@@ -71,8 +77,18 @@ export function DeliveryTable({
           render: (delivery) => delivery.bairro,
         },
         {
-          key: 'valor',
-          header: 'Valor',
+          key: 'produto',
+          header: 'Produto',
+          headerClassName: 'text-right',
+          cellClassName: 'text-right text-muted-foreground',
+          render: (delivery) =>
+            delivery.valorProduto
+              ? formatCurrency(Number(delivery.valorProduto))
+              : '—',
+        },
+        {
+          key: 'taxa',
+          header: 'Taxa',
           headerClassName: 'text-right',
           cellClassName: 'text-right font-medium',
           render: (delivery) => (
@@ -83,6 +99,11 @@ export function DeliveryTable({
               ) : null}
             </div>
           ),
+        },
+        {
+          key: 'pagamento',
+          header: 'Pagamento',
+          render: (delivery) => pagamentoLabel(delivery.formaPagamento),
         },
         {
           key: 'acoes',

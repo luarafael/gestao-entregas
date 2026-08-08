@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  generateEmpresaPrestacaoWhatsAppText,
   generateMotoboyPrestacaoWhatsAppText,
   generateWhatsAppText,
 } from '../services/whatsapp.service.js'
@@ -217,6 +218,45 @@ describe('generateWhatsAppText', () => {
 
     expect(text).toContain('Nenhum repasse aprovado')
     expect(text).toContain('Valor líquido')
+  })
+})
+
+describe('generateEmpresaPrestacaoWhatsAppText', () => {
+  const prestacao = {
+    data: new Date('2026-07-31'),
+    totalEntregas: 2,
+    valorTotal: 55,
+    valorPendencias: 25,
+    valorFinal: 80,
+    valorRepasseMotoboys: 40,
+    valorLiquido: 40,
+    observacoes: 'Repasse até sexta',
+  }
+
+  it('foca em resumo, pendências e repasse sem listar entregas', () => {
+    const text = generateEmpresaPrestacaoWhatsAppText(
+      prestacao,
+      [
+        {
+          id: '1',
+          descricao: 'Pagamento pendente',
+          valor: 25,
+          referenteAoDia: new Date('2026-07-12'),
+          status: 'PENDENTE' as const,
+          criadoEm: new Date(),
+        },
+      ],
+      [{ motoboyNome: 'Carlos', totalEntregas: 2, valorFinal: 40, pix: '11999998888' }],
+    )
+
+    expect(text).toContain('Empresa')
+    expect(text).toContain('Resumo do dia')
+    expect(text).not.toContain('Entregas realizadas')
+    expect(text).not.toContain('Centro')
+    expect(text).toContain('Pendências')
+    expect(text).toContain('Repasse motoboys')
+    expect(text).toContain('PIX: 11999998888')
+    expect(text).toContain('Observações')
   })
 })
 

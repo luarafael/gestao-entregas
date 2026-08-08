@@ -254,36 +254,162 @@ export function generateMotoboyPrestacaoWhatsAppText(
   return lines.join('\n')
 }
 
+export function generateEmpresaPrestacaoWhatsAppText(
+  prestacao: PrestacaoSummary & {
+    valorRepasseMotoboys?: number | { toString(): string }
+    valorLiquido?: number | { toString(): string }
+    observacoes?: string | null
+  },
+  pendencias: PendenciaSummary[],
+  prestacoesMotoboy: MotoboyPrestacaoSummary[] = [],
+): string {
+  const lines: string[] = [
+    `${WA.report} *Prestação de Contas — Empresa*`,
+    `${WA.clock} *Data:* ${formatDateOnlyBR(prestacao.data)}`,
+    '',
+    `${WA.package} *Resumo do dia:*`,
+    `${prestacao.totalEntregas} entrega(s) — ${formatCurrency(Number(prestacao.valorTotal))} em taxas de entrega`,
+    '',
+  ]
+
+  if (pendencias.length > 0) {
+    lines.push(`${WA.hourglass} *Pendências*`, '')
+
+    for (const pendencia of pendencias) {
+      lines.push(`• ${WA.memo} ${pendencia.descricao}`)
+      lines.push(
+        `  ${WA.clock} Referente ao dia: ${formatDateOnlyBR(pendencia.referenteAoDia)}`,
+      )
+      lines.push(`  ${WA.money} ${formatCurrency(Number(pendencia.valor))}`)
+      lines.push('')
+    }
+
+    lines.push(
+      `${WA.warning} *Total pendências:*`,
+      formatCurrency(Number(prestacao.valorPendencias)),
+      '',
+    )
+  }
+
+  lines.push(`${WA.truck} *Repasse motoboys (aprovado):*`, '')
+
+  if (prestacoesMotoboy.length === 0) {
+    lines.push('• Nenhum repasse aprovado', '')
+  } else {
+    for (const item of prestacoesMotoboy) {
+      lines.push(formatMotoboyRepasseLine(item))
+    }
+    lines.push('')
+  }
+
+  lines.push(
+    `${WA.warning} *Total repasse motoboys:*`,
+    formatCurrency(Number(prestacao.valorRepasseMotoboys ?? 0)),
+    '',
+    `${WA.check} *Valor final:*`,
+    formatCurrency(Number(prestacao.valorFinal)),
+    '',
+  )
+
+  if (prestacao.valorLiquido !== undefined) {
+    lines.push(
+      `${WA.check} *Valor líquido (após motoboys):*`,
+      formatCurrency(Number(prestacao.valorLiquido)),
+      '',
+    )
+  }
+
+  const observacoes = prestacao.observacoes?.trim()
+  if (observacoes) {
+    lines.push(`${WA.memo} *Observações:*`, observacoes, '')
+  }
+
+  lines.push(`${WA.thanks} Obrigado!`, '', '---')
+
+  return lines.join('\n')
+}
+
+const FORMA_PAGAMENTO_LABELS: Record<string, string> = {
+  DINHEIRO: 'Dinheiro',
+  PIX: 'PIX',
+  CARTAO: 'Cartão',
+}
+
+interface ClienteEntregaSummary extends EntregaSummary {
+  endereco?: string
+  cidade?: string | null
+  valorProduto?: number | { toString(): string } | null
+  formaPagamento?: string | null
+  observacao?: string | null
+}
+
+function formatFormaPagamento(forma?: string | null) {
+  if (!forma) return null
+  return FORMA_PAGAMENTO_LABELS[forma] ?? forma
+}
+
 export function generateClientePrestacaoWhatsAppText(
   nomeCliente: string,
   prestacao: Pick<PrestacaoSummary, 'data' | 'totalEntregas' | 'valorFinal'>,
-  entregas: EntregaSummary[],
+  entregas: ClienteEntregaSummary[],
+  observacoes?: string | null,
 ): string {
   const lines: string[] = [
     `${WA.report} *Prestação — ${nomeCliente}*`,
     `${WA.clock} *Data:* ${formatDateOnlyBR(prestacao.data)}`,
   ]
 
+  let totalGeral = 0
+
   if (entregas.length > 0) {
-    lines.push(`${WA.package} *Entregas:* ${prestacao.totalEntregas}`)
+    lines.push(`${WA.package} *Entregas:* ${prestacao.totalEntregas}`, '')
 
     for (const entrega of entregas) {
-      const motoboy = entrega.motoboyNome?.trim()
-      const motoboyInfo = motoboy ? ` — ${WA.user} ${motoboy}` : ''
-      const valor = formatCurrency(Number(entrega.valorEntrega))
-      const pagoPeloCliente = entrega.pagoPeloCliente
-        ? ' — _pago pelo cliente_'
-        : ''
+      const taxa = Number(entrega.valorEntrega)
+      const produto = Number(entrega.valorProduto ?? 0)
+      totalGeral += taxa + produto
 
-      lines.push(
-        `• ${WA.pin} ${entrega.bairro} - ${WA.money} ${valor}${motoboyInfo}${pagoPeloCliente}`,
-      )
+      const endereco = entrega.endereco?.trim() || 'Sem endereço'
+      const bairro = entrega.bairro?.trim()
+      const cidade = entrega.cidade?.trim()
+      const local = [endereco, bairro, cidade].filter(Boolean).join(' — ')
+
+      lines.push(`• ${WA.pin} ${local}`)
+
+      const detalhes: string[] = []
+      if (produto > 0) {
+        detalhes.push(`Produto: ${formatCurrency(produto)}`)
+      }
+      detalhes.push(`Taxa entrega: ${formatCurrency(taxa)}`)
+
+      const pagamento = formatFormaPagamento(entrega.formaPagamento)
+      if (pagamento) {
+        detalhes.push(`Pagamento: ${pagamento}`)
+      }
+
+      lines.push(`  ${WA.money} ${detalhes.join(' | ')}`)
+
+      const motoboy = entrega.motoboyNome?.trim()
+      if (motoboy) {
+        lines.push(`  ${WA.user} Motoboy: ${motoboy}`)
+      }
+
+      if (entrega.observacao?.trim()) {
+        lines.push(`  ${WA.memo} ${entrega.observacao.trim()}`)
+      }
+
+      lines.push('')
     }
   }
 
-  const valorFinal = Number(prestacao.valorFinal)
+  const valorFinal = totalGeral > 0 ? totalGeral : Number(prestacao.valorFinal)
   if (valorFinal > 0) {
     lines.push(`${WA.money} *Total:* ${formatCurrency(valorFinal)}`)
+  }
+
+  const obs = observacoes?.trim()
+  if (obs) {
+    lines.push(`${WA.memo} *Observações:*`, obs)
   }
 
   return lines.join('\n')
