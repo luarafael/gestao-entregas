@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { generateWhatsAppText } from '../services/whatsapp.service.js'
+import {
+  generateMotoboyPrestacaoWhatsAppText,
+  generateWhatsAppText,
+} from '../services/whatsapp.service.js'
 
 describe('generateWhatsAppText', () => {
   const prestacao = {
@@ -110,5 +113,112 @@ describe('generateWhatsAppText', () => {
     expect(text).toContain('Repasse motoboys')
     expect(text).toContain('Carlos')
     expect(text).toContain('Valor líquido')
+  })
+})
+
+describe('generateMotoboyPrestacaoWhatsAppText', () => {
+  const prestacao = {
+    data: new Date('2026-07-31'),
+    totalEntregas: 2,
+    valorTotal: 55,
+    valorPendencias: 25,
+    valorFinal: 80,
+  }
+
+  const entregas = [
+    {
+      bairro: 'Centro',
+      nomeCliente: 'João Silva',
+      valorEntrega: 25,
+    },
+    {
+      bairro: 'Jardins',
+      nomeCliente: null,
+      valorEntrega: 30,
+    },
+  ]
+
+  const pendencias = [
+    {
+      descricao: 'Repasse dia anterior',
+      valor: 25,
+      referenteAoDia: new Date('2026-07-12'),
+    },
+  ]
+
+  it('lista corridas com bairro, cliente e valor da corrida', () => {
+    const text = generateMotoboyPrestacaoWhatsAppText(
+      'Carlos',
+      prestacao,
+      entregas,
+      pendencias,
+    )
+
+    expect(text).toContain('Prestação do dia — Carlos')
+    expect(text).toContain('*Corridas:* 2')
+    expect(text).toContain('Centro')
+    expect(text).toContain('João Silva')
+    expect(text).toMatch(/Centro.*João Silva.*R\$/)
+    expect(text).not.toContain('Valor das entregas')
+    expect(text).not.toContain('Obrigado')
+    expect(text).toContain('Repasse pendente')
+    expect(text).toContain('Repasse:')
+  })
+
+  it('omite seções zeradas ou vazias', () => {
+    const text = generateMotoboyPrestacaoWhatsAppText(
+      'Carlos',
+      {
+        ...prestacao,
+        totalEntregas: 0,
+        valorFinal: 0,
+      },
+      [],
+      [],
+    )
+
+    expect(text).toContain('Prestação do dia — Carlos')
+    expect(text).not.toContain('Corridas')
+    expect(text).not.toContain('Repasse pendente')
+    expect(text).not.toContain('Repasse:')
+    expect(text).not.toContain('Nenhuma')
+  })
+
+  it('mostra repasse sem pendências quando não houver repasse pendente', () => {
+    const text = generateMotoboyPrestacaoWhatsAppText(
+      'Carlos',
+      { ...prestacao, valorPendencias: 0, valorFinal: 55 },
+      entregas,
+      [],
+    )
+
+    expect(text).toContain('*Corridas:* 2')
+    expect(text).not.toContain('Repasse pendente')
+    expect(text).toContain('Repasse:')
+    expect(text).not.toContain('pago pelo cliente')
+  })
+
+  it('inclui PIX quando informado', () => {
+    const text = generateMotoboyPrestacaoWhatsAppText(
+      'Carlos',
+      prestacao,
+      entregas,
+      [],
+      '11999998888',
+    )
+
+    expect(text).toContain('*PIX:* 11999998888')
+  })
+
+  it('omite PIX quando não informado', () => {
+    const text = generateMotoboyPrestacaoWhatsAppText(
+      'Carlos',
+      prestacao,
+      entregas,
+      [],
+      null,
+    )
+
+    expect(text).not.toContain('*PIX:*')
   })
 })

@@ -64,7 +64,12 @@ export class PrestacaoMotoboyService {
     motoboyId?: string,
   ) {
     if (!isAdminUser(user)) {
-      return { motoboyId: user.id, motoboyNome: user.nome }
+      const motoboy = await usuarioRepository.findMotoboyById(user.id)
+      return {
+        motoboyId: user.id,
+        motoboyNome: user.nome,
+        pix: motoboy?.pix ?? null,
+      }
     }
 
     if (!motoboyId) {
@@ -76,7 +81,11 @@ export class PrestacaoMotoboyService {
       throw new NotFoundError('Motoboy não encontrado')
     }
 
-    return { motoboyId: motoboy.id, motoboyNome: motoboy.nome }
+    return {
+      motoboyId: motoboy.id,
+      motoboyNome: motoboy.nome,
+      pix: motoboy.pix ?? null,
+    }
   }
 
   async preview(
@@ -106,7 +115,7 @@ export class PrestacaoMotoboyService {
   }
 
   async submit(user: AuthenticatedUser, input: SubmitPrestacaoMotoboyInput) {
-    const { motoboyId, motoboyNome } = await this.resolveMotoboyTarget(
+    const { motoboyId, motoboyNome, pix } = await this.resolveMotoboyTarget(
       user,
       input.motoboyId,
     )
@@ -152,6 +161,7 @@ export class PrestacaoMotoboyService {
       prestacao,
       entregas,
       totals.pendencias,
+      pix,
     )
 
     return {
@@ -279,6 +289,7 @@ export class PrestacaoMotoboyService {
         prestacao,
         entregas,
         pendencias,
+        prestacao.motoboy.pix,
       ),
     }
   }

@@ -73,6 +73,14 @@ describe('PrestacaoMotoboyService', () => {
       { id: 'p1', descricao: 'Repasse', valor: 15 },
     ])
     entregaRepository.findByDate.mockResolvedValue([{ id: 'e1' }])
+    usuarioRepository.findMotoboyById.mockResolvedValue({
+      id: 'motoboy-1',
+      nome: 'João',
+      email: 'motoboy@test.com',
+      pix: '11999998888',
+      role: 'MOTOBOY',
+      ativo: true,
+    })
     prestacaoMotoboyRepository.findByMotoboyAndDate.mockResolvedValue(null)
     prestacaoMotoboyRepository.create.mockResolvedValue({
       id: 'pm1',
@@ -93,6 +101,7 @@ describe('PrestacaoMotoboyService', () => {
     expect(prestacaoMotoboyRepository.create).toHaveBeenCalled()
     expect(result.prestacao.status).toBe('ENVIADA')
     expect(result.whatsappText).toContain('João')
+    expect(result.whatsappText).toContain('*PIX:* 11999998888')
   })
 
   it('exige motoboyId quando admin envia prestação', async () => {

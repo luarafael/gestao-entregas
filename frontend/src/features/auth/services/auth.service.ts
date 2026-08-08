@@ -16,4 +16,11 @@ export const authService = {
   me() {
     return apiFetch<AuthUser>('/api/auth/me')
   },
+
+  updatePix(pix: string) {
+    return apiFetch<AuthUser>('/api/auth/me/pix', {
+      method: 'PATCH',
+      body: JSON.stringify({ pix }),
+    })
+  },
 }

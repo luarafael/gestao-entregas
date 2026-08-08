@@ -154,10 +154,44 @@ export function generateMotoboyPrestacaoWhatsAppText(
   prestacao: PrestacaoSummary,
   entregas: EntregaSummary[],
   pendencias: PendenciaSummary[],
+  pix?: string | null,
 ): string {
-  const base = generateWhatsAppText(prestacao, entregas, pendencias)
-  return base.replace(
-    `${WA.report} *Prestação de Contas*`,
+  const lines: string[] = [
     `${WA.report} *Prestação do dia — ${motoboyNome}*`,
-  )
+    `${WA.clock} *Data:* ${formatDateOnlyBR(prestacao.data)}`,
+  ]
+
+  if (entregas.length > 0) {
+    lines.push(`${WA.package} *Corridas:* ${prestacao.totalEntregas}`)
+
+    for (const entrega of entregas) {
+      const cliente = entrega.nomeCliente?.trim() || 'Sem nome'
+      const valor = formatCurrency(Number(entrega.valorEntrega))
+      lines.push(
+        `• ${WA.pin} ${entrega.bairro} — ${WA.user} ${cliente} — ${WA.money} ${valor}`,
+      )
+    }
+  }
+
+  if (pendencias.length > 0) {
+    lines.push(`${WA.hourglass} *Repasse pendente:*`)
+
+    for (const pendencia of pendencias) {
+      lines.push(
+        `• ${WA.memo} ${pendencia.descricao} — ${formatDateOnlyBR(pendencia.referenteAoDia)} — ${formatCurrency(Number(pendencia.valor))}`,
+      )
+    }
+  }
+
+  const valorFinal = Number(prestacao.valorFinal)
+  if (valorFinal > 0) {
+    lines.push(`${WA.money} *Repasse:* ${formatCurrency(valorFinal)}`)
+  }
+
+  const pixKey = pix?.trim()
+  if (pixKey) {
+    lines.push(`${WA.key} *PIX:* ${pixKey}`)
+  }
+
+  return lines.join('\n')
 }

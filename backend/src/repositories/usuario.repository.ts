@@ -7,6 +7,7 @@ export interface CreateUsuarioInput {
   email: string
   senhaHash: string
   role?: UsuarioRole
+  pix?: string | null
 }
 
 export interface ListMotoboysFilters {
@@ -20,6 +21,7 @@ const motoboyPublicSelect = {
   id: true,
   nome: true,
   email: true,
+  pix: true,
   role: true,
   ativo: true,
   criadoEm: true,
@@ -84,6 +86,7 @@ export const usuarioRepository = {
         email: input.email.toLowerCase().trim(),
         senhaHash: input.senhaHash,
         role: input.role ?? 'MOTOBOY',
+        ...(input.pix !== undefined ? { pix: input.pix } : {}),
       },
       select: motoboyPublicSelect,
     })
@@ -95,6 +98,7 @@ export const usuarioRepository = {
       nome?: string
       email?: string
       senhaHash?: string
+      pix?: string | null
     },
   ) {
     return prisma.usuario.update({
@@ -105,7 +109,16 @@ export const usuarioRepository = {
           ? { email: data.email.toLowerCase().trim() }
           : {}),
         ...(data.senhaHash !== undefined ? { senhaHash: data.senhaHash } : {}),
+        ...(data.pix !== undefined ? { pix: data.pix } : {}),
       },
+      select: motoboyPublicSelect,
+    })
+  },
+
+  updatePix(id: string, pix: string | null) {
+    return prisma.usuario.update({
+      where: { id },
+      data: { pix },
       select: motoboyPublicSelect,
     })
   },

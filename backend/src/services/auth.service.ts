@@ -9,12 +9,14 @@ function toPublicUser(user: {
   nome: string
   email: string
   role: 'ADMIN' | 'MOTOBOY'
+  pix?: string | null
 }) {
   return {
     id: user.id,
     nome: user.nome,
     email: user.email,
     role: user.role,
+    ...(user.role === 'MOTOBOY' ? { pix: user.pix ?? null } : {}),
   }
 }
 
@@ -50,6 +52,17 @@ export class AuthService {
     }
 
     return toPublicUser(user)
+  }
+
+  async updatePix(userId: string, pix: string | null) {
+    const user = await usuarioRepository.findById(userId)
+
+    if (!user || !user.ativo || user.role !== 'MOTOBOY') {
+      throw new UnauthorizedError('Usuário não encontrado ou inativo')
+    }
+
+    const updated = await usuarioRepository.updatePix(userId, pix)
+    return toPublicUser(updated)
   }
 
   async ensureAdminUser(params: {

@@ -13,5 +13,5 @@ export const WA = {
   warning: '\u{26A0}\u{FE0F}',
   check: '\u{2705}',
   thanks: '\u{1F64F}',
-  chart: '\u{1F4CA}',
+  key: '\u{1F511}',
 } as const

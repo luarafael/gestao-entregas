@@ -4,12 +4,24 @@ export const createMotoboySchema = z.object({
   nome: z.string().trim().min(1, 'Nome é obrigatório'),
   email: z.string().trim().email('E-mail inválido'),
   senha: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  pix: z
+    .string()
+    .trim()
+    .max(140, 'PIX deve ter no máximo 140 caracteres')
+    .optional()
+    .transform((value) => value || undefined),
 })
 
 export const updateMotoboySchema = z.object({
   nome: z.string().trim().min(1, 'Nome é obrigatório').optional(),
   email: z.string().trim().email('E-mail inválido').optional(),
   senha: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres').optional(),
+  pix: z
+    .string()
+    .trim()
+    .max(140, 'PIX deve ter no máximo 140 caracteres')
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value || null)),
 })
 
 export const listMotoboysSchema = z.object({

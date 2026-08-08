@@ -5,6 +5,11 @@ export const motoboyFormSchema = z
     nome: z.string().trim().min(1, 'Nome é obrigatório'),
     email: z.string().trim().email('E-mail inválido'),
     senha: z.string().optional(),
+    pix: z
+      .string()
+      .trim()
+      .max(140, 'PIX deve ter no máximo 140 caracteres')
+      .optional(),
   })
   .superRefine((data, ctx) => {
     const senha = data.senha?.trim() ?? ''
@@ -37,17 +42,25 @@ export const ATIVO_OPTIONS: Array<{ value: MotoboyAtivoFilter; label: string }> 
   ]
 
 export function toCreatePayload(data: MotoboyFormData) {
+  const pix = data.pix?.trim()
   return {
     nome: data.nome.trim(),
     email: data.email.trim().toLowerCase(),
     senha: data.senha!.trim(),
+    ...(pix ? { pix } : {}),
   }
 }
 
 export function toUpdatePayload(data: MotoboyFormData) {
-  const payload: { nome: string; email: string; senha?: string } = {
+  const payload: {
+    nome: string
+    email: string
+    senha?: string
+    pix?: string | null
+  } = {
     nome: data.nome.trim(),
     email: data.email.trim().toLowerCase(),
+    pix: data.pix?.trim() || null,
   }
 
   const senha = data.senha?.trim()

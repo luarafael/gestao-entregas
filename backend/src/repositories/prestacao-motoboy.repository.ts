@@ -33,7 +33,7 @@ export class PrestacaoMotoboyRepository {
         data: toUtcDateOnly(data.data),
       },
       include: {
-        motoboy: { select: { id: true, nome: true, email: true } },
+        motoboy: { select: { id: true, nome: true, email: true, pix: true } },
       },
     })
   }
@@ -42,7 +42,7 @@ export class PrestacaoMotoboyRepository {
     return prisma.prestacaoMotoboy.findUnique({
       where: { id },
       include: {
-        motoboy: { select: { id: true, nome: true, email: true } },
+        motoboy: { select: { id: true, nome: true, email: true, pix: true } },
       },
     })
   }
@@ -56,7 +56,7 @@ export class PrestacaoMotoboyRepository {
         },
       },
       include: {
-        motoboy: { select: { id: true, nome: true, email: true } },
+        motoboy: { select: { id: true, nome: true, email: true, pix: true } },
       },
     })
   }
@@ -85,7 +85,7 @@ export class PrestacaoMotoboyRepository {
         take: filters.limit,
         orderBy: [{ aprovadaEm: 'desc' }, { rejeitadaEm: 'desc' }, { data: 'desc' }],
         include: {
-          motoboy: { select: { id: true, nome: true, email: true } },
+          motoboy: { select: { id: true, nome: true, email: true, pix: true } },
         },
       }),
       prisma.prestacaoMotoboy.count({ where }),
@@ -108,7 +108,7 @@ export class PrestacaoMotoboyRepository {
       },
       orderBy: { motoboy: { nome: 'asc' } },
       include: {
-        motoboy: { select: { id: true, nome: true, email: true } },
+        motoboy: { select: { id: true, nome: true, email: true, pix: true } },
       },
     })
   }
@@ -135,7 +135,7 @@ export class PrestacaoMotoboyRepository {
       where: { id },
       data,
       include: {
-        motoboy: { select: { id: true, nome: true, email: true } },
+        motoboy: { select: { id: true, nome: true, email: true, pix: true } },
       },
     })
   }

@@ -16,6 +16,8 @@ import {
 import { IconReceipt } from '@/shared/components/icons'
 import { formatCurrency } from '@/shared/utils/cn'
 import { WhatsAppPreview } from '@/features/accounting/components/WhatsAppPreview'
+import { authService } from '@/features/auth/services/auth.service'
+import { useAuthStore } from '@/features/auth/stores/auth.store'
 import {
   useCopyPrestacaoMotoboyWhatsApp,
   usePrestacaoMotoboyHistory,
@@ -40,6 +42,10 @@ const statusLabels = {
 export function MinhaPrestacaoPage() {
   const [generatedResult, setGeneratedResult] =
     useState<SubmitPrestacaoMotoboyResponse | null>(null)
+  const [pix, setPix] = useState('')
+  const [isSavingPix, setIsSavingPix] = useState(false)
+  const token = useAuthStore((state) => state.token)
+  const setSession = useAuthStore((state) => state.setSession)
 
   const {
     register,
@@ -63,11 +69,28 @@ export function MinhaPrestacaoPage() {
     reset(defaultSubmitFormValues)
   }, [reset])
 
+  useEffect(() => {
+    authService
+      .me()
+      .then((user) => setPix(user.pix ?? ''))
+      .catch(() => undefined)
+  }, [])
+
   const canSubmit =
     preview?.statusExistente !== 'ENVIADA' &&
     preview?.statusExistente !== 'APROVADA'
 
   const handleSubmitPrestacao = handleSubmit(async (data) => {
+    setIsSavingPix(true)
+    try {
+      const updatedUser = await authService.updatePix(pix.trim())
+      if (token) {
+        setSession(token, updatedUser)
+      }
+    } finally {
+      setIsSavingPix(false)
+    }
+
     const result = await submitMutation.mutateAsync(data)
     setGeneratedResult(result)
   })
@@ -133,6 +156,19 @@ export function MinhaPrestacaoPage() {
               </div>
             )}
 
+            <div className="space-y-1.5">
+              <Input
+                label="PIX para recebimento"
+                placeholder="CPF, e-mail, telefone ou chave aleatória"
+                value={pix}
+                onChange={(event) => setPix(event.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Incluído na mensagem do WhatsApp para o administrador pagar o
+                repasse.
+              </p>
+            </div>
+
             <Textarea
               label="Observações (opcional)"
               placeholder="Informações para o administrador..."
@@ -144,7 +180,7 @@ export function MinhaPrestacaoPage() {
               type="submit"
               size="lg"
               disabled={!canSubmit}
-              isLoading={submitMutation.isPending}
+              isLoading={submitMutation.isPending || isSavingPix}
             >
               {preview?.statusExistente === 'REJEITADA'
                 ? 'Reenviar para aprovação'

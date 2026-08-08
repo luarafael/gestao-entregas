@@ -63,6 +63,7 @@ describe('UsuarioService', () => {
       email: 'joao@test.com',
       senhaHash: 'hashed-password',
       role: 'MOTOBOY',
+      pix: null,
     })
     expect(result.id).toBe('m1')
   })

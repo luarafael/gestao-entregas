@@ -44,6 +44,7 @@ export class UsuarioService {
       email,
       senhaHash,
       role: 'MOTOBOY',
+      pix: input.pix ?? null,
     })
   }
 
@@ -70,6 +71,7 @@ export class UsuarioService {
       nome: input.nome,
       email: input.email,
       senhaHash,
+      pix: input.pix,
     })
   }
 

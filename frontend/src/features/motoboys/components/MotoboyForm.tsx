@@ -27,6 +27,7 @@ const defaultValues: MotoboyFormData = {
   nome: '',
   email: '',
   senha: '',
+  pix: '',
 }
 
 export function MotoboyForm({
@@ -54,6 +55,7 @@ export function MotoboyForm({
         nome: editingMotoboy.nome,
         email: editingMotoboy.email,
         senha: '',
+        pix: editingMotoboy.pix ?? '',
       })
     } else {
       reset(defaultValues)
@@ -107,6 +109,14 @@ export function MotoboyForm({
             autoComplete="new-password"
             error={errors.senha?.message}
             {...register('senha')}
+          />
+
+          <Input
+            label="PIX (opcional)"
+            placeholder="CPF, e-mail, telefone ou chave aleatória"
+            autoComplete="off"
+            error={errors.pix?.message}
+            {...register('pix')}
           />
 
           <div className="flex flex-wrap gap-2">
