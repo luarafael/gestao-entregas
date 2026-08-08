@@ -30,4 +30,4 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/bootstrap/ensure-admin.js && node dist/src/bootstrap/ensure-motoboy.js && node dist/src/index.js"]
+CMD ["sh", "-c", "PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK=1 npx prisma migrate deploy && node dist/src/bootstrap/ensure-admin.js && node dist/src/bootstrap/ensure-motoboy.js && node dist/src/index.js"]
