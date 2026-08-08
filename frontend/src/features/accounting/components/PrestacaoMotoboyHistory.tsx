@@ -23,7 +23,10 @@ interface PrestacaoMotoboyHistoryProps {
   totalPages: number
   onPageChange: (page: number) => void
   onCopy: (id: string) => void
+  onExportPdf?: (item: PrestacaoMotoboy) => void
+  onSend?: (item: PrestacaoMotoboy) => void
   copyingId?: string | null
+  sendingId?: string | null
 }
 
 export function PrestacaoMotoboyHistory({
@@ -33,7 +36,10 @@ export function PrestacaoMotoboyHistory({
   totalPages,
   onPageChange,
   onCopy,
+  onExportPdf,
+  onSend,
   copyingId,
+  sendingId,
 }: PrestacaoMotoboyHistoryProps) {
   if (isLoading) {
     return <TableSkeleton rows={4} />
@@ -43,8 +49,8 @@ export function PrestacaoMotoboyHistory({
     return (
       <EmptyState
         icon={<IconReceipt className="size-6" />}
-        title="Nenhuma prestação deste motoboy"
-        description="Gere a prestação do dia para salvar o histórico."
+        title="Nenhuma prestação enviada"
+        description="Envie a prestação do dia para aparecer no histórico."
       />
     )
   }
@@ -52,12 +58,14 @@ export function PrestacaoMotoboyHistory({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-200 text-left text-sm">
+        <table className="w-full min-w-245 text-left text-sm">
           <thead>
             <tr className="border-b border-border/60 text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-3 py-3 font-medium">Data</th>
               <th className="px-3 py-3 font-medium">Entregas</th>
-              <th className="px-3 py-3 font-medium text-right">Valor final</th>
+              <th className="px-3 py-3 font-medium text-right">Valor entregas</th>
+              <th className="px-3 py-3 font-medium text-right">Repasse pend.</th>
+              <th className="px-3 py-3 font-medium text-right">Total a receber</th>
               <th className="px-3 py-3 font-medium">Status</th>
               <th className="px-3 py-3 font-medium text-right">Ações</th>
             </tr>
@@ -72,6 +80,12 @@ export function PrestacaoMotoboyHistory({
                   {formatPrestacaoMotoboyDate(item.data)}
                 </td>
                 <td className="px-3 py-3">{item.totalEntregas}</td>
+                <td className="px-3 py-3 text-right">
+                  {formatCurrency(Number(item.valorTotal))}
+                </td>
+                <td className="px-3 py-3 text-right">
+                  {formatCurrency(Number(item.valorPendencias))}
+                </td>
                 <td className="px-3 py-3 text-right font-medium">
                   {formatCurrency(Number(item.valorFinal))}
                 </td>
@@ -84,7 +98,16 @@ export function PrestacaoMotoboyHistory({
                   ) : null}
                 </td>
                 <td className="px-3 py-3">
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
+                    {onExportPdf ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onExportPdf(item)}
+                      >
+                        PDF
+                      </Button>
+                    ) : null}
                     <Button
                       variant="secondary"
                       size="sm"
@@ -93,6 +116,16 @@ export function PrestacaoMotoboyHistory({
                     >
                       Copiar
                     </Button>
+                    {onSend ? (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => onSend(item)}
+                        isLoading={sendingId === item.id}
+                      >
+                        WhatsApp
+                      </Button>
+                    ) : null}
                   </div>
                 </td>
               </tr>

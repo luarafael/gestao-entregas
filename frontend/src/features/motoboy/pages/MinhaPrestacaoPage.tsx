@@ -16,8 +16,16 @@ import {
 import { IconReceipt } from '@/shared/components/icons'
 import { formatCurrency } from '@/shared/utils/cn'
 import { WhatsAppPreview } from '@/features/accounting/components/WhatsAppPreview'
+import { PrestacaoMotoboyHistory } from '@/features/accounting/components/PrestacaoMotoboyHistory'
+import {
+  WhatsAppSendModal,
+  type WhatsAppSendPayload,
+} from '@/features/accounting/components/WhatsAppSendModal'
+import { exportPrestacaoPdf } from '@/features/accounting/utils/exportPrestacaoPdf'
 import { authService } from '@/features/auth/services/auth.service'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
+import { prestacaoMotoboyService } from '../services/prestacaoMotoboy.service'
+import { toast } from '@/shared/stores/toast.store'
 import {
   useCopyPrestacaoMotoboyWhatsApp,
   usePrestacaoMotoboyHistory,
@@ -32,6 +40,7 @@ import {
   type SubmitPrestacaoMotoboyFormData,
 } from '../schemas/prestacaoMotoboy.schema'
 import type { SubmitPrestacaoMotoboyResponse } from '../types/prestacaoMotoboy.types'
+import type { PrestacaoMotoboy } from '../types/prestacaoMotoboy.types'
 
 const statusLabels = {
   ENVIADA: { label: 'Aguardando aprovação', variant: 'warning' as const },
@@ -44,6 +53,11 @@ export function MinhaPrestacaoPage() {
     useState<SubmitPrestacaoMotoboyResponse | null>(null)
   const [pix, setPix] = useState('')
   const [isSavingPix, setIsSavingPix] = useState(false)
+  const [historyPage, setHistoryPage] = useState(1)
+  const [copyingId, setCopyingId] = useState<string | null>(null)
+  const [sendingId, setSendingId] = useState<string | null>(null)
+  const [sendPayload, setSendPayload] = useState<WhatsAppSendPayload | null>(null)
+  const [sendModalOpen, setSendModalOpen] = useState(false)
   const token = useAuthStore((state) => state.token)
   const setSession = useAuthStore((state) => state.setSession)
 
@@ -61,7 +75,10 @@ export function MinhaPrestacaoPage() {
   const selectedDate = useWatch({ control, name: 'data' }) || getTodayInputDate()
   const previewQuery = usePrestacaoMotoboyPreview(selectedDate)
   const preview = previewQuery.data
-  const historyQuery = usePrestacaoMotoboyHistory({ page: 1, limit: 10 })
+  const historyQuery = usePrestacaoMotoboyHistory({
+    page: historyPage,
+    limit: 10,
+  })
   const submitMutation = useSubmitPrestacaoMotoboy()
   const copyMutation = useCopyPrestacaoMotoboyWhatsApp()
 
@@ -93,7 +110,48 @@ export function MinhaPrestacaoPage() {
 
     const result = await submitMutation.mutateAsync(data)
     setGeneratedResult(result)
+    setHistoryPage(1)
   })
+
+  const handleCopyFromHistory = async (id: string) => {
+    try {
+      setCopyingId(id)
+      const { text } = await prestacaoMotoboyService.getWhatsAppText(id)
+      await copyMutation.mutateAsync(text)
+    } catch {
+      toast('Erro ao buscar texto da prestação', 'error')
+    } finally {
+      setCopyingId(null)
+    }
+  }
+
+  const handleExportHistoryPdf = (item: PrestacaoMotoboy) => {
+    exportPrestacaoPdf({
+      date: item.data.slice(0, 10),
+      totalEntregas: item.totalEntregas,
+      valorTotal: Number(item.valorTotal),
+      valorPendencias: Number(item.valorPendencias),
+      valorFinal: Number(item.valorFinal),
+      observacoes: item.observacoes,
+    })
+    toast('PDF exportado com sucesso', 'success')
+  }
+
+  const handleSendFromHistory = async (item: PrestacaoMotoboy) => {
+    try {
+      setSendingId(item.id)
+      const { text } = await prestacaoMotoboyService.getWhatsAppText(item.id)
+      setSendPayload({ baseText: text })
+      setSendModalOpen(true)
+    } catch {
+      toast('Erro ao buscar texto da prestação', 'error')
+    } finally {
+      setSendingId(null)
+    }
+  }
+
+  const historyItems = historyQuery.data?.data ?? []
+  const historyMeta = historyQuery.data?.meta
 
   return (
     <div className="space-y-6">
@@ -201,44 +259,40 @@ export function MinhaPrestacaoPage() {
       ) : null}
 
       <section className="rounded-2xl border border-border/60 bg-card/70 p-5 backdrop-blur-xl">
-        <h3 className="mb-4 text-lg font-semibold">Histórico</h3>
-        {historyQuery.isLoading ? (
-          <StatCardSkeleton />
-        ) : !historyQuery.data?.data.length ? (
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold tracking-tight">Histórico</h3>
+          <p className="text-sm text-muted-foreground">
+            Prestações enviadas, aprovadas ou rejeitadas.
+          </p>
+        </div>
+
+        {historyQuery.isError ? (
           <EmptyState
             icon={<IconReceipt className="size-6" />}
-            title="Nenhuma prestação enviada"
-            description="Envie a prestação do dia para aparecer aqui."
+            title="Erro ao carregar histórico"
+            description="Não foi possível buscar suas prestações."
           />
         ) : (
-          <div className="space-y-3">
-            {historyQuery.data.data.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col gap-2 rounded-xl border border-border/60 bg-surface/30 p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="font-medium">
-                    {formatPrestacaoMotoboyDate(item.data)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.totalEntregas} entregas ·{' '}
-                    {formatCurrency(Number(item.valorFinal))}
-                  </p>
-                  {item.motivoRejeicao ? (
-                    <p className="mt-1 text-sm text-danger">
-                      Motivo: {item.motivoRejeicao}
-                    </p>
-                  ) : null}
-                </div>
-                <Badge variant={statusLabels[item.status].variant}>
-                  {statusLabels[item.status].label}
-                </Badge>
-              </div>
-            ))}
-          </div>
+          <PrestacaoMotoboyHistory
+            items={historyItems}
+            isLoading={historyQuery.isLoading || historyQuery.isFetching}
+            page={historyMeta?.page ?? 1}
+            totalPages={historyMeta?.totalPages ?? 1}
+            onPageChange={setHistoryPage}
+            onCopy={handleCopyFromHistory}
+            onExportPdf={handleExportHistoryPdf}
+            onSend={handleSendFromHistory}
+            copyingId={copyingId}
+            sendingId={sendingId}
+          />
         )}
       </section>
+
+      <WhatsAppSendModal
+        open={sendModalOpen}
+        onClose={() => setSendModalOpen(false)}
+        payload={sendPayload}
+      />
     </div>
   )
 }
