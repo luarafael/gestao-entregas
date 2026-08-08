@@ -4,6 +4,8 @@ export type FormaPagamentoEntrega = 'DINHEIRO' | 'PIX' | 'CARTAO'
 
 export type DeliveryViewMode = 'motoboy' | 'cliente'
 
+export type OrigemCadastroEntrega = 'MOTOBOY' | 'CLIENTE'
+
 export const FORMA_PAGAMENTO_OPTIONS: {
   value: FormaPagamentoEntrega
   label: string
@@ -38,21 +40,22 @@ export const deliveryMotoboyFormSchema = z
 
 export const deliveryClienteFormSchema = z.object({
   nomeCliente: z.string().trim().min(1, 'Nome do cliente é obrigatório'),
+  telefoneCliente: z.string().trim().min(8, 'Telefone do cliente é obrigatório'),
   endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
-  bairro: z.string().trim().min(1, 'Bairro é obrigatório'),
-  cidade: z.string().trim().optional(),
-  valorProduto: z.number().min(0, 'Valor do produto inválido').optional(),
-  formaPagamento: z.enum(['DINHEIRO', 'PIX', 'CARTAO']).optional(),
+  valorProduto: z.number().min(0, 'Valor do produto inválido'),
+  formaPagamento: z.enum(['DINHEIRO', 'PIX', 'CARTAO'], {
+    message: 'Forma de pagamento é obrigatória',
+  }),
   valorEntrega: z
-    .number({ message: 'Valor é obrigatório' })
-    .positive('Taxa de entrega deve ser maior que zero'),
+    .number()
+    .min(0, 'Taxa de entrega inválida')
+    .optional(),
   observacao: z.string().trim().optional(),
-  motoboyId: z.string().trim().optional(),
+  cidade: z.string().trim().optional(),
 })
 
 export type DeliveryMotoboyFormData = z.infer<typeof deliveryMotoboyFormSchema>
 export type DeliveryClienteFormData = z.infer<typeof deliveryClienteFormSchema>
-export type DeliveryFormData = DeliveryMotoboyFormData | DeliveryClienteFormData
 
 export type DateFilter = 'today' | 'yesterday' | 'week' | 'month'
 
@@ -68,8 +71,7 @@ export interface DeliveryFilters {
   sortBy: SortField
   sortOrder: SortOrder
   motoboyId?: string
-  nomeCliente?: string
-  apenasComCliente?: boolean
+  origemCadastro?: OrigemCadastroEntrega
 }
 
 export const DATE_FILTER_OPTIONS: { value: DateFilter; label: string }[] = [
@@ -86,5 +88,5 @@ export const SORT_OPTIONS: { value: SortField; label: string }[] = [
   { value: 'valorEntrega', label: 'Valor' },
 ]
 
-/** @deprecated use deliveryMotoboyFormSchema or deliveryClienteFormSchema */
+/** @deprecated use deliveryMotoboyFormSchema */
 export const deliveryFormSchema = deliveryMotoboyFormSchema

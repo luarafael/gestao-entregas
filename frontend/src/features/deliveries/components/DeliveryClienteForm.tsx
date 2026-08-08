@@ -1,9 +1,7 @@
 import { useEffect } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Textarea } from '@/shared/components/ui'
-import { MotoboySelect } from '@/shared/components/MotoboySelect'
-import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import {
   deliveryClienteFormSchema,
   FORMA_PAGAMENTO_OPTIONS,
@@ -20,14 +18,13 @@ interface DeliveryClienteFormProps {
 
 const defaultValues: DeliveryClienteFormData = {
   nomeCliente: '',
+  telefoneCliente: '',
   endereco: '',
-  bairro: '',
-  cidade: '',
-  valorProduto: undefined,
-  formaPagamento: undefined,
-  valorEntrega: 0,
+  valorProduto: 0,
+  formaPagamento: 'DINHEIRO',
+  valorEntrega: undefined,
   observacao: '',
-  motoboyId: '',
+  cidade: '',
 }
 
 export function DeliveryClienteForm({
@@ -36,14 +33,10 @@ export function DeliveryClienteForm({
   onCancelEdit,
   isSubmitting,
 }: DeliveryClienteFormProps) {
-  const isAdmin = useIsAdmin()
-
   const {
     register,
     handleSubmit,
     reset,
-    control,
-    setError,
     formState: { errors },
   } = useForm<DeliveryClienteFormData>({
     resolver: zodResolver(deliveryClienteFormSchema),
@@ -54,16 +47,16 @@ export function DeliveryClienteForm({
     if (editingDelivery) {
       reset({
         nomeCliente: editingDelivery.nomeCliente ?? '',
+        telefoneCliente: editingDelivery.telefoneCliente ?? '',
         endereco: editingDelivery.endereco,
-        bairro: editingDelivery.bairro,
-        cidade: editingDelivery.cidade ?? '',
-        valorProduto: editingDelivery.valorProduto
-          ? Number(editingDelivery.valorProduto)
-          : undefined,
-        formaPagamento: editingDelivery.formaPagamento ?? undefined,
-        valorEntrega: Number(editingDelivery.valorEntrega),
+        valorProduto: Number(editingDelivery.valorProduto ?? 0),
+        formaPagamento: editingDelivery.formaPagamento ?? 'DINHEIRO',
+        valorEntrega:
+          Number(editingDelivery.valorEntrega) > 0
+            ? Number(editingDelivery.valorEntrega)
+            : undefined,
         observacao: editingDelivery.observacao ?? '',
-        motoboyId: editingDelivery.motoboyId ?? '',
+        cidade: editingDelivery.cidade ?? '',
       })
     } else {
       reset(defaultValues)
@@ -71,51 +64,31 @@ export function DeliveryClienteForm({
   }, [editingDelivery, reset])
 
   const handleFormSubmit = handleSubmit(async (data) => {
-    if (isAdmin && !data.motoboyId?.trim()) {
-      setError('motoboyId', {
-        type: 'manual',
-        message: 'Selecione o motoboy responsável',
-      })
-      return
+    await onSubmit(data)
+    if (!editingDelivery) {
+      reset(defaultValues)
     }
-
-    await onSubmit({
-      ...data,
-      motoboyId: isAdmin ? data.motoboyId : undefined,
-    })
-    reset(defaultValues)
   })
 
   return (
     <Card glass className="h-fit">
       <CardHeader>
-        <CardTitle>{editingDelivery ? 'Editar Entrega' : 'Nova Entrega — Cliente'}</CardTitle>
+        <CardTitle>{editingDelivery ? 'Editar Pedido' : 'Novo Pedido — Cliente'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleFormSubmit} className="space-y-4">
-          {isAdmin ? (
-            <Controller
-              name="motoboyId"
-              control={control}
-              render={({ field }) => (
-                <MotoboySelect
-                  id="entrega-cliente-motoboy"
-                  label="Motoboy"
-                  layout="stack"
-                  allowAll={false}
-                  value={field.value || ''}
-                  onChange={field.onChange}
-                  error={errors.motoboyId?.message}
-                />
-              )}
-            />
-          ) : null}
-
           <Input
-            label="Nome do Cliente"
+            label="Nome do cliente"
             placeholder="Ex: João Silva"
             error={errors.nomeCliente?.message}
             {...register('nomeCliente')}
+          />
+
+          <Input
+            label="Telefone do cliente"
+            placeholder="Ex: (11) 99999-9999"
+            error={errors.telefoneCliente?.message}
+            {...register('telefoneCliente')}
           />
 
           <Input
@@ -125,61 +98,51 @@ export function DeliveryClienteForm({
             {...register('endereco')}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Bairro"
-              placeholder="Ex: Centro"
-              error={errors.bairro?.message}
-              {...register('bairro')}
-            />
-            <Input
-              label="Cidade (opcional)"
-              placeholder="Ex: São Paulo"
-              error={errors.cidade?.message}
-              {...register('cidade')}
-            />
-          </div>
+          <Input
+            label="Cidade (opcional)"
+            placeholder="Ex: São Paulo"
+            error={errors.cidade?.message}
+            {...register('cidade')}
+          />
 
           <Input
-            label="Valor do produto (opcional)"
+            label="Valor do produto"
             type="number"
             step="0.01"
             min="0"
             placeholder="0,00"
-            error={errors.valorProduto?.message as string | undefined}
-            {...register('valorProduto', {
-              setValueAs: (value) =>
-                value === '' || Number.isNaN(Number(value))
-                  ? undefined
-                  : Number(value),
-            })}
+            error={errors.valorProduto?.message}
+            {...register('valorProduto', { valueAsNumber: true })}
           />
 
           <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-foreground">
-              Forma de pagamento (opcional)
-            </span>
+            <span className="text-sm font-medium text-foreground">Forma de pagamento</span>
             <select
               className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3 text-sm text-foreground"
               {...register('formaPagamento')}
             >
-              <option value="">Selecione...</option>
               {FORMA_PAGAMENTO_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
+            {errors.formaPagamento?.message ? (
+              <p className="text-xs text-destructive">{errors.formaPagamento.message}</p>
+            ) : null}
           </label>
 
           <Input
-            label="Taxa de entrega"
+            label="Taxa de entrega (opcional)"
             type="number"
             step="0.01"
             min="0"
             placeholder="0,00"
             error={errors.valorEntrega?.message}
-            {...register('valorEntrega', { valueAsNumber: true })}
+            {...register('valorEntrega', {
+              setValueAs: (value) =>
+                value === '' || Number.isNaN(Number(value)) ? undefined : Number(value),
+            })}
           />
 
           <Textarea
@@ -191,7 +154,7 @@ export function DeliveryClienteForm({
 
           <div className="flex flex-wrap gap-2 pt-2">
             <Button type="submit" isLoading={isSubmitting} className="flex-1 sm:flex-none">
-              {editingDelivery ? 'Atualizar Entrega' : 'Salvar Entrega'}
+              {editingDelivery ? 'Atualizar Pedido' : 'Salvar Pedido'}
             </Button>
             {editingDelivery ? (
               <Button type="button" variant="ghost" onClick={onCancelEdit}>

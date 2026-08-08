@@ -84,11 +84,30 @@ export const listEntregasSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
   motoboyId: z.string().trim().min(1).optional(),
   nomeCliente: z.string().trim().min(1).optional(),
-  apenasComCliente: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((value) => value === 'true'),
+  origemCadastro: z.enum(['MOTOBOY', 'CLIENTE']).optional(),
 })
+
+export const createEntregaClienteSchema = z.object({
+  nomeCliente: z.string().trim().min(1, 'Nome do cliente é obrigatório'),
+  telefoneCliente: z.string().trim().min(8, 'Telefone do cliente é obrigatório'),
+  endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
+  valorProduto: z.coerce.number().min(0, 'Valor do produto inválido'),
+  formaPagamento: formaPagamentoSchema,
+  valorEntrega: z.coerce.number().min(0).optional(),
+  observacao: z.string().trim().optional(),
+  cidade: z.string().trim().optional(),
+})
+
+export const updateEntregaClienteSchema = createEntregaClienteSchema.partial()
+
+export const importEntregasClienteSchema = z.object({
+  ids: z.array(z.string().trim().min(1)).min(1, 'Selecione ao menos uma entrega'),
+  motoboyId: z.string().trim().min(1).optional(),
+})
+
+export type CreateEntregaClienteInput = z.infer<typeof createEntregaClienteSchema>
+export type UpdateEntregaClienteInput = z.infer<typeof updateEntregaClienteSchema>
+export type ImportEntregasClienteInput = z.infer<typeof importEntregasClienteSchema>
 
 export type CreateEntregaInput = z.infer<typeof createEntregaSchema>
 export type UpdateEntregaInput = z.infer<typeof updateEntregaSchema>

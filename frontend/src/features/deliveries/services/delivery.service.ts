@@ -5,7 +5,6 @@ import type {
   DeliveryClienteFormData,
   DeliveryFilters,
   DeliveryMotoboyFormData,
-  DeliveryViewMode,
 } from '../schemas/delivery.schema'
 
 function buildQuery(filters: DeliveryFilters): string {
@@ -29,12 +28,8 @@ function buildQuery(filters: DeliveryFilters): string {
     params.set('motoboyId', filters.motoboyId)
   }
 
-  if (filters.nomeCliente) {
-    params.set('nomeCliente', filters.nomeCliente)
-  }
-
-  if (filters.apenasComCliente) {
-    params.set('apenasComCliente', 'true')
+  if (filters.origemCadastro) {
+    params.set('origemCadastro', filters.origemCadastro)
   }
 
   return params.toString()
@@ -56,15 +51,13 @@ function toMotoboyApiPayload(data: DeliveryMotoboyFormData) {
 function toClienteApiPayload(data: DeliveryClienteFormData) {
   return {
     nomeCliente: data.nomeCliente,
+    telefoneCliente: data.telefoneCliente,
     endereco: data.endereco,
-    bairro: data.bairro,
-    cidade: data.cidade,
     valorProduto: data.valorProduto,
     formaPagamento: data.formaPagamento,
     valorEntrega: data.valorEntrega,
     observacao: data.observacao,
-    pagoPeloCliente: false,
-    ...(data.motoboyId ? { motoboyId: data.motoboyId } : {}),
+    cidade: data.cidade,
   }
 }
 
@@ -73,47 +66,46 @@ export const deliveryService = {
     return apiFetch<PaginatedResponse<Entrega>>(`/api/entregas?${buildQuery(filters)}`)
   },
 
-  listClientes(filters: Pick<DeliveryFilters, 'filter'>) {
-    const params = new URLSearchParams()
-    params.set('page', '1')
-    params.set('limit', '1')
-    params.set('filter', filters.filter)
-    if (filters.filter === 'today') {
-      params.set('referenceDate', getTodayInputDate())
-    }
-    return apiFetch<{ clientes: string[] }>(`/api/entregas/clientes?${params.toString()}`)
-  },
-
   getById(id: string) {
     return apiFetch<Entrega>(`/api/entregas/${id}`)
   },
 
-  create(viewMode: DeliveryViewMode, data: DeliveryMotoboyFormData | DeliveryClienteFormData) {
-    const body =
-      viewMode === 'cliente'
-        ? toClienteApiPayload(data as DeliveryClienteFormData)
-        : toMotoboyApiPayload(data as DeliveryMotoboyFormData)
-
+  createMotoboy(data: DeliveryMotoboyFormData) {
     return apiFetch<Entrega>('/api/entregas', {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify(toMotoboyApiPayload(data)),
     })
   },
 
-  update(
-    viewMode: DeliveryViewMode,
-    id: string,
-    data: DeliveryMotoboyFormData | DeliveryClienteFormData,
-  ) {
-    const body =
-      viewMode === 'cliente'
-        ? toClienteApiPayload(data as DeliveryClienteFormData)
-        : toMotoboyApiPayload(data as DeliveryMotoboyFormData)
-
+  updateMotoboy(id: string, data: DeliveryMotoboyFormData) {
     return apiFetch<Entrega>(`/api/entregas/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(body),
+      body: JSON.stringify(toMotoboyApiPayload(data)),
     })
+  },
+
+  createCliente(data: DeliveryClienteFormData) {
+    return apiFetch<Entrega>('/api/entregas/cliente', {
+      method: 'POST',
+      body: JSON.stringify(toClienteApiPayload(data)),
+    })
+  },
+
+  updateCliente(id: string, data: DeliveryClienteFormData) {
+    return apiFetch<Entrega>(`/api/entregas/cliente/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(toClienteApiPayload(data)),
+    })
+  },
+
+  importClienteToMotoboy(ids: string[], motoboyId?: string) {
+    return apiFetch<{ importadas: Entrega[]; total: number }>(
+      '/api/entregas/cliente/importar-motoboy',
+      {
+        method: 'POST',
+        body: JSON.stringify({ ids, motoboyId }),
+      },
+    )
   },
 
   delete(id: string) {

@@ -41,6 +41,7 @@ export function ImportarEntregasModal({
     filter,
     sortBy: 'horario',
     sortOrder: 'desc',
+    origemCadastro: 'MOTOBOY',
   })
 
   const deliveries = useMemo(() => {

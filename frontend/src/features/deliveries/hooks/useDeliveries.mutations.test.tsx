@@ -4,14 +4,14 @@ import type { ReactNode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import {
   useDeleteDelivery,
-  useUpdateDelivery,
+  useUpdateMotoboyDelivery,
 } from './useDeliveries'
 import { deliveryService } from '../services/delivery.service'
 import { createTestQueryClient } from '@/test/test-utils'
 
 vi.mock('../services/delivery.service', () => ({
   deliveryService: {
-    update: vi.fn(),
+    updateMotoboy: vi.fn(),
     delete: vi.fn(),
   },
 }))
@@ -35,8 +35,8 @@ describe('useDeliveries mutations', () => {
     vi.clearAllMocks()
   })
 
-  it('atualiza entrega', async () => {
-    vi.mocked(deliveryService.update).mockResolvedValue({
+  it('atualiza entrega motoboy', async () => {
+    vi.mocked(deliveryService.updateMotoboy).mockResolvedValue({
       id: '1',
       data: '',
       horario: '',
@@ -53,7 +53,7 @@ describe('useDeliveries mutations', () => {
       criadoEm: '',
     })
 
-    const { result } = renderHook(() => useUpdateDelivery('motoboy'), {
+    const { result } = renderHook(() => useUpdateMotoboyDelivery(), {
       wrapper: createWrapper(),
     })
 
@@ -62,7 +62,7 @@ describe('useDeliveries mutations', () => {
       data: { endereco: 'Rua A', bairro: 'Centro', valorEntrega: 10, pagoPeloCliente: false },
     })
 
-    expect(deliveryService.update).toHaveBeenCalled()
+    expect(deliveryService.updateMotoboy).toHaveBeenCalled()
   })
 
   it('exclui entrega', async () => {

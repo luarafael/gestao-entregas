@@ -28,27 +28,38 @@ enum TipoPendencia {
   REPASSE_MOTOBOY
 }
 
+enum OrigemCadastroEntrega {
+  MOTOBOY
+  CLIENTE
+}
+
 model Entrega {
-  id              String        @id @default(cuid())
-  data            DateTime      @db.Date
-  horario         DateTime
-  nomeCliente     String?
-  endereco        String
-  bairro          String
-  cidade          String?
-  observacao      String?
-  valorProduto    Decimal?              @map("valor_produto") @db.Decimal(10, 2)
-  formaPagamento  FormaPagamentoEntrega? @map("forma_pagamento")
-  valorEntrega    Decimal               @db.Decimal(10, 2)
-  pagoPeloCliente Boolean       @default(false)
-  status          StatusEntrega @default(ENTREGUE)
-  motoboyId       String?       @map("motoboy_id")
-  motoboy         Usuario?      @relation(fields: [motoboyId], references: [id], onDelete: SetNull)
-  criadoEm        DateTime      @default(now())
+  id               String                 @id @default(cuid())
+  data             DateTime               @db.Date
+  horario          DateTime
+  nomeCliente      String?
+  telefoneCliente  String?                @map("telefone_cliente")
+  endereco         String
+  bairro           String
+  cidade           String?
+  observacao       String?
+  valorProduto     Decimal?               @map("valor_produto") @db.Decimal(10, 2)
+  formaPagamento   FormaPagamentoEntrega? @map("forma_pagamento")
+  valorEntrega     Decimal                @db.Decimal(10, 2)
+  pagoPeloCliente  Boolean                @default(false)
+  origemCadastro   OrigemCadastroEntrega  @default(MOTOBOY) @map("origem_cadastro")
+  entregaMotoboyId String?                @map("entrega_motoboy_id")
+  entregaMotoboy   Entrega?               @relation("EntregaClienteImportada", fields: [entregaMotoboyId], references: [id], onDelete: SetNull)
+  importacoesCliente Entrega[]            @relation("EntregaClienteImportada")
+  status           StatusEntrega          @default(ENTREGUE)
+  motoboyId        String?                @map("motoboy_id")
+  motoboy          Usuario?               @relation(fields: [motoboyId], references: [id], onDelete: SetNull)
+  criadoEm         DateTime               @default(now())
 
   @@index([data])
   @@index([bairro])
   @@index([motoboyId])
+  @@index([origemCadastro])
   @@map("entregas")
 }
 

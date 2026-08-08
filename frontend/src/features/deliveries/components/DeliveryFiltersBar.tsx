@@ -14,7 +14,6 @@ import {
   type SortField,
   type SortOrder,
 } from '../schemas/delivery.schema'
-import { DeliveryClienteFilter } from './DeliveryClienteFilter'
 
 interface DeliveryFiltersBarProps {
   viewMode: DeliveryViewMode
@@ -24,7 +23,6 @@ interface DeliveryFiltersBarProps {
   onSortByChange: (sortBy: SortField) => void
   onSortOrderChange: (sortOrder: SortOrder) => void
   onMotoboyChange: (motoboyId?: string) => void
-  onClienteChange: (nomeCliente?: string) => void
 }
 
 export function DeliveryFiltersBar({
@@ -35,7 +33,6 @@ export function DeliveryFiltersBar({
   onSortByChange,
   onSortOrderChange,
   onMotoboyChange,
-  onClienteChange,
 }: DeliveryFiltersBarProps) {
   const isAdmin = useIsAdmin()
   const motoboyValue: MotoboySelectValue = filters.motoboyId ?? 'all'
@@ -45,7 +42,7 @@ export function DeliveryFiltersBar({
       <Input
         placeholder={
           viewMode === 'cliente'
-            ? 'Pesquisar por cliente, endereço ou bairro...'
+            ? 'Pesquisar por cliente, telefone ou endereço...'
             : 'Pesquisar por cliente, endereço ou bairro...'
         }
         value={filters.search}
@@ -79,14 +76,6 @@ export function DeliveryFiltersBar({
             onChange={(value) =>
               onMotoboyChange(value === 'all' ? undefined : value)
             }
-          />
-        ) : null}
-
-        {viewMode === 'cliente' ? (
-          <DeliveryClienteFilter
-            filter={filters.filter}
-            value={filters.nomeCliente ?? ''}
-            onChange={(value) => onClienteChange(value || undefined)}
           />
         ) : null}
 

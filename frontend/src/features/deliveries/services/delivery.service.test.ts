@@ -21,6 +21,7 @@ describe('deliveryService', () => {
       filter: 'week',
       sortBy: 'horario',
       sortOrder: 'desc',
+      origemCadastro: 'MOTOBOY',
     })
 
     expect(apiFetch).toHaveBeenCalledWith(
@@ -45,10 +46,10 @@ describe('deliveryService', () => {
     )
   })
 
-  it('cria entrega', async () => {
+  it('cria entrega motoboy', async () => {
     vi.mocked(apiFetch).mockResolvedValue({ id: '1' })
 
-    await deliveryService.create('motoboy', {
+    await deliveryService.createMotoboy({
       endereco: 'Rua A',
       bairro: 'Centro',
       valorEntrega: 10,
@@ -58,10 +59,24 @@ describe('deliveryService', () => {
     expect(apiFetch).toHaveBeenCalledWith('/api/entregas', expect.any(Object))
   })
 
-  it('atualiza entrega', async () => {
+  it('cria entrega cliente', async () => {
     vi.mocked(apiFetch).mockResolvedValue({ id: '1' })
 
-    await deliveryService.update('motoboy', '1', {
+    await deliveryService.createCliente({
+      nomeCliente: 'João',
+      telefoneCliente: '11999999999',
+      endereco: 'Rua A',
+      valorProduto: 50,
+      formaPagamento: 'PIX',
+    })
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/entregas/cliente', expect.any(Object))
+  })
+
+  it('atualiza entrega motoboy', async () => {
+    vi.mocked(apiFetch).mockResolvedValue({ id: '1' })
+
+    await deliveryService.updateMotoboy('1', {
       endereco: 'Rua B',
       bairro: 'Centro',
       valorEntrega: 15,

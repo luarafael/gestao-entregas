@@ -41,9 +41,9 @@ export function DeliveryTable({
       isFetching={isFetching}
       emptyState={{
         icon: <IconPackage className="size-6" />,
-        title: isClienteView ? 'Nenhuma entrega de cliente encontrada' : 'Nenhuma entrega encontrada',
+        title: isClienteView ? 'Nenhum pedido de cliente encontrado' : 'Nenhuma entrega encontrada',
         description: isClienteView
-          ? 'Cadastre uma entrega na aba Cliente ou ajuste o filtro de cliente.'
+          ? 'Cadastre um pedido na aba Cliente ou ajuste os filtros.'
           : 'Cadastre uma nova entrega ou ajuste os filtros de busca.',
       }}
       columns={[
@@ -59,8 +59,7 @@ export function DeliveryTable({
                 key: 'motoboy',
                 header: 'Motoboy',
                 cellClassName: 'text-muted-foreground',
-                render: (delivery: Entrega) =>
-                  delivery.motoboy?.nome ?? '—',
+                render: (delivery: Entrega) => delivery.motoboy?.nome ?? '—',
               },
             ]
           : []),
@@ -68,19 +67,45 @@ export function DeliveryTable({
           key: 'cliente',
           header: 'Cliente',
           cellClassName: 'font-medium',
-          render: (delivery) => delivery.nomeCliente ?? '—',
+          render: (delivery) => (
+            <div className="space-y-1">
+              <span>{delivery.nomeCliente ?? '—'}</span>
+              {isClienteView && delivery.entregaMotoboyId ? (
+                <Badge variant="success" className="text-[10px]">
+                  Importado
+                </Badge>
+              ) : null}
+            </div>
+          ),
         },
+        ...(isClienteView
+          ? [
+              {
+                key: 'telefone',
+                header: 'Telefone',
+                cellClassName: 'text-muted-foreground',
+                render: (delivery: Entrega) => delivery.telefoneCliente ?? '—',
+              },
+            ]
+          : []),
         {
           key: 'endereco',
           header: 'Endereço',
           cellClassName: 'text-muted-foreground',
-          render: (delivery) => delivery.endereco,
+          render: (delivery) => {
+            const parts = [delivery.endereco, delivery.cidade].filter(Boolean)
+            return parts.join(' — ')
+          },
         },
-        {
-          key: 'bairro',
-          header: 'Bairro',
-          render: (delivery) => delivery.bairro,
-        },
+        ...(!isClienteView
+          ? [
+              {
+                key: 'bairro',
+                header: 'Bairro',
+                render: (delivery: Entrega) => delivery.bairro,
+              },
+            ]
+          : []),
         ...(isClienteView
           ? [
               {
@@ -99,7 +124,9 @@ export function DeliveryTable({
                 headerClassName: 'text-right',
                 cellClassName: 'text-right font-medium',
                 render: (delivery: Entrega) =>
-                  formatCurrency(Number(delivery.valorEntrega)),
+                  Number(delivery.valorEntrega) > 0
+                    ? formatCurrency(Number(delivery.valorEntrega))
+                    : '—',
               },
               {
                 key: 'pagamento',
@@ -133,11 +160,7 @@ export function DeliveryTable({
                 Editar
               </Button>
               {canDelete ? (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => onDelete(delivery)}
-                >
+                <Button variant="danger" size="sm" onClick={() => onDelete(delivery)}>
                   Excluir
                 </Button>
               ) : null}

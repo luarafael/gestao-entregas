@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { useDeliveries, useCreateDelivery } from './useDeliveries'
+import { useDeliveries, useCreateMotoboyDelivery } from './useDeliveries'
 import { deliveryService } from '../services/delivery.service'
 import { createTestQueryClient } from '@/test/test-utils'
 
 vi.mock('../services/delivery.service', () => ({
   deliveryService: {
     list: vi.fn(),
-    create: vi.fn(),
+    createMotoboy: vi.fn(),
   },
 }))
 
@@ -47,6 +47,7 @@ describe('useDeliveries', () => {
           filter: 'today',
           sortBy: 'horario',
           sortOrder: 'desc',
+          origemCadastro: 'MOTOBOY',
         }),
       { wrapper: createWrapper() },
     )
@@ -55,8 +56,8 @@ describe('useDeliveries', () => {
     expect(deliveryService.list).toHaveBeenCalled()
   })
 
-  it('cria entrega com sucesso', async () => {
-    vi.mocked(deliveryService.create).mockResolvedValue({
+  it('cria entrega motoboy com sucesso', async () => {
+    vi.mocked(deliveryService.createMotoboy).mockResolvedValue({
       id: '1',
       data: '',
       horario: '',
@@ -73,7 +74,7 @@ describe('useDeliveries', () => {
       criadoEm: '',
     })
 
-    const { result } = renderHook(() => useCreateDelivery('motoboy'), {
+    const { result } = renderHook(() => useCreateMotoboyDelivery(), {
       wrapper: createWrapper(),
     })
 
@@ -84,6 +85,6 @@ describe('useDeliveries', () => {
       pagoPeloCliente: false,
     })
 
-    expect(deliveryService.create).toHaveBeenCalled()
+    expect(deliveryService.createMotoboy).toHaveBeenCalled()
   })
 })

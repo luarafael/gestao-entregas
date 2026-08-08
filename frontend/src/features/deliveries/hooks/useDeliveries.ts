@@ -5,7 +5,6 @@ import type {
   DeliveryClienteFormData,
   DeliveryFilters,
   DeliveryMotoboyFormData,
-  DeliveryViewMode,
 } from '../schemas/delivery.schema'
 import { toast } from '@/shared/stores/toast.store'
 
@@ -19,52 +18,71 @@ export function useDeliveries(filters: DeliveryFilters) {
   })
 }
 
-export function useDeliveryClientes(
-  filters: Pick<DeliveryFilters, 'filter'>,
-  enabled = true,
-) {
-  return useQuery({
-    queryKey: [DELIVERIES_QUERY_KEY, 'clientes', filters],
-    queryFn: () => deliveryService.listClientes(filters),
-    enabled,
-    staleTime: 10_000,
-  })
-}
-
-export function useCreateDelivery(viewMode: DeliveryViewMode) {
+export function useCreateMotoboyDelivery() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: DeliveryMotoboyFormData | DeliveryClienteFormData) =>
-      deliveryService.create(viewMode, data),
+    mutationFn: (data: DeliveryMotoboyFormData) => deliveryService.createMotoboy(data),
     onSuccess: () => {
       invalidateDeliveryRelated(queryClient)
       toast('Entrega salva com sucesso!', 'success')
     },
-    onError: () => {
-      toast('Erro ao salvar entrega', 'error')
-    },
+    onError: () => toast('Erro ao salvar entrega', 'error'),
   })
 }
 
-export function useUpdateDelivery(viewMode: DeliveryViewMode) {
+export function useUpdateMotoboyDelivery() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string
-      data: DeliveryMotoboyFormData | DeliveryClienteFormData
-    }) => deliveryService.update(viewMode, id, data),
+    mutationFn: ({ id, data }: { id: string; data: DeliveryMotoboyFormData }) =>
+      deliveryService.updateMotoboy(id, data),
     onSuccess: () => {
       invalidateDeliveryRelated(queryClient)
       toast('Entrega atualizada com sucesso!', 'success')
     },
-    onError: () => {
-      toast('Erro ao atualizar entrega', 'error')
+    onError: () => toast('Erro ao atualizar entrega', 'error'),
+  })
+}
+
+export function useCreateClienteDelivery() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: DeliveryClienteFormData) => deliveryService.createCliente(data),
+    onSuccess: () => {
+      invalidateDeliveryRelated(queryClient)
+      toast('Pedido do cliente salvo!', 'success')
     },
+    onError: () => toast('Erro ao salvar pedido', 'error'),
+  })
+}
+
+export function useUpdateClienteDelivery() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DeliveryClienteFormData }) =>
+      deliveryService.updateCliente(id, data),
+    onSuccess: () => {
+      invalidateDeliveryRelated(queryClient)
+      toast('Pedido atualizado!', 'success')
+    },
+    onError: () => toast('Erro ao atualizar pedido', 'error'),
+  })
+}
+
+export function useImportClienteDeliveries() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ ids, motoboyId }: { ids: string[]; motoboyId?: string }) =>
+      deliveryService.importClienteToMotoboy(ids, motoboyId),
+    onSuccess: (result) => {
+      invalidateDeliveryRelated(queryClient)
+      toast(`${result.total} entrega(s) importada(s) para o motoboy!`, 'success')
+    },
+    onError: () => toast('Erro ao importar entregas', 'error'),
   })
 }
 
@@ -77,8 +95,6 @@ export function useDeleteDelivery() {
       invalidateDeliveryRelated(queryClient)
       toast('Entrega excluída com sucesso!', 'success')
     },
-    onError: () => {
-      toast('Erro ao excluir entrega', 'error')
-    },
+    onError: () => toast('Erro ao excluir entrega', 'error'),
   })
 }

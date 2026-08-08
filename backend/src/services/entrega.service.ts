@@ -3,7 +3,10 @@ import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 import { entregaRepository } from '../repositories/entrega.repository.js'
 import type {
   CreateEntregaInput,
+  CreateEntregaClienteInput,
+  ImportEntregasClienteInput,
   ListEntregasInput,
+  UpdateEntregaClienteInput,
   UpdateEntregaInput,
 } from '../schemas/entrega.schema.js'
 import { pendenciaRepository } from '../repositories/pendencia.repository.js'
@@ -36,6 +39,10 @@ export class EntregaService {
       throw new NotFoundError('Entrega não encontrada')
     }
 
+    if (entrega.origemCadastro === 'CLIENTE') {
+      return entrega
+    }
+
     assertOwnsResource(user, entrega.motoboyId)
     return entrega
   }
@@ -63,8 +70,79 @@ export class EntregaService {
     return { clientes }
   }
 
+  async createCliente(_user: AuthenticatedUser, input: CreateEntregaClienteInput) {
+    return entregaRepository.createCliente(input)
+  }
+
+  async updateCliente(
+    user: AuthenticatedUser,
+    id: string,
+    input: UpdateEntregaClienteInput,
+  ) {
+    const entrega = await this.findById(user, id)
+    if (entrega.origemCadastro !== 'CLIENTE') {
+      throw new ValidationError('Esta entrega não é um cadastro de cliente')
+    }
+
+    return entregaRepository.updateCliente(id, input)
+  }
+
+  async importClienteToMotoboy(
+    user: AuthenticatedUser,
+    input: ImportEntregasClienteInput,
+  ) {
+    let motoboyId: string
+
+    if (isAdminUser(user)) {
+      if (!input.motoboyId) {
+        throw new ValidationError('Selecione o motoboy para importar as entregas')
+      }
+      motoboyId = input.motoboyId
+    } else {
+      motoboyId = user.id
+    }
+
+    const entregas = await entregaRepository.findByIds(input.ids)
+    const importadas = []
+
+    for (const entrega of entregas) {
+      if (entrega.origemCadastro !== 'CLIENTE') continue
+      if (entrega.entregaMotoboyId) continue
+
+      const taxa = Number(entrega.valorEntrega)
+      const motoboyEntrega = await entregaRepository.create(
+        {
+          nomeCliente: entrega.nomeCliente ?? undefined,
+          endereco: entrega.endereco,
+          bairro: entrega.bairro === '—' ? 'Centro' : entrega.bairro,
+          cidade: entrega.cidade ?? undefined,
+          valorProduto: entrega.valorProduto
+            ? Number(entrega.valorProduto)
+            : undefined,
+          formaPagamento: entrega.formaPagamento ?? undefined,
+          valorEntrega: taxa > 0 ? taxa : Number(entrega.valorProduto ?? 0) || 1,
+          observacao: entrega.observacao ?? undefined,
+          pagoPeloCliente: false,
+        },
+        motoboyId,
+      )
+
+      await entregaRepository.linkEntregaMotoboy(entrega.id, motoboyEntrega.id)
+      importadas.push(motoboyEntrega)
+    }
+
+    if (importadas.length === 0) {
+      throw new ValidationError('Nenhuma entrega elegível para importação')
+    }
+
+    return { importadas, total: importadas.length }
+  }
+
   async update(user: AuthenticatedUser, id: string, input: UpdateEntregaInput) {
     const entrega = await this.findById(user, id)
+    if (entrega.origemCadastro === 'CLIENTE') {
+      throw new ValidationError('Use a aba Cliente para editar este cadastro')
+    }
     assertOwnsResource(user, entrega.motoboyId, 'Você não pode editar esta entrega')
 
     const { motoboyId: requestedMotoboyId, ...entregaData } = input

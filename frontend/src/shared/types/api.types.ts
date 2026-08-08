@@ -10,6 +10,7 @@ export interface Entrega {
   data: string
   horario: string
   nomeCliente: string | null
+  telefoneCliente?: string | null
   endereco: string
   bairro: string
   cidade: string | null
@@ -18,6 +19,8 @@ export interface Entrega {
   formaPagamento: 'DINHEIRO' | 'PIX' | 'CARTAO' | null
   valorEntrega: string
   pagoPeloCliente: boolean
+  origemCadastro?: 'MOTOBOY' | 'CLIENTE'
+  entregaMotoboyId?: string | null
   status: 'ENTREGUE' | 'CANCELADA'
   motoboyId?: string | null
   motoboy?: { id: string; nome: string } | null

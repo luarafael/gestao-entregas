@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { useCreateDelivery } from './useDeliveries'
+import { useCreateMotoboyDelivery } from './useDeliveries'
 import { deliveryService } from '../services/delivery.service'
 import { toast } from '@/shared/stores/toast.store'
 import { createTestQueryClient } from '@/test/test-utils'
 
 vi.mock('../services/delivery.service', () => ({
   deliveryService: {
-    create: vi.fn(),
+    createMotoboy: vi.fn(),
   },
 }))
 
@@ -27,15 +27,15 @@ function createWrapper() {
   }
 }
 
-describe('useCreateDelivery errors', () => {
+describe('useCreateMotoboyDelivery errors', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('exibe toast de erro', async () => {
-    vi.mocked(deliveryService.create).mockRejectedValue(new Error('fail'))
+    vi.mocked(deliveryService.createMotoboy).mockRejectedValue(new Error('fail'))
 
-    const { result } = renderHook(() => useCreateDelivery('motoboy'), {
+    const { result } = renderHook(() => useCreateMotoboyDelivery(), {
       wrapper: createWrapper(),
     })
 

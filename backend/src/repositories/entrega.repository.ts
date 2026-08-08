@@ -14,7 +14,7 @@ export interface ListEntregasFilters {
   sortOrder: 'asc' | 'desc'
   motoboyId?: string
   nomeCliente?: string
-  apenasComCliente?: boolean
+  origemCadastro?: 'MOTOBOY' | 'CLIENTE'
 }
 
 export class EntregaRepository {
@@ -54,15 +54,18 @@ export class EntregaRepository {
       where.motoboyId = filters.motoboyId
     }
 
+    if (filters.origemCadastro) {
+      where.origemCadastro = filters.origemCadastro
+    }
+
     if (filters.nomeCliente) {
       where.nomeCliente = { equals: filters.nomeCliente, mode: 'insensitive' }
-    } else if (filters.apenasComCliente) {
-      where.nomeCliente = { not: null }
     }
 
     if (filters.search) {
       where.OR = [
         { nomeCliente: { contains: filters.search, mode: 'insensitive' } },
+        { telefoneCliente: { contains: filters.search, mode: 'insensitive' } },
         { endereco: { contains: filters.search, mode: 'insensitive' } },
         { bairro: { contains: filters.search, mode: 'insensitive' } },
         { cidade: { contains: filters.search, mode: 'insensitive' } },
@@ -117,6 +120,7 @@ export class EntregaRepository {
       where: {
         data: day,
         status: 'ENTREGUE',
+        origemCadastro: 'MOTOBOY',
         ...(filters?.motoboyId ? { motoboyId: filters.motoboyId } : {}),
         ...(filters?.nomeCliente
           ? { nomeCliente: { equals: filters.nomeCliente, mode: 'insensitive' } }
@@ -168,6 +172,59 @@ export class EntregaRepository {
     })
   }
 
+  async createCliente(data: {
+    nomeCliente: string
+    telefoneCliente: string
+    endereco: string
+    cidade?: string
+    valorProduto: number
+    formaPagamento: 'DINHEIRO' | 'PIX' | 'CARTAO'
+    valorEntrega?: number
+    observacao?: string
+  }) {
+    const now = new Date()
+
+    return prisma.entrega.create({
+      data: {
+        nomeCliente: data.nomeCliente,
+        telefoneCliente: data.telefoneCliente,
+        endereco: data.endereco,
+        bairro: '—',
+        cidade: data.cidade,
+        valorProduto: data.valorProduto,
+        formaPagamento: data.formaPagamento,
+        valorEntrega: data.valorEntrega ?? 0,
+        observacao: data.observacao,
+        origemCadastro: 'CLIENTE',
+        data: toUtcDateOnlyFromBusinessTz(now),
+        horario: now,
+      },
+    })
+  }
+
+  async updateCliente(
+    id: string,
+    data: Partial<{
+      nomeCliente: string
+      telefoneCliente: string
+      endereco: string
+      cidade: string | null
+      valorProduto: number
+      formaPagamento: 'DINHEIRO' | 'PIX' | 'CARTAO'
+      valorEntrega: number
+      observacao: string | null
+    }>,
+  ) {
+    return prisma.entrega.update({ where: { id }, data })
+  }
+
+  async linkEntregaMotoboy(clienteId: string, motoboyEntregaId: string) {
+    return prisma.entrega.update({
+      where: { id: clienteId },
+      data: { entregaMotoboyId: motoboyEntregaId },
+    })
+  }
+
   async update(id: string, data: UpdateEntregaInput) {
     return prisma.entrega.update({ where: { id }, data })
   }
@@ -203,6 +260,7 @@ export class EntregaRepository {
     const baseWhere: Prisma.EntregaWhereInput = {
       data: day,
       status: 'ENTREGUE' as StatusEntrega,
+      origemCadastro: 'MOTOBOY',
       ...(filters?.motoboyId ? { motoboyId: filters.motoboyId } : {}),
       ...(filters?.nomeCliente
         ? { nomeCliente: { equals: filters.nomeCliente, mode: 'insensitive' } }

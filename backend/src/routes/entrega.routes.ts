@@ -14,6 +14,9 @@ import {
   monitoramentoQuerySchema,
   monitoramentoEventosQuerySchema,
   updateEntregaSchema,
+  createEntregaClienteSchema,
+  updateEntregaClienteSchema,
+  importEntregasClienteSchema,
   type DashboardStatsQuery,
   type ListEntregasInput,
   type MonitoramentoQuery,
@@ -86,6 +89,37 @@ entregaRoutes.get(
       getValidatedQuery<ListEntregasInput>(req),
     )
     res.json(result)
+  }),
+)
+
+entregaRoutes.post(
+  '/cliente/importar-motoboy',
+  validateBody(importEntregasClienteSchema),
+  asyncHandler(async (req, res) => {
+    const result = await entregaService.importClienteToMotoboy(req.user!, req.body)
+    res.json(result)
+  }),
+)
+
+entregaRoutes.post(
+  '/cliente',
+  validateBody(createEntregaClienteSchema),
+  asyncHandler(async (req, res) => {
+    const entrega = await entregaService.createCliente(req.user!, req.body)
+    res.status(201).json(entrega)
+  }),
+)
+
+entregaRoutes.put(
+  '/cliente/:id',
+  validateBody(updateEntregaClienteSchema),
+  asyncHandler(async (req, res) => {
+    const entrega = await entregaService.updateCliente(
+      req.user!,
+      getRouteParam(req, 'id'),
+      req.body,
+    )
+    res.json(entrega)
   }),
 )
 

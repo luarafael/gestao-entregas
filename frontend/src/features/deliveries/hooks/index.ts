@@ -1,7 +1,10 @@
 export {
   useDeliveries,
-  useCreateDelivery,
-  useUpdateDelivery,
+  useCreateMotoboyDelivery,
+  useUpdateMotoboyDelivery,
+  useCreateClienteDelivery,
+  useUpdateClienteDelivery,
+  useImportClienteDeliveries,
   useDeleteDelivery,
   DELIVERIES_QUERY_KEY,
 } from './useDeliveries'

@@ -1,19 +1,30 @@
-import { useState } from 'react'
-import { Modal, Pagination, EmptyState } from '@/shared/components/ui'
-import { IconPackage } from '@/shared/components/icons'
+import { useMemo, useState } from 'react'
+import { Modal, Pagination, EmptyState, Button } from '@/shared/components/ui'
+import { IconPackage, IconWhatsApp } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
 import { useDebounce } from '@/shared/hooks'
 import {
-  useCreateDelivery,
+  useCreateClienteDelivery,
+  useCreateMotoboyDelivery,
   useDeleteDelivery,
   useDeliveries,
-  useUpdateDelivery,
+  useImportClienteDeliveries,
+  useUpdateClienteDelivery,
+  useUpdateMotoboyDelivery,
 } from '../hooks/useDeliveries'
 import { DeliveryMotoboyForm } from '../components/DeliveryMotoboyForm'
 import { DeliveryClienteForm } from '../components/DeliveryClienteForm'
 import { DeliveryFiltersBar } from '../components/DeliveryFiltersBar'
 import { DeliveryTable } from '../components/DeliveryTable'
 import { routingService } from '@/features/routing/services/routing.service'
+import {
+  WhatsAppSendModal,
+  type WhatsAppSendPayload,
+} from '@/features/accounting/components/WhatsAppSendModal'
+import { MotoboySelect } from '@/shared/components/MotoboySelect'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
+import { deliveryService } from '../services/delivery.service'
+import { buildClienteEntregasMotoboyWhatsAppText } from '../utils/clienteEntregasWhatsApp'
 import type {
   DeliveryClienteFormData,
   DeliveryFilters,
@@ -37,28 +48,51 @@ const VIEW_MODE_OPTIONS: { value: DeliveryViewMode; label: string }[] = [
 ]
 
 export function DeliveriesPage() {
+  const isAdmin = useIsAdmin()
   const [viewMode, setViewMode] = useState<DeliveryViewMode>('motoboy')
   const [filters, setFilters] = useState<DeliveryFilters>(initialFilters)
   const [editingDelivery, setEditingDelivery] = useState<Entrega | null>(null)
   const [deletingDelivery, setDeletingDelivery] = useState<Entrega | null>(null)
+  const [whatsAppPayload, setWhatsAppPayload] = useState<WhatsAppSendPayload | null>(null)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [importMotoboyId, setImportMotoboyId] = useState('')
+  const [importIds, setImportIds] = useState<string[]>([])
+  const [isPreparingWhatsApp, setIsPreparingWhatsApp] = useState(false)
+  const [isPreparingImport, setIsPreparingImport] = useState(false)
 
   const debouncedSearch = useDebounce(filters.search)
 
   const queryFilters: DeliveryFilters = {
     ...filters,
     search: debouncedSearch,
-    ...(viewMode === 'cliente'
-      ? { apenasComCliente: true, motoboyId: undefined }
-      : { nomeCliente: undefined, apenasComCliente: undefined }),
+    origemCadastro: viewMode === 'cliente' ? 'CLIENTE' : 'MOTOBOY',
+    motoboyId: viewMode === 'cliente' ? undefined : filters.motoboyId,
   }
 
   const { data, isLoading, isFetching, isError, refetch } = useDeliveries(queryFilters)
-  const createMutation = useCreateDelivery(viewMode)
-  const updateMutation = useUpdateDelivery(viewMode)
+  const createMotoboyMutation = useCreateMotoboyDelivery()
+  const updateMotoboyMutation = useUpdateMotoboyDelivery()
+  const createClienteMutation = useCreateClienteDelivery()
+  const updateClienteMutation = useUpdateClienteDelivery()
+  const importMutation = useImportClienteDeliveries()
   const deleteMutation = useDeleteDelivery()
 
   const deliveries = data?.data ?? []
   const meta = data?.meta
+
+  const importableCount = useMemo(
+    () => deliveries.filter((d) => !d.entregaMotoboyId).length,
+    [deliveries],
+  )
+
+  const fetchImportableIds = async () => {
+    const result = await deliveryService.list({
+      ...queryFilters,
+      page: 1,
+      limit: 100,
+    })
+    return result.data.filter((d) => !d.entregaMotoboyId).map((d) => d.id)
+  }
 
   const updateFilters = (partial: Partial<DeliveryFilters>) => {
     setFilters((current) => ({
@@ -68,8 +102,7 @@ export function DeliveriesPage() {
         partial.page ??
         (partial.search !== undefined ||
         partial.filter !== undefined ||
-        partial.motoboyId !== undefined ||
-        partial.nomeCliente !== undefined
+        partial.motoboyId !== undefined
           ? 1
           : current.page),
     }))
@@ -82,33 +115,31 @@ export function DeliveriesPage() {
       ...current,
       page: 1,
       motoboyId: undefined,
-      nomeCliente: undefined,
     }))
   }
 
   const handleMotoboySubmit = async (formData: DeliveryMotoboyFormData) => {
     if (editingDelivery) {
-      await updateMutation.mutateAsync({ id: editingDelivery.id, data: formData })
+      await updateMotoboyMutation.mutateAsync({ id: editingDelivery.id, data: formData })
       await syncPlannerIfNeeded(editingDelivery.id, formData)
       setEditingDelivery(null)
     } else {
-      await createMutation.mutateAsync(formData)
+      await createMotoboyMutation.mutateAsync(formData)
     }
   }
 
   const handleClienteSubmit = async (formData: DeliveryClienteFormData) => {
     if (editingDelivery) {
-      await updateMutation.mutateAsync({ id: editingDelivery.id, data: formData })
-      await syncPlannerIfNeeded(editingDelivery.id, formData)
+      await updateClienteMutation.mutateAsync({ id: editingDelivery.id, data: formData })
       setEditingDelivery(null)
     } else {
-      await createMutation.mutateAsync(formData)
+      await createClienteMutation.mutateAsync(formData)
     }
   }
 
   const syncPlannerIfNeeded = async (
     entregaId: string,
-    formData: DeliveryMotoboyFormData | DeliveryClienteFormData,
+    formData: DeliveryMotoboyFormData,
   ) => {
     try {
       const linked = await routingService.findByEntrega(entregaId)
@@ -134,6 +165,49 @@ export function DeliveriesPage() {
     }
   }
 
+  const handleWhatsAppClick = async () => {
+    setIsPreparingWhatsApp(true)
+    try {
+      const result = await deliveryService.list({
+        ...queryFilters,
+        page: 1,
+        limit: 100,
+      })
+      setWhatsAppPayload({
+        baseText: buildClienteEntregasMotoboyWhatsAppText(result.data),
+      })
+    } finally {
+      setIsPreparingWhatsApp(false)
+    }
+  }
+
+  const handleImportClick = async () => {
+    setIsPreparingImport(true)
+    try {
+      const ids = await fetchImportableIds()
+      if (ids.length === 0) return
+      setImportIds(ids)
+      if (isAdmin) {
+        setImportModalOpen(true)
+        return
+      }
+      await importMutation.mutateAsync({ ids })
+    } finally {
+      setIsPreparingImport(false)
+    }
+  }
+
+  const handleConfirmImport = async () => {
+    if (isAdmin && !importMotoboyId.trim()) return
+    await importMutation.mutateAsync({
+      ids: importIds,
+      motoboyId: isAdmin ? importMotoboyId : undefined,
+    })
+    setImportModalOpen(false)
+    setImportMotoboyId('')
+    setImportIds([])
+  }
+
   const handleConfirmDelete = async () => {
     if (!deletingDelivery) return
     await deleteMutation.mutateAsync(deletingDelivery.id)
@@ -143,6 +217,11 @@ export function DeliveriesPage() {
     }
   }
 
+  const isSubmitting =
+    viewMode === 'motoboy'
+      ? createMotoboyMutation.isPending || updateMotoboyMutation.isPending
+      : createClienteMutation.isPending || updateClienteMutation.isPending
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -151,7 +230,7 @@ export function DeliveriesPage() {
           <p className="text-sm text-muted-foreground">
             {viewMode === 'motoboy'
               ? 'Cadastre corridas do motoboy e filtre por motoboy.'
-              : 'Cadastre entregas para clientes e acompanhe o histórico por cliente.'}
+              : 'Cadastre pedidos de clientes, envie ao motoboy via WhatsApp e importe para rotas.'}
           </p>
         </div>
 
@@ -180,14 +259,14 @@ export function DeliveriesPage() {
             editingDelivery={editingDelivery}
             onSubmit={handleMotoboySubmit}
             onCancelEdit={() => setEditingDelivery(null)}
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            isSubmitting={isSubmitting}
           />
         ) : (
           <DeliveryClienteForm
             editingDelivery={editingDelivery}
             onSubmit={handleClienteSubmit}
             onCancelEdit={() => setEditingDelivery(null)}
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            isSubmitting={isSubmitting}
           />
         )}
 
@@ -200,9 +279,6 @@ export function DeliveriesPage() {
             onSortByChange={(sortBy) => updateFilters({ sortBy, page: 1 })}
             onSortOrderChange={(sortOrder) => updateFilters({ sortOrder, page: 1 })}
             onMotoboyChange={(motoboyId) => updateFilters({ motoboyId, page: 1 })}
-            onClienteChange={(nomeCliente) =>
-              updateFilters({ nomeCliente, page: 1 })
-            }
           />
 
           {isError ? (
@@ -231,6 +307,28 @@ export function DeliveriesPage() {
             />
           )}
 
+          {viewMode === 'cliente' ? (
+            <div className="flex flex-wrap gap-2 border-t border-border/50 pt-4">
+              <Button
+                variant="secondary"
+                onClick={() => void handleWhatsAppClick()}
+                isLoading={isPreparingWhatsApp}
+                disabled={deliveries.length === 0}
+              >
+                <IconWhatsApp className="mr-2 size-4" />
+                Enviar pedidos via WhatsApp
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => void handleImportClick()}
+                isLoading={importMutation.isPending || isPreparingImport}
+                disabled={importableCount === 0 && !isPreparingImport}
+              >
+                Importar para Motoboy
+              </Button>
+            </div>
+          ) : null}
+
           {meta ? (
             <Pagination
               page={meta.page}
@@ -255,6 +353,32 @@ export function DeliveriesPage() {
         variant="danger"
         isLoading={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
+      />
+
+      <Modal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        title="Importar para Motoboy"
+        description={`${importIds.length} pedido(s) serão copiados para a aba Motoboy e poderão ser usados no Planejador de rotas.`}
+        confirmLabel="Importar"
+        cancelLabel="Cancelar"
+        isLoading={importMutation.isPending}
+        onConfirm={handleConfirmImport}
+      >
+        <MotoboySelect
+          id="import-cliente-motoboy"
+          label="Motoboy"
+          layout="stack"
+          allowAll={false}
+          value={importMotoboyId}
+          onChange={setImportMotoboyId}
+        />
+      </Modal>
+
+      <WhatsAppSendModal
+        open={Boolean(whatsAppPayload)}
+        onClose={() => setWhatsAppPayload(null)}
+        payload={whatsAppPayload}
       />
     </div>
   )
