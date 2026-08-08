@@ -10,5 +10,5 @@ ADD COLUMN "valor_entrega_motoboy" DECIMAL(10, 2);
 UPDATE "entregas"
 SET
   "status_pagamento_cliente" = 'NAO_PAGO',
-  "valor_entrega_motoboy" = COALESCE("valor_entrega", 0)
+  "valor_entrega_motoboy" = COALESCE("valorEntrega", 0)
 WHERE "origem_cadastro" = 'CLIENTE';
