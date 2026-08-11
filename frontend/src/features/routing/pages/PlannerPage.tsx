@@ -186,9 +186,13 @@ export function PlannerPage() {
   const whatsappText = useMemo(() => {
     if (!result) return ''
     return formatRouteWhatsAppText(
-      buildRouteWhatsAppPayload({ ...result, paradas: enrichedStops }),
+      buildRouteWhatsAppPayload({
+        ...result,
+        enderecoInicial: enderecoPartidaRota,
+        paradas: enrichedStops,
+      }),
     )
-  }, [result, enrichedStops])
+  }, [result, enrichedStops, enderecoPartidaRota])
 
   const progressWhatsappText = useMemo(() => {
     if (!result) return ''
@@ -787,6 +791,30 @@ export function PlannerPage() {
             <BarraProgressoExecucao stops={displayStops} />
           ) : null}
 
+          {routePlanned ? (
+            <WhatsAppPreview
+              title="Início de rota — WhatsApp"
+              text={whatsappText}
+              onCopy={handleCopyWhatsApp}
+              onSend={handleSendWhatsApp}
+              isCopying={copyMutation.isPending}
+            />
+          ) : null}
+
+          {routePlanned && executionActive ? (
+            <WhatsAppPreview
+              title={
+                routeCompleted
+                  ? 'Rota concluída — WhatsApp'
+                  : 'Andamento da rota — WhatsApp'
+              }
+              text={progressWhatsappText}
+              onCopy={handleCopyProgressWhatsApp}
+              onSend={handleSendProgressWhatsApp}
+              isCopying={copyMutation.isPending}
+            />
+          ) : null}
+
           <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <div className="min-w-0 space-y-4">
               <EnderecoInicial />
@@ -964,30 +992,6 @@ export function PlannerPage() {
                     </ul>
                   </CardContent>
                 </Card>
-              ) : null}
-
-              {routePlanned && !executionActive ? (
-                <WhatsAppPreview
-                  title="Rota planejada — WhatsApp"
-                  text={whatsappText}
-                  onCopy={handleCopyWhatsApp}
-                  onSend={handleSendWhatsApp}
-                  isCopying={copyMutation.isPending}
-                />
-              ) : null}
-
-              {routePlanned && executionActive ? (
-                <WhatsAppPreview
-                  title={
-                    routeCompleted
-                      ? 'Rota concluída — WhatsApp'
-                      : 'Andamento da rota — WhatsApp'
-                  }
-                  text={progressWhatsappText}
-                  onCopy={handleCopyProgressWhatsApp}
-                  onSend={handleSendProgressWhatsApp}
-                  isCopying={copyMutation.isPending}
-                />
               ) : null}
 
               <div className="flex flex-wrap gap-2">
