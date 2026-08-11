@@ -5,6 +5,7 @@ interface PrestacaoScopeSelectProps {
   value: PrestacaoScope
   onChange: (value: PrestacaoScope) => void
   className?: string
+  selectClassName?: string
 }
 
 const options: { value: PrestacaoScope; label: string }[] = [
@@ -17,6 +18,7 @@ export function PrestacaoScopeSelect({
   value,
   onChange,
   className,
+  selectClassName,
 }: PrestacaoScopeSelectProps) {
   return (
     <div className={cn('space-y-1.5', className)}>
@@ -29,7 +31,10 @@ export function PrestacaoScopeSelect({
           id="prestacao-scope"
           value={value}
           onChange={(event) => onChange(event.target.value as PrestacaoScope)}
-          className="h-9 min-w-44 rounded-lg border border-border/70 bg-surface/50 px-2 text-sm text-foreground"
+          className={cn(
+            'h-9 min-w-44 rounded-lg border border-border/70 bg-surface/50 px-2 text-sm text-foreground',
+            selectClassName,
+          )}
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -46,6 +51,7 @@ interface PrestacaoHistoricoFilterSelectProps {
   value: 'all' | PrestacaoScope
   onChange: (value: 'all' | PrestacaoScope) => void
   className?: string
+  selectClassName?: string
 }
 
 const historicoOptions: { value: 'all' | PrestacaoScope; label: string }[] = [
@@ -59,6 +65,7 @@ export function PrestacaoHistoricoFilterSelect({
   value,
   onChange,
   className,
+  selectClassName,
 }: PrestacaoHistoricoFilterSelectProps) {
   return (
     <div className={cn('space-y-1.5', className)}>
@@ -73,7 +80,10 @@ export function PrestacaoHistoricoFilterSelect({
           onChange={(event) =>
             onChange(event.target.value as 'all' | PrestacaoScope)
           }
-          className="h-9 min-w-36 rounded-lg border border-border/70 bg-surface/50 px-2 text-sm text-foreground"
+          className={cn(
+            'h-9 min-w-36 rounded-lg border border-border/70 bg-surface/50 px-2 text-sm text-foreground',
+            selectClassName,
+          )}
         >
           {historicoOptions.map((option) => (
             <option key={option.value} value={option.value}>

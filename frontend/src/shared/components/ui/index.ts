@@ -23,3 +23,9 @@ export {
   PAGE_CARD_ARTICLE,
   PAGE_CARD_SECTION,
 } from './PageShell'
+export {
+  PageHeader,
+  PageHeaderActions,
+  toolbarFieldClassName,
+  toolbarSelectClassName,
+} from './PageHeader'

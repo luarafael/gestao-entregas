@@ -7,6 +7,7 @@ import {
   MetaChip,
   MetaField,
   Modal,
+  PageHeader,
   PageShell,
   PAGE_CARD_ARTICLE,
   TableSkeleton,
@@ -14,6 +15,7 @@ import {
 import { IconReceipt } from '@/shared/components/icons'
 import {
   MotoboySelect,
+  motoboySelectToolbarProps,
   type MotoboySelectValue,
 } from '@/shared/components/MotoboySelect'
 import { cn, formatCurrency } from '@/shared/utils/cn'
@@ -71,15 +73,10 @@ export function AprovacoesPage() {
 
   return (
     <PageShell>
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Aprovações de motoboy
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Gerencie solicitações pendentes e consulte o histórico de decisões.
-          </p>
-        </div>
+      <PageHeader
+        title="Aprovações de motoboy"
+        description="Gerencie solicitações pendentes e consulte o histórico de decisões."
+      >
         <MotoboySelect
           id="filtro-motoboy-aprovacoes"
           value={motoboyFilter}
@@ -88,8 +85,9 @@ export function AprovacoesPage() {
             setHistoryPage(1)
           }}
           allowAll
+          {...motoboySelectToolbarProps}
         />
-      </div>
+      </PageHeader>
 
       <div className="flex flex-wrap gap-2">
         <Button

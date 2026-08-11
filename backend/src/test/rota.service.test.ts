@@ -10,6 +10,8 @@ vi.mock('../repositories/rota.repository.js', () => ({
     delete: vi.fn(),
     findById: vi.fn(),
     getEnderecoPartidaPadrao: vi.fn(),
+    findActiveToday: vi.fn(),
+    findActiveForMotoboyToday: vi.fn(),
   },
 }))
 
@@ -165,5 +167,47 @@ describe('RotaService motoboy slot', () => {
         ],
       }),
     ).rejects.toBeInstanceOf(ValidationError)
+  })
+
+  it('usa motoboyId explícito quando admin informa no save', async () => {
+    await service.save(adminUser, {
+      ...savePayload,
+      motoboyId: 'motoboy-2',
+    })
+
+    expect(rotaRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ motoboyId: 'motoboy-2' }),
+    )
+  })
+})
+
+describe('RotaService getActiveToday', () => {
+  const service = new RotaService()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('retorna rota ativa do dia para admin', async () => {
+    rotaRepository.findActiveToday.mockResolvedValue({ id: 'rota-admin' })
+
+    const result = await service.getActiveToday(adminUser)
+
+    expect(rotaRepository.findActiveToday).toHaveBeenCalled()
+    expect(result.rota?.id).toBe('rota-admin')
+  })
+
+  it('retorna rota ativa do motoboy no dia', async () => {
+    rotaRepository.findActiveForMotoboyToday.mockResolvedValue({
+      id: 'rota-motoboy',
+    })
+
+    const result = await service.getActiveToday(motoboyUser)
+
+    expect(rotaRepository.findActiveForMotoboyToday).toHaveBeenCalledWith(
+      'motoboy-1',
+      expect.any(Date),
+    )
+    expect(result.rota?.id).toBe('rota-motoboy')
   })
 })

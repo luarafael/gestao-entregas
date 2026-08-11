@@ -7,6 +7,8 @@ import {
   CardHeader,
   CardTitle,
   MetaChip,
+  PageHeader,
+  PageHeaderActions,
   PageShell,
 } from '@/shared/components/ui'
 import { IconRoute } from '@/shared/components/icons'
@@ -18,6 +20,12 @@ import {
   type WhatsAppSendPayload,
 } from '@/features/accounting/components/WhatsAppSendModal'
 import { useCopyWhatsAppText } from '@/features/accounting/hooks/usePrestacao'
+import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
+import {
+  MotoboySelect,
+  motoboySelectToolbarProps,
+  type MotoboySelectValue,
+} from '@/shared/components/MotoboySelect'
 import { EnderecoInicial } from '../components/EnderecoInicial'
 import { FormularioEntrega } from '../components/FormularioEntrega'
 import { ListaEntregas } from '../components/ListaEntregas'
@@ -36,7 +44,7 @@ import {
   useSaveRoute,
   ROTAS_QUERY_KEY,
 } from '../hooks/useRouting'
-import { usePlannerBootstrap } from '../hooks/usePlannerBootstrap'
+import { usePlannerBootstrap, usePlannerSync } from '../hooks/usePlannerBootstrap'
 import { usePlannerStore } from '../stores/planner.store'
 import { usePlannerEntregas, useUpdateEntregaPaymentStatus } from '../hooks/usePlannerEntregas'
 import { routingService } from '../services/routing.service'
@@ -83,7 +91,10 @@ import { DEFAULT_START_ADDRESS } from '../schemas/routing.schema'
 
 export function PlannerPage() {
   usePlannerBootstrap()
+  usePlannerSync(true)
   const queryClient = useQueryClient()
+  const isAdmin = useIsAdmin()
+  const [motoboyFilter, setMotoboyFilter] = useState<MotoboySelectValue>('')
 
   const { data: enderecoPartidaData } = useEnderecoPartida()
   const enderecoPartidaPadrao =
@@ -129,6 +140,12 @@ export function PlannerPage() {
   const optimizeMutation = useOptimizeRoute()
   const planMutation = usePlanRoute()
   const saveMutation = useSaveRoute()
+
+  const resolvePlannerMotoboyId = () => {
+    if (!isAdmin) return null
+    if (!motoboyFilter || motoboyFilter === 'all') return null
+    return motoboyFilter
+  }
   const copyMutation = useCopyWhatsAppText()
   const updatePaymentMutation = useUpdateEntregaPaymentStatus()
 
@@ -329,6 +346,7 @@ export function PlannerPage() {
       aproximada: optimized.aproximada,
       paradas: optimized.paradas,
       substituirRotaId: routeCompleted ? null : savedRotaId,
+      motoboyId: resolvePlannerMotoboyId(),
       silent: options?.silent ?? true,
     })
 
@@ -420,6 +438,7 @@ export function PlannerPage() {
       paradas: currentStops,
       preservarOrdem: true,
       substituirRotaId: routeCompleted ? null : savedRotaId,
+      motoboyId: resolvePlannerMotoboyId(),
     })
     applyOptimizedResult(currentStops, {
       ...planned,
@@ -442,6 +461,7 @@ export function PlannerPage() {
       enderecoInicial: enderecoPartidaPadrao,
       paradas: stops,
       substituirRotaId: routeCompleted ? null : savedRotaId,
+      motoboyId: resolvePlannerMotoboyId(),
     })
     applyOptimizedResult(stops, planned)
     setSavedRotaId(planned.rotaId ?? null)
@@ -720,16 +740,21 @@ export function PlannerPage() {
 
   return (
     <PageShell>
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Planejador de Rotas
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Importe entregas, otimize a sequência e inicie a navegação.
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        title="Planejador de Rotas"
+        description="Importe entregas, otimize a sequência e inicie a navegação. A rota calculada sincroniza automaticamente entre dispositivos."
+      >
+        {isAdmin ? (
+          <MotoboySelect
+            id="planner-motoboy"
+            value={motoboyFilter}
+            onChange={setMotoboyFilter}
+            allowAll={false}
+            label="Motoboy"
+            {...motoboySelectToolbarProps}
+          />
+        ) : null}
+        <PageHeaderActions className="sm:ml-0">
           <Button
             variant={tab === 'planejar' ? 'primary' : 'secondary'}
             onClick={() => setTab('planejar')}
@@ -742,8 +767,8 @@ export function PlannerPage() {
           >
             Histórico
           </Button>
-        </div>
-      </div>
+        </PageHeaderActions>
+      </PageHeader>
 
       {tab === 'historico' ? (
         <HistoricoRotas onLoadRoute={handleLoadRoute} />

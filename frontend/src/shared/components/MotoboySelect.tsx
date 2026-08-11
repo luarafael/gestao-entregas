@@ -4,6 +4,11 @@ import type { MotoboyAtivoFilter } from '@/features/motoboys/schemas/motoboy.sch
 
 export type MotoboySelectValue = 'all' | string
 
+export const motoboySelectToolbarProps = {
+  className: 'min-w-0',
+  selectClassName: 'min-w-0 w-full sm:w-auto sm:min-w-36 sm:max-w-48',
+} as const
+
 interface MotoboySelectProps {
   value: MotoboySelectValue
   onChange: (value: MotoboySelectValue) => void

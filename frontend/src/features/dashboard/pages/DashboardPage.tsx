@@ -13,16 +13,13 @@ import {
   EmptyState,
   MetaChip,
   PAGE_CARD_ARTICLE,
+  PageHeader,
   PagePanel,
   PageShell,
   StatCard,
   StatCardSkeleton,
   TableSkeleton,
 } from '@/shared/components/ui'
-import {
-  MotoboySelect,
-  type MotoboySelectValue,
-} from '@/shared/components/MotoboySelect'
 import { cn, formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
 import type { DashboardStats, Entrega } from '@/shared/types/api.types'
@@ -39,6 +36,11 @@ import {
   type DashboardScope,
 } from '@/features/dashboard/types'
 import { ScopeToggle } from '@/shared/components/ScopeToggle'
+import {
+  MotoboySelect,
+  motoboySelectToolbarProps,
+  type MotoboySelectValue,
+} from '@/shared/components/MotoboySelect'
 import {
   useNeighborhoodReport,
   usePeriodDailyBreakdown,
@@ -402,35 +404,30 @@ export function DashboardPage() {
   return (
     <PageShell>
       <section className="min-w-0">
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Resumo do dia
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {getDashboardScopeDescription(
-                effectiveScope,
-                isAdmin,
-                Boolean(motoboyId),
-              )}
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            {isAdmin ? (
-              <ScopeToggle
-                value={dashboardScope}
-                onChange={setDashboardScope}
-              />
-            ) : null}
-            {isAdmin && effectiveScope === 'motoboy' ? (
-              <MotoboySelect
-                value={motoboyFilter}
-                onChange={setMotoboyFilter}
-                allowAll
-              />
-            ) : null}
-          </div>
-        </div>
+        <PageHeader
+          className="mb-4"
+          title="Resumo do dia"
+          description={getDashboardScopeDescription(
+            effectiveScope,
+            isAdmin,
+            Boolean(motoboyId),
+          )}
+        >
+          {isAdmin ? (
+            <ScopeToggle
+              value={dashboardScope}
+              onChange={setDashboardScope}
+            />
+          ) : null}
+          {isAdmin && effectiveScope === 'motoboy' ? (
+            <MotoboySelect
+              value={motoboyFilter}
+              onChange={setMotoboyFilter}
+              allowAll
+              {...motoboySelectToolbarProps}
+            />
+          ) : null}
+        </PageHeader>
 
         {!queriesEnabled || isLoading ? (
           <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">

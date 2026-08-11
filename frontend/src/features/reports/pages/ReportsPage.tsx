@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import type { ReportPeriod } from '@/shared/types/api.types'
-import { Button, PageShell } from '@/shared/components/ui'
+import { Button, PageHeader, PageHeaderActions, PageShell } from '@/shared/components/ui'
 import { ScopeToggle } from '@/shared/components/ScopeToggle'
 import {
   MotoboySelect,
+  motoboySelectToolbarProps,
   type MotoboySelectValue,
 } from '@/shared/components/MotoboySelect'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
@@ -109,30 +110,28 @@ export function ReportsPage() {
 
   return (
     <PageShell>
-      <section className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-2xl font-semibold tracking-tight">Relatórios</h2>
-          <p className="text-sm text-muted-foreground">
-            {getReportScopeDescription(
-              effectiveScope,
-              isAdmin,
-              Boolean(motoboyId),
-            )}
-          </p>
-        </div>
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-          {isAdmin ? (
-            <ScopeToggle value={reportScope} onChange={setReportScope} />
-          ) : null}
-          {isAdmin && effectiveScope === 'motoboy' ? (
-            <MotoboySelect
-              id="reports-motoboy"
-              value={motoboyFilter}
-              onChange={setMotoboyFilter}
-              allowAll
-              label="Motoboy"
-            />
-          ) : null}
+      <PageHeader
+        title="Relatórios"
+        description={getReportScopeDescription(
+          effectiveScope,
+          isAdmin,
+          Boolean(motoboyId),
+        )}
+      >
+        {isAdmin ? (
+          <ScopeToggle value={reportScope} onChange={setReportScope} />
+        ) : null}
+        {isAdmin && effectiveScope === 'motoboy' ? (
+          <MotoboySelect
+            id="reports-motoboy"
+            value={motoboyFilter}
+            onChange={setMotoboyFilter}
+            allowAll
+            label="Motoboy"
+            {...motoboySelectToolbarProps}
+          />
+        ) : null}
+        <PageHeaderActions>
           <Button
             variant="pdf"
             onClick={handleExportPdf}
@@ -141,8 +140,8 @@ export function ReportsPage() {
             Exportar PDF
           </Button>
           <PeriodFilter value={period} onChange={setPeriod} />
-        </div>
-      </section>
+        </PageHeaderActions>
+      </PageHeader>
 
       <ReportSummaryCards
         scope={effectiveScope}

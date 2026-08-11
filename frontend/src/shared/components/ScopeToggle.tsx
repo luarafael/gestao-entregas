@@ -11,7 +11,7 @@ interface ScopeToggleProps {
 
 export function ScopeToggle({ value, onChange }: ScopeToggleProps) {
   return (
-    <div className="flex rounded-xl border border-border/60 bg-surface/40 p-1">
+    <div className="flex flex-wrap rounded-xl border border-border/60 bg-surface/40 p-1">
       {DASHBOARD_SCOPE_OPTIONS.map((option) => (
         <button
           key={option.value}

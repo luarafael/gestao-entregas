@@ -39,15 +39,18 @@ export function usePlanRoute() {
       paradas,
       preservarOrdem = false,
       substituirRotaId = null,
+      motoboyId = null,
     }: {
       enderecoInicial: string
       paradas: PlannerStop[]
       preservarOrdem?: boolean
       substituirRotaId?: string | null
+      motoboyId?: string | null
     }) =>
       routingService.planRoute(enderecoInicial, paradas, {
         preservarOrdem,
         substituirRotaId,
+        motoboyId,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
@@ -75,6 +78,7 @@ export function useSaveRoute() {
         aproximada: variables.aproximada,
         paradas: variables.paradas,
         substituirRotaId: variables.substituirRotaId ?? null,
+        motoboyId: variables.motoboyId ?? null,
       }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })

@@ -2,14 +2,18 @@ import { useState } from 'react'
 import {
   EmptyState,
   Input,
+  PageHeader,
   PageShell,
   Skeleton,
+  toolbarFieldClassName,
 } from '@/shared/components/ui'
 import { IconEye, IconRoute } from '@/shared/components/icons'
 import {
   MotoboySelect,
+  motoboySelectToolbarProps,
   type MotoboySelectValue,
 } from '@/shared/components/MotoboySelect'
+import { cn } from '@/shared/utils/cn'
 import { formatDateBR, formatTimeBR } from '@/shared/utils/format'
 import { getTodayInputDate } from '@/features/accounting/schemas/prestacao.schema'
 import { useMonitoramento } from '../hooks/useMonitoramento'
@@ -61,34 +65,27 @@ export function MonitoramentoPage() {
 
   return (
     <PageShell className="mx-auto max-w-3xl">
-      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Monitoramento
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Acompanhe em tempo real a rota do motoboy selecionado.
-          </p>
-        </div>
-
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
-          <MotoboySelect
-            id="monitoramento-motoboy"
-            value={motoboyFilter}
-            onChange={setMotoboyFilter}
-            allowAll={false}
-            label="Motoboy"
+      <PageHeader
+        title="Monitoramento"
+        description="Acompanhe em tempo real a rota do motoboy selecionado."
+      >
+        <MotoboySelect
+          id="monitoramento-motoboy"
+          value={motoboyFilter}
+          onChange={setMotoboyFilter}
+          allowAll={false}
+          label="Motoboy"
+          {...motoboySelectToolbarProps}
+        />
+        <div className={cn('w-full sm:w-auto sm:min-w-36 sm:max-w-48', toolbarFieldClassName)}>
+          <Input
+            label="Data"
+            type="date"
+            value={selectedDate}
+            onChange={(event) => setSelectedDate(event.target.value)}
           />
-          <div className="w-full sm:w-56">
-            <Input
-              label="Data"
-              type="date"
-              value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
-            />
-          </div>
         </div>
-      </div>
+      </PageHeader>
 
       {!motoboyId ? (
         <EmptyState

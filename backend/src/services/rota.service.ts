@@ -34,9 +34,14 @@ import {
 async function resolveMotoboyIdForSave(
   user: AuthenticatedUser,
   paradas: SaveRotaInput['paradas'],
+  explicitMotoboyId?: string | null,
 ): Promise<string | null> {
   if (!isAdminUser(user)) {
     return user.id
+  }
+
+  if (explicitMotoboyId) {
+    return explicitMotoboyId
   }
 
   const entregaIds = paradas
@@ -429,6 +434,7 @@ export class RotaService {
       aproximada: optimized.aproximada,
       paradas: optimized.paradas,
       substituirRotaId: input.substituirRotaId,
+      motoboyId: input.motoboyId,
     })
 
     const paradas = optimized.paradas.map((parada) => {
@@ -453,7 +459,11 @@ export class RotaService {
   }
 
   async save(user: AuthenticatedUser, input: SaveRotaInput) {
-    const motoboyId = await resolveMotoboyIdForSave(user, input.paradas)
+    const motoboyId = await resolveMotoboyIdForSave(
+      user,
+      input.paradas,
+      input.motoboyId,
+    )
     const day = input.data ?? toUtcDateOnlyFromBusinessTz()
 
     if (motoboyId) {
@@ -502,11 +512,13 @@ export class RotaService {
   }
 
   async getActiveToday(user: AuthenticatedUser) {
+    const day = toUtcDateOnlyFromBusinessTz()
+
     if (isAdminUser(user)) {
-      return { rota: null }
+      const rota = await rotaRepository.findActiveToday(day)
+      return { rota: rota ?? null }
     }
 
-    const day = toUtcDateOnlyFromBusinessTz()
     const rota = await rotaRepository.findActiveForMotoboyToday(user.id, day)
     return { rota: rota ?? null }
   }

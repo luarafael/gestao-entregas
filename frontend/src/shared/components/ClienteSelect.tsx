@@ -7,6 +7,7 @@ interface ClienteSelectProps {
   onChange: (value: string) => void
   label?: string
   className?: string
+  selectClassName?: string
   id?: string
   error?: string
   layout?: 'inline' | 'stack'
@@ -19,6 +20,7 @@ export function ClienteSelect({
   onChange,
   label = 'Cliente',
   className,
+  selectClassName,
   id = 'cliente-select',
   error,
   layout = 'inline',
@@ -50,6 +52,7 @@ export function ClienteSelect({
               'h-9 min-w-44 rounded-lg border border-border/70 bg-surface/50 px-2 text-sm text-foreground',
               'disabled:cursor-not-allowed disabled:opacity-60',
               error && 'border-danger/50',
+              selectClassName,
             )}
           >
             <option value="">Selecione um cliente</option>

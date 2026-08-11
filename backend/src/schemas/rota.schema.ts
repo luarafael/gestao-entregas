@@ -42,6 +42,7 @@ export const optimizeRotaSchema = z.object({
   paradas: z.array(optimizeParadaSchema).min(1, 'Informe ao menos uma entrega'),
   preservarOrdem: z.boolean().optional().default(false),
   substituirRotaId: z.string().trim().min(1).optional().nullable(),
+  motoboyId: z.string().trim().min(1).optional().nullable(),
 })
 
 export const saveRotaSchema = z.object({
@@ -62,6 +63,7 @@ export const saveRotaSchema = z.object({
   sugestoes: z.array(z.string()).optional(),
   paradas: z.array(saveParadaSchema).min(1),
   substituirRotaId: z.string().trim().min(1).optional().nullable(),
+  motoboyId: z.string().trim().min(1).optional().nullable(),
 })
 
 export const listRotasSchema = z.object({

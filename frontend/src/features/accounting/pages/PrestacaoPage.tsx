@@ -11,13 +11,16 @@ import {
   EmptyState,
   Input,
   Modal,
+  PageHeader,
   PagePanel,
   PageShell,
   StatCardSkeleton,
   Textarea,
+  toolbarFieldClassName,
+  toolbarSelectClassName,
 } from '@/shared/components/ui'
 import { IconReceipt, IconTrending } from '@/shared/components/icons'
-import { MotoboySelect } from '@/shared/components/MotoboySelect'
+import { MotoboySelect, motoboySelectToolbarProps } from '@/shared/components/MotoboySelect'
 import { ClienteSelect } from '@/shared/components/ClienteSelect'
 import { formatCurrency } from '@/shared/utils/cn'
 import {
@@ -496,37 +499,37 @@ export function PrestacaoPage() {
 
   return (
     <PageShell>
-      <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Prestação de Contas
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {scopeDescription[prestacaoScope]}
-          </p>
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <PrestacaoScopeSelect value={prestacaoScope} onChange={handleScopeChange} />
-          {prestacaoScope === 'motoboy' ? (
-            <MotoboySelect
-              id="prestacao-motoboy"
-              value={motoboyId}
-              onChange={setMotoboyId}
-              allowAll={false}
-              label="Motoboy"
-            />
-          ) : null}
-          {prestacaoScope === 'cliente' ? (
-            <ClienteSelect
-              data={selectedDate}
-              value={nomeCliente}
-              onChange={setNomeCliente}
-              label="Cliente"
-            />
-          ) : null}
-        </div>
-      </div>
+      <PageHeader
+        title="Prestação de Contas"
+        description={scopeDescription[prestacaoScope]}
+      >
+        <PrestacaoScopeSelect
+          value={prestacaoScope}
+          onChange={handleScopeChange}
+          className={toolbarFieldClassName}
+          selectClassName={toolbarSelectClassName}
+        />
+        {prestacaoScope === 'motoboy' ? (
+          <MotoboySelect
+            id="prestacao-motoboy"
+            value={motoboyId}
+            onChange={setMotoboyId}
+            allowAll={false}
+            label="Motoboy"
+            {...motoboySelectToolbarProps}
+          />
+        ) : null}
+        {prestacaoScope === 'cliente' ? (
+          <ClienteSelect
+            data={selectedDate}
+            value={nomeCliente}
+            onChange={setNomeCliente}
+            label="Cliente"
+            className={toolbarFieldClassName}
+            selectClassName={toolbarSelectClassName}
+          />
+        ) : null}
+      </PageHeader>
 
       <Card glass>
         <CardHeader>
@@ -736,21 +739,22 @@ export function PrestacaoPage() {
       ) : null}
 
       <PagePanel density="default" className="min-w-0">
-        <div className="mb-1 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <h3 className="text-lg font-semibold tracking-tight">Histórico</h3>
-            <p className="text-sm text-muted-foreground">
-              Prestações de empresa, motoboys e clientes.
-            </p>
-          </div>
+        <PageHeader
+          size="section"
+          className="mb-1"
+          title="Histórico"
+          description="Prestações de empresa, motoboys e clientes."
+        >
           <PrestacaoHistoricoFilterSelect
             value={historyFilter}
             onChange={(value) => {
               setHistoryFilter(value)
               setHistoryPage(1)
             }}
+            className={toolbarFieldClassName}
+            selectClassName={toolbarSelectClassName}
           />
-        </div>
+        </PageHeader>
 
         {historicoQuery.isError ? (
           <EmptyState

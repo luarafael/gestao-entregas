@@ -112,6 +112,17 @@ export class RotaRepository {
     })
   }
 
+  async findActiveToday(date: Date) {
+    return prisma.rotaPlanejada.findFirst({
+      where: {
+        data: date,
+        concluidaEm: null,
+      },
+      orderBy: { criadoEm: 'desc' },
+      include: { paradas: { orderBy: { ordem: 'asc' } } },
+    })
+  }
+
   async markConcluded(id: string, concluidaEm: Date) {
     return prisma.rotaPlanejada.update({
       where: { id },

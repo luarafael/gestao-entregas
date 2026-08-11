@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Modal, Pagination, EmptyState, Button, PageShell, PagePanel, PageSplit } from '@/shared/components/ui'
+import { Modal, Pagination, EmptyState, Button, PageHeader, PageShell, PagePanel, PageSplit } from '@/shared/components/ui'
 import { IconPackage, IconWhatsApp } from '@/shared/components/icons'
 import { cn } from '@/shared/utils/cn'
 import { useDebounce } from '@/shared/hooks'
@@ -224,17 +224,15 @@ export function DeliveriesPage() {
 
   return (
     <PageShell density="compact">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Entregas</h2>
-          <p className="text-xs text-muted-foreground sm:text-sm">
-            {viewMode === 'motoboy'
-              ? 'Cadastre corridas do motoboy e filtre por motoboy.'
-              : 'Cadastre pedidos de clientes, envie ao motoboy via WhatsApp e importe para rotas.'}
-          </p>
-        </div>
-
-        <div className="flex rounded-xl border border-border/60 bg-surface/40 p-1">
+      <PageHeader
+        title="Entregas"
+        description={
+          viewMode === 'motoboy'
+            ? 'Cadastre corridas do motoboy e filtre por motoboy.'
+            : 'Cadastre pedidos de clientes, envie ao motoboy via WhatsApp e importe para rotas.'
+        }
+      >
+        <div className="flex flex-wrap rounded-xl border border-border/60 bg-surface/40 p-1">
           {VIEW_MODE_OPTIONS.map((option) => (
             <button
               key={option.value}
@@ -251,7 +249,7 @@ export function DeliveriesPage() {
             </button>
           ))}
         </div>
-      </div>
+      </PageHeader>
 
       <PageSplit variant="form">
         {viewMode === 'motoboy' ? (

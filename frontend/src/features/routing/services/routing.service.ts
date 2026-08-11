@@ -25,7 +25,11 @@ export const routingService = {
   planRoute(
     enderecoInicial: string,
     paradas: PlannerStop[],
-    options?: { preservarOrdem?: boolean; substituirRotaId?: string | null },
+    options?: {
+      preservarOrdem?: boolean
+      substituirRotaId?: string | null
+      motoboyId?: string | null
+    },
   ) {
     return apiFetch<OptimizedRouteResult>('/api/rotas/planejar', {
       method: 'POST',
@@ -34,6 +38,7 @@ export const routingService = {
         paradas,
         preservarOrdem: options?.preservarOrdem ?? false,
         substituirRotaId: options?.substituirRotaId ?? null,
+        motoboyId: options?.motoboyId ?? null,
       }),
     })
   },
@@ -45,6 +50,7 @@ export const routingService = {
     aproximada: boolean
     paradas: PlannerStop[]
     substituirRotaId?: string | null
+    motoboyId?: string | null
   }) {
     return apiFetch<RotaPlanejada>('/api/rotas', {
       method: 'POST',
