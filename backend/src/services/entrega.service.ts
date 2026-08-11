@@ -15,9 +15,27 @@ import { assertOwnsResource, isAdminUser, resolveMotoboyScope } from '../utils/a
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { formatDateOnlyISO, toUtcDateOnly, toUtcDateOnlyFromBusinessTz } from '../utils/date.utils.js'
 
+function normalizeMotoboyEntregaData<
+  T extends {
+    pagoPeloCliente?: boolean
+    valorPagoCliente?: number | null
+    telefoneCliente?: string | null
+  },
+>(input: T): T {
+  if (!input.pagoPeloCliente) {
+    return {
+      ...input,
+      valorPagoCliente: null,
+      telefoneCliente: null,
+    }
+  }
+
+  return input
+}
+
 export class EntregaService {
   async create(user: AuthenticatedUser, input: CreateEntregaInput) {
-    const { motoboyId: requestedMotoboyId, ...entregaData } = input
+    const { motoboyId: requestedMotoboyId, ...entregaData } = normalizeMotoboyEntregaData(input)
 
     let motoboyId: string | undefined
 
@@ -172,7 +190,8 @@ export class EntregaService {
     }
     assertOwnsResource(user, entrega.motoboyId, 'Você não pode editar esta entrega')
 
-    const { motoboyId: requestedMotoboyId, ...entregaData } = input
+    const { motoboyId: requestedMotoboyId, ...entregaData } =
+      normalizeMotoboyEntregaData(input)
 
     if (!isAdminUser(user) && requestedMotoboyId !== undefined) {
       throw new ForbiddenError('Você não pode alterar o motoboy da entrega')
@@ -233,6 +252,8 @@ export class EntregaService {
       valorRecebidoHoje: entregaStats.valorTotal,
       totalPendencias: pendenciaStats.totalPendencias,
       valorTotalDia: entregaStats.valorTotal + pendenciaStats.valorPendencias,
+      entregasPagasPeloCliente: entregaStats.entregasPagasPeloCliente,
+      valorPagasPeloCliente: entregaStats.valorPagasPeloCliente,
       ...(origemCadastro
         ? {}
         : {

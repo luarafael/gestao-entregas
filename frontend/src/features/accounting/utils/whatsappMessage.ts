@@ -27,7 +27,7 @@ export function formatDailyReportSummary(report: DailyReportSummary): string {
 
   if (report.entregasPagasPeloCliente && report.entregasPagasPeloCliente > 0) {
     lines.push(
-      `${WA.check} *Pagas pelo cliente (fora do total):* ${report.entregasPagasPeloCliente} — ${formatCurrency(report.valorPagasPeloCliente ?? 0)}`,
+      `${WA.check} *Pagas pelo cliente (descontadas do total):* ${report.entregasPagasPeloCliente} — ${formatCurrency(report.valorPagasPeloCliente ?? 0)}`,
     )
   }
 

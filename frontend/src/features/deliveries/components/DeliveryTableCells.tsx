@@ -1,7 +1,11 @@
-import { Badge, Button, PAGE_CARD_SECTION } from '@/shared/components/ui'
+import { Badge, Button, MetaChip, PAGE_CARD_SECTION } from '@/shared/components/ui'
 import { formatCurrency, cn } from '@/shared/utils/cn'
 import { STATUS_PAGAMENTO_OPTIONS } from '../schemas/delivery.schema'
 import type { Entrega } from '@/shared/types/api.types'
+import {
+  getValorPagoPeloCliente,
+  getValorRecebivelEntrega,
+} from '../utils/entregaValor'
 import { FormaPagamentoBadge } from './FormaPagamentoBadge'
 import {
   DeliveryCardChip,
@@ -107,9 +111,27 @@ export function DeliveryMotoboyValoresCell({ delivery }: { delivery: Entrega }) 
           />
         ) : null}
         {delivery.pagoPeloCliente ? (
-          <Badge variant="warning" className="w-full justify-center gap-1.5 px-2 py-1 text-xs">
-            Pago pelo cliente
-          </Badge>
+          <div className="space-y-1.5">
+            <Badge variant="warning" className="w-full justify-center gap-1.5 px-2 py-1 text-xs">
+              Pago pelo cliente
+            </Badge>
+            <ValueRow
+              tone="money"
+              label="Descontado"
+              value={formatCurrency(getValorPagoPeloCliente(delivery))}
+            />
+            <ValueRow
+              tone="motoboyFee"
+              label="Recebível"
+              highlight
+              value={formatCurrency(getValorRecebivelEntrega(delivery))}
+            />
+            {delivery.telefoneCliente?.trim() ? (
+              <MetaChip tone="phone" className="w-full justify-center">
+                {delivery.telefoneCliente.trim()}
+              </MetaChip>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </div>

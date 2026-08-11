@@ -8,6 +8,8 @@ export interface DashboardStats {
   pedidosPagosHoje?: number
   pedidosNaoPagosHoje?: number
   pedidosClientesHoje?: number
+  entregasPagasPeloCliente?: number
+  valorPagasPeloCliente?: number
 }
 
 export interface Entrega {
@@ -26,6 +28,7 @@ export interface Entrega {
   valorEntregaMotoboy?: string | null
   statusPagamentoCliente?: 'PAGO' | 'NAO_PAGO' | null
   pagoPeloCliente: boolean
+  valorPagoCliente?: string | null
   origemCadastro?: 'MOTOBOY' | 'CLIENTE'
   entregaMotoboyId?: string | null
   status: 'ENTREGUE' | 'CANCELADA'

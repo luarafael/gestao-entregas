@@ -40,14 +40,18 @@ function buildQuery(filters: DeliveryFilters): string {
 }
 
 function toMotoboyApiPayload(data: DeliveryMotoboyFormData) {
+  const pagoPeloCliente = data.pagoPeloCliente ?? false
+
   return {
     nomeCliente: data.nomeCliente,
+    telefoneCliente: pagoPeloCliente ? data.telefoneCliente : undefined,
     endereco: data.endereco,
     bairro: data.bairro,
     cidade: data.cidade,
     valorEntrega: data.valorEntrega,
+    valorPagoCliente: pagoPeloCliente ? data.valorPagoCliente : undefined,
     observacao: data.observacao,
-    pagoPeloCliente: data.pagoPeloCliente ?? false,
+    pagoPeloCliente,
     ...(data.motoboyId ? { motoboyId: data.motoboyId } : {}),
   }
 }

@@ -38,6 +38,7 @@ const statusPagamentoClienteSchema = z.enum(['PAGO', 'NAO_PAGO'])
 
 const entregaBaseSchema = z.object({
   nomeCliente: z.string().trim().optional(),
+  telefoneCliente: z.string().trim().optional(),
   endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
   bairro: z.string().trim().min(1, 'Bairro é obrigatório'),
   cidade: z.string().trim().optional(),
@@ -45,31 +46,66 @@ const entregaBaseSchema = z.object({
   formaPagamento: formaPagamentoSchema.optional(),
   statusPagamentoCliente: statusPagamentoClienteSchema.optional(),
   valorEntrega: z.coerce.number().positive('Valor da taxa de entrega deve ser maior que zero'),
+  valorPagoCliente: z.coerce.number().positive('Valor pago pelo cliente deve ser maior que zero').optional(),
   observacao: z.string().trim().optional(),
   pagoPeloCliente: z.boolean().optional().default(false),
   motoboyId: z.string().trim().min(1).optional(),
 })
 
-export const createEntregaSchema = entregaBaseSchema.superRefine((data, ctx) => {
-  if (data.pagoPeloCliente && !data.nomeCliente?.trim()) {
+function validatePagoPeloCliente(
+  data: {
+    pagoPeloCliente?: boolean
+    nomeCliente?: string
+    telefoneCliente?: string
+    valorEntrega?: number
+    valorPagoCliente?: number
+  },
+  ctx: z.RefinementCtx,
+) {
+  if (!data.pagoPeloCliente) return
+
+  if (!data.nomeCliente?.trim()) {
     ctx.addIssue({
       code: 'custom',
       message: 'Informe o nome do cliente quando a corrida foi paga por ele',
       path: ['nomeCliente'],
     })
   }
+
+  if (!data.telefoneCliente?.trim() || data.telefoneCliente.trim().length < 8) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Informe o telefone do cliente',
+      path: ['telefoneCliente'],
+    })
+  }
+
+  if (data.valorPagoCliente == null) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Informe o valor pago pelo cliente',
+      path: ['valorPagoCliente'],
+    })
+    return
+  }
+
+  if (data.valorEntrega != null && data.valorPagoCliente > data.valorEntrega) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Valor pago pelo cliente não pode ser maior que o valor da entrega',
+      path: ['valorPagoCliente'],
+    })
+  }
+}
+
+export const createEntregaSchema = entregaBaseSchema.superRefine((data, ctx) => {
+  validatePagoPeloCliente(data, ctx)
 })
 
 export const updateEntregaSchema = entregaBaseSchema.partial().extend({
   status: z.enum(['ENTREGUE', 'CANCELADA']).optional(),
 }).superRefine((data, ctx) => {
-  if (data.pagoPeloCliente && !data.nomeCliente?.trim()) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Informe o nome do cliente quando a corrida foi paga por ele',
-      path: ['nomeCliente'],
-    })
-  }
+  validatePagoPeloCliente(data, ctx)
 })
 
 export const listEntregasSchema = z.object({

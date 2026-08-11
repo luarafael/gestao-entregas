@@ -37,16 +37,19 @@ describe('entrega schemas', () => {
     ).toThrow()
   })
 
-  it('aceita pago pelo cliente com nome', () => {
+  it('aceita pago pelo cliente com nome, telefone e valor', () => {
     const parsed = createEntregaSchema.parse({
       nomeCliente: 'Maria',
+      telefoneCliente: '85999999999',
       endereco: 'Rua A, 1',
       bairro: 'Centro',
       valorEntrega: 10,
+      valorPagoCliente: 10,
       pagoPeloCliente: true,
     })
 
     expect(parsed.pagoPeloCliente).toBe(true)
+    expect(parsed.valorPagoCliente).toBe(10)
   })
 
   it('aceita atualização parcial', () => {

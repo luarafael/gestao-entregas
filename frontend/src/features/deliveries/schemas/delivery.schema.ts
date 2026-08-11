@@ -28,22 +28,54 @@ export const STATUS_PAGAMENTO_OPTIONS: {
 export const deliveryMotoboyFormSchema = z
   .object({
     nomeCliente: z.string().trim().optional(),
+    telefoneCliente: z.string().trim().optional(),
     endereco: z.string().trim().min(1, 'Endereço é obrigatório'),
     bairro: z.string().trim().min(1, 'Bairro é obrigatório'),
     cidade: z.string().trim().optional(),
     valorEntrega: z
       .number({ message: 'Valor é obrigatório' })
       .positive('Valor da entrega deve ser maior que zero'),
+    valorPagoCliente: z
+      .number()
+      .positive('Valor pago pelo cliente deve ser maior que zero')
+      .optional(),
     observacao: z.string().trim().optional(),
     pagoPeloCliente: z.boolean().optional(),
     motoboyId: z.string().trim().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.pagoPeloCliente && !data.nomeCliente?.trim()) {
+    if (!data.pagoPeloCliente) return
+
+    if (!data.nomeCliente?.trim()) {
       ctx.addIssue({
         code: 'custom',
         message: 'Informe o nome do cliente quando a corrida foi paga por ele',
         path: ['nomeCliente'],
+      })
+    }
+
+    if (!data.telefoneCliente?.trim() || data.telefoneCliente.trim().length < 8) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Informe o telefone do cliente',
+        path: ['telefoneCliente'],
+      })
+    }
+
+    if (data.valorPagoCliente == null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Informe o valor pago pelo cliente',
+        path: ['valorPagoCliente'],
+      })
+      return
+    }
+
+    if (data.valorPagoCliente > data.valorEntrega) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Valor pago pelo cliente não pode ser maior que o valor da entrega',
+        path: ['valorPagoCliente'],
       })
     }
   })

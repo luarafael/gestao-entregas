@@ -36,7 +36,7 @@ export function exportPrestacaoPdf(data: PrestacaoPdfInput) {
       doc,
       y,
       'Pagas pelo cliente',
-      `${data.entregasPagasPeloCliente} — ${formatCurrency(data.valorPagasPeloCliente ?? 0)} (fora do total)`,
+      `${data.entregasPagasPeloCliente} — ${formatCurrency(data.valorPagasPeloCliente ?? 0)} (descontado do total)`,
       58,
     )
   }

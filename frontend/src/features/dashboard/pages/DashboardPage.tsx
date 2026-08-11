@@ -23,6 +23,10 @@ import {
 import { cn, formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
 import type { DashboardStats, Entrega } from '@/shared/types/api.types'
+import {
+  getValorPagoPeloCliente,
+  getValorRecebivelEntrega,
+} from '@/features/deliveries/utils/entregaValor'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import {
@@ -129,7 +133,7 @@ function TodayMotoboyDeliveriesList({
                   ) : null}
                   {delivery.pagoPeloCliente ? (
                     <Badge variant="warning" className="text-[10px]">
-                      Pago pelo cliente
+                      {formatCurrency(getValorPagoPeloCliente(delivery))} pago pelo cliente
                     </Badge>
                   ) : null}
                 </div>
@@ -154,8 +158,13 @@ function TodayMotoboyDeliveriesList({
 
               <div className="flex w-full shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:items-end">
                 <MetaChip tone="money" className="justify-center tabular-nums">
-                  {formatCurrency(Number(delivery.valorEntrega))}
+                  {formatCurrency(getValorRecebivelEntrega(delivery))}
                 </MetaChip>
+                {delivery.pagoPeloCliente ? (
+                  <MetaChip tone="product" className="justify-center tabular-nums text-xs">
+                    Corrida: {formatCurrency(Number(delivery.valorEntrega))}
+                  </MetaChip>
+                ) : null}
                 {delivery.formaPagamento ? (
                   <FormaPagamentoBadge
                     value={delivery.formaPagamento}
@@ -322,11 +331,25 @@ function DashboardDayStats({
       <StatCard
         title="Valor Recebido Hoje"
         value={formatCurrency(stats?.valorRecebidoHoje ?? 0)}
-        description="Soma das entregas"
+        description={
+          stats?.valorPagasPeloCliente
+            ? `${formatCurrency(stats.valorPagasPeloCliente)} descontado(s) — pago pelo cliente`
+            : 'Soma das entregas'
+        }
         icon={<IconWallet className="size-5" />}
         accent="success"
         delay={0.05}
       />
+      {(stats?.entregasPagasPeloCliente ?? 0) > 0 ? (
+        <StatCard
+          title="Pagas pelo cliente"
+          value={formatCurrency(stats?.valorPagasPeloCliente ?? 0)}
+          description={`${stats?.entregasPagasPeloCliente ?? 0} corrida(s) descontada(s) do recebível`}
+          icon={<IconCreditCard className="size-5" />}
+          accent="neutral"
+          delay={0.08}
+        />
+      ) : null}
       <StatCard
         title="Pendências"
         value={String(stats?.totalPendencias ?? 0)}

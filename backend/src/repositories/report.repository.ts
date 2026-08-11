@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js'
 import type { ReportPeriod } from '../schemas/report.schema.js'
+import { getValorRecebivelEntrega } from '../utils/entrega-valor.utils.js'
 import {
   formatDateOnlyISO,
   getUtcDateOnlyRange,
@@ -43,6 +44,7 @@ function entregaDayValue(entrega: {
   valorProduto: unknown
   valorEntregaMotoboy: unknown
   pagoPeloCliente: boolean
+  valorPagoCliente?: unknown | null
 }) {
   if (entrega.origemCadastro === 'CLIENTE') {
     return (
@@ -51,7 +53,7 @@ function entregaDayValue(entrega: {
     )
   }
 
-  return entrega.pagoPeloCliente ? 0 : Number(entrega.valorEntrega ?? 0)
+  return getValorRecebivelEntrega(entrega)
 }
 
 export class ReportRepository {
@@ -133,6 +135,7 @@ export class ReportRepository {
         valorProduto: true,
         valorEntregaMotoboy: true,
         pagoPeloCliente: true,
+        valorPagoCliente: true,
       },
     })
 
@@ -286,6 +289,7 @@ export class ReportRepository {
         valorProduto: true,
         valorEntregaMotoboy: true,
         pagoPeloCliente: true,
+        valorPagoCliente: true,
       },
     })
 

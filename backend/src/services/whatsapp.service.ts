@@ -3,6 +3,10 @@ import {
   formatDateOnlyBR,
 } from '../utils/date.utils.js'
 import { WA } from '../utils/whatsappEmoji.js'
+import {
+  getValorPagoPeloCliente,
+  getValorRecebivelEntrega,
+} from '../utils/entrega-valor.utils.js'
 
 interface PrestacaoSummary {
   data: Date
@@ -17,6 +21,8 @@ interface EntregaSummary {
   nomeCliente: string | null
   valorEntrega: number | { toString(): string }
   pagoPeloCliente?: boolean
+  valorPagoCliente?: number | { toString(): string } | null
+  telefoneCliente?: string | null
   motoboyNome?: string | null
   motoboyId?: string | null
 }
@@ -49,10 +55,29 @@ function formatMotoboyRepasseLine(item: MotoboyPrestacaoSummary): string {
 
 function formatEntregaLine(entrega: EntregaSummary): string {
   const cliente = entrega.nomeCliente?.trim() || 'Sem nome'
-  const valor = formatCurrency(Number(entrega.valorEntrega))
-  const pagoPeloCliente = entrega.pagoPeloCliente ? ' — _pago pelo cliente_' : ''
+  const valorEntrega = Number(entrega.valorEntrega)
+  const recebivel = entrega.pagoPeloCliente
+    ? getValorRecebivelEntrega({
+        valorEntrega,
+        pagoPeloCliente: true,
+        valorPagoCliente: entrega.valorPagoCliente,
+      })
+    : valorEntrega
+  const valor = formatCurrency(recebivel)
 
-  return `• ${WA.pin} ${entrega.bairro} - ${WA.user} ${cliente} - ${WA.money} ${valor}${pagoPeloCliente}`
+  if (!entrega.pagoPeloCliente) {
+    return `• ${WA.pin} ${entrega.bairro} - ${WA.user} ${cliente} - ${WA.money} ${valor}`
+  }
+
+  const pagoPeloClienteValor = getValorPagoPeloCliente({
+    valorEntrega,
+    pagoPeloCliente: true,
+    valorPagoCliente: entrega.valorPagoCliente,
+  })
+  const telefone = entrega.telefoneCliente?.trim()
+  const telefoneSuffix = telefone ? ` — Tel: ${telefone}` : ''
+
+  return `• ${WA.pin} ${entrega.bairro} - ${WA.user} ${cliente} - ${WA.money} ${valor} — _${formatCurrency(pagoPeloClienteValor)} pago pelo cliente${telefoneSuffix}_`
 }
 
 function appendEntregasSection(
@@ -111,12 +136,18 @@ function appendEntregasSection(
   const pagasPeloCliente = filtered.filter((entrega) => entrega.pagoPeloCliente)
   if (pagasPeloCliente.length > 0) {
     const valorForaDoTotal = pagasPeloCliente.reduce(
-      (sum, entrega) => sum + Number(entrega.valorEntrega),
+      (sum, entrega) =>
+        sum +
+        getValorPagoPeloCliente({
+          valorEntrega: entrega.valorEntrega,
+          pagoPeloCliente: true,
+          valorPagoCliente: entrega.valorPagoCliente,
+        }),
       0,
     )
 
     lines.push(
-      `${WA.check} *Pagas pelo cliente (fora do total):* ${pagasPeloCliente.length} corrida(s) — ${formatCurrency(valorForaDoTotal)}`,
+      `${WA.check} *Pagas pelo cliente (descontadas do total):* ${pagasPeloCliente.length} corrida(s) — ${formatCurrency(valorForaDoTotal)}`,
       '',
     )
   }
@@ -228,6 +259,24 @@ export function generateMotoboyPrestacaoWhatsAppText(
 
     for (const entrega of entregas) {
       lines.push(formatEntregaLine(entrega))
+    }
+
+    const pagasPeloCliente = entregas.filter((entrega) => entrega.pagoPeloCliente)
+    if (pagasPeloCliente.length > 0) {
+      const valorDescontado = pagasPeloCliente.reduce(
+        (sum, entrega) =>
+          sum +
+          getValorPagoPeloCliente({
+            valorEntrega: entrega.valorEntrega,
+            pagoPeloCliente: true,
+            valorPagoCliente: entrega.valorPagoCliente,
+          }),
+        0,
+      )
+
+      lines.push(
+        `${WA.check} *Pagas pelo cliente:* ${pagasPeloCliente.length} corrida(s) — ${formatCurrency(valorDescontado)} descontado(s) do repasse`,
+      )
     }
   }
 

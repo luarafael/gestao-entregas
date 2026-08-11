@@ -28,7 +28,7 @@ describe('whatsappMessage', () => {
       valorPagasPeloCliente: 40,
     })
 
-    expect(text).toContain('Pagas pelo cliente (fora do total)')
+    expect(text).toContain('Pagas pelo cliente (descontadas do total)')
   })
 
   it('anexa relatório diário ao texto base', () => {

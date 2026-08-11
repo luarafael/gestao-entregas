@@ -4,6 +4,7 @@ import { motoboyRelationSelect } from './motoboy-select.js'
 import type { DateFilter } from '../utils/date.utils.js'
 import { getUtcDateOnlyRange, toUtcDateOnly, toUtcDateOnlyFromBusinessTz, formatDateOnlyISO } from '../utils/date.utils.js'
 import type { CreateEntregaInput, UpdateEntregaInput } from '../schemas/entrega.schema.js'
+import { computeMotoboyEntregaStats } from '../utils/entrega-valor.utils.js'
 
 export interface ListEntregasFilters {
   page: number
@@ -439,27 +440,22 @@ export class EntregaRepository {
       }
     }
 
-    const [total, billable, paidByClient] = await Promise.all([
-      prisma.entrega.aggregate({
-        where: baseWhere,
-        _count: { id: true },
-      }),
-      prisma.entrega.aggregate({
-        where: { ...baseWhere, pagoPeloCliente: false },
-        _sum: { valorEntrega: true },
-      }),
-      prisma.entrega.aggregate({
-        where: { ...baseWhere, pagoPeloCliente: true },
-        _count: { id: true },
-        _sum: { valorEntrega: true },
-      }),
-    ])
+    const entregas = await prisma.entrega.findMany({
+      where: baseWhere,
+      select: {
+        valorEntrega: true,
+        pagoPeloCliente: true,
+        valorPagoCliente: true,
+      },
+    })
+
+    const stats = computeMotoboyEntregaStats(entregas)
 
     return {
-      totalEntregas: total._count.id,
-      valorTotal: Number(billable._sum.valorEntrega ?? 0),
-      entregasPagasPeloCliente: paidByClient._count.id,
-      valorPagasPeloCliente: Number(paidByClient._sum.valorEntrega ?? 0),
+      totalEntregas: stats.totalEntregas,
+      valorTotal: stats.valorTotal,
+      entregasPagasPeloCliente: stats.entregasPagasPeloCliente,
+      valorPagasPeloCliente: stats.valorPagasPeloCliente,
       valorProdutoTotal: 0,
       valorEntregaMotoboyTotal: 0,
       pedidosPagos: 0,

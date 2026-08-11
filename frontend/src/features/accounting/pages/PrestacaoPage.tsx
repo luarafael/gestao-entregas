@@ -876,9 +876,15 @@ function MotoboyPreviewSection({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <PreviewItem label="Entregas" value={String(preview?.totalEntregas ?? 0)} />
         <PreviewItem
-          label="Valor das entregas"
+          label="Valor das entregas (líquido)"
           value={formatCurrency(preview?.valorTotal ?? 0)}
         />
+        {(preview?.entregasPagasPeloCliente ?? 0) > 0 ? (
+          <PreviewItem
+            label="Descontado — pago pelo cliente"
+            value={`${preview?.entregasPagasPeloCliente ?? 0} corrida(s) · ${formatCurrency(preview?.valorPagasPeloCliente ?? 0)}`}
+          />
+        ) : null}
         <PreviewItem
           label="Repasse pendente"
           value={formatCurrency(preview?.valorPendencias ?? 0)}
@@ -973,9 +979,15 @@ function EmpresaPreviewSection({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <PreviewItem label="Entregas" value={String(preview?.totalEntregas ?? 0)} />
         <PreviewItem
-          label="Valor das entregas"
+          label="Valor das entregas (líquido)"
           value={formatCurrency(preview?.valorTotal ?? 0)}
         />
+        {(preview?.entregasPagasPeloCliente ?? 0) > 0 ? (
+          <PreviewItem
+            label="Descontado — pago pelo cliente"
+            value={`${preview?.entregasPagasPeloCliente ?? 0} corrida(s) · ${formatCurrency(preview?.valorPagasPeloCliente ?? 0)}`}
+          />
+        ) : null}
         <PreviewItem
           label="Pendências em aberto"
           value={String(preview?.totalPendencias ?? 0)}

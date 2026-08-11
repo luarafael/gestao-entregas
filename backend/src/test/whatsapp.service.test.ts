@@ -97,7 +97,7 @@ describe('generateWhatsAppText', () => {
     )
 
     expect(text).toContain('pago pelo cliente')
-    expect(text).toContain('Pagas pelo cliente (fora do total)')
+    expect(text).toContain('Pagas pelo cliente (descontadas do total)')
   })
 
   it('should include motoboy repasse and net value when provided', () => {

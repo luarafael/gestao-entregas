@@ -54,6 +54,7 @@ model Entrega {
   valorEntregaMotoboy Decimal?            @map("valor_entrega_motoboy") @db.Decimal(10, 2)
   statusPagamentoCliente StatusPagamentoCliente? @map("status_pagamento_cliente")
   pagoPeloCliente  Boolean                @default(false)
+  valorPagoCliente Decimal?               @map("valor_pago_cliente") @db.Decimal(10, 2)
   origemCadastro   OrigemCadastroEntrega  @default(MOTOBOY) @map("origem_cadastro")
   entregaMotoboyId String?                @map("entrega_motoboy_id")
   entregaMotoboy   Entrega?               @relation("EntregaClienteImportada", fields: [entregaMotoboyId], references: [id], onDelete: SetNull)
