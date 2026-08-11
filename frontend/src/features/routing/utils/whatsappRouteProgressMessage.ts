@@ -15,7 +15,14 @@ import {
   type StatusExecucao,
 } from './executionStatus'
 import { appendStopPaymentWhatsAppLines } from './routeStopPayment'
-import type { PlannerStop } from '../schemas/routing.schema'
+import type { PlannerStop, RotaPlanejada } from '../schemas/routing.schema'
+
+export type RotaExecucaoParada = {
+  paradaId: string | null
+  status: string
+  observacao: string | null
+  dataHoraStatus: string | null
+}
 
 export interface RouteProgressWhatsAppInput {
   data?: string
@@ -329,4 +336,53 @@ export function formatRouteProgressWhatsAppText(
   }
 
   return lines.join('\n')
+}
+
+export function buildRouteProgressMessageFromRota(
+  rota: RotaPlanejada,
+  execucoes: RotaExecucaoParada[] = [],
+): string {
+  const execByParadaId = new Map(
+    execucoes
+      .filter((execucao) => execucao.paradaId)
+      .map((execucao) => [execucao.paradaId!, execucao]),
+  )
+  const isConcluida = Boolean(rota.concluidaEm)
+
+  const stops: PlannerStop[] = rota.paradas.map((parada) => {
+    const execucao = execByParadaId.get(parada.id)
+
+    return {
+      tempId: parada.id,
+      paradaId: parada.id,
+      entregaId: parada.entregaId,
+      cliente: parada.cliente,
+      endereco: parada.endereco,
+      bairro: parada.bairro,
+      telefone: parada.telefone ?? null,
+      observacao: parada.observacao,
+      prioridade: parada.prioridade,
+      ordemUrgencia: parada.ordemUrgencia ?? null,
+      valorEntrega: parada.valorEntrega ? Number(parada.valorEntrega) : null,
+      ordem: parada.ordem,
+      distancia: parada.distancia ? Number(parada.distancia) : null,
+      tempo: parada.tempo,
+      latitude: parada.latitude,
+      longitude: parada.longitude,
+      statusExecucao: (execucao?.status ??
+        (isConcluida ? 'ENTREGUE' : 'PENDENTE')) as StatusExecucao,
+      statusObservacao: execucao?.observacao ?? null,
+      statusAtualizadoEm: execucao?.dataHoraStatus ?? rota.concluidaEm ?? null,
+    }
+  })
+
+  return formatRouteProgressWhatsAppText({
+    stops,
+    enderecoInicial: rota.enderecoInicial,
+    distanciaTotal: Number(rota.distanciaTotal),
+    tempoTotal: rota.tempoTotal,
+    aproximada: rota.aproximada,
+    data: rota.data,
+    atualizadoEm: rota.concluidaEm ?? undefined,
+  })
 }

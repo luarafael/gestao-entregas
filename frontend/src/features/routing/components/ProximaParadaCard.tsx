@@ -1,21 +1,110 @@
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   MetaChip,
+  MetaField,
+  MetaSectionTitle,
+  PAGE_CARD_SECTION,
 } from '@/shared/components/ui'
-import { IconRoute } from '@/shared/components/icons'
-import { cn } from '@/shared/utils/cn'
+import { IconRoute, IconTrending } from '@/shared/components/icons'
+import { cn, formatCurrency } from '@/shared/utils/cn'
 import type { PlannerStop } from '../schemas/routing.schema'
 import { formatDistance, formatDuration } from '../utils/googleMapsUrl'
 import { STATUS_COLORS, getStopStatus } from '../utils/executionStatus'
 
-interface ProximaParadaCardProps {
-  stop: PlannerStop | null
+export interface RouteCompletedSummary {
+  totalEntregas: number
+  entregues: number
+  distanciaTotal: number
+  tempoTotal: number
+  valorTotal: number
+  enderecoPartida: string
+  aproximada?: boolean
 }
 
-export function ProximaParadaCard({ stop }: ProximaParadaCardProps) {
+interface ProximaParadaCardProps {
+  stop: PlannerStop | null
+  completedSummary?: RouteCompletedSummary | null
+  onCopyMessage?: () => void
+  isCopying?: boolean
+}
+
+export function ProximaParadaCard({
+  stop,
+  completedSummary,
+  onCopyMessage,
+  isCopying = false,
+}: ProximaParadaCardProps) {
+  if (completedSummary) {
+    return (
+      <Card glass className="min-w-0 overflow-hidden border border-emerald-500/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-emerald-300">
+            <IconTrending className="size-4" aria-hidden />
+            Rota concluída
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="min-w-0 space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Todas as entregas foram realizadas. Resumo final da rota:
+          </p>
+
+          <div className={cn(PAGE_CARD_SECTION, 'grid min-w-0 gap-3 sm:grid-cols-2')}>
+            <MetaField label="Entregas">
+              <MetaChip tone="delivery" className="w-fit tabular-nums">
+                {completedSummary.entregues}/{completedSummary.totalEntregas}
+              </MetaChip>
+            </MetaField>
+            <MetaField label="Distância total">
+              <MetaChip tone="time" className="w-fit">
+                {formatDistance(completedSummary.distanciaTotal)}
+                {completedSummary.aproximada ? ' (aprox.)' : ''}
+              </MetaChip>
+            </MetaField>
+            <MetaField label="Tempo total">
+              <MetaChip tone="time" className="w-fit">
+                {formatDuration(completedSummary.tempoTotal)}
+              </MetaChip>
+            </MetaField>
+            {completedSummary.valorTotal > 0 ? (
+              <MetaField label="Valor das entregas">
+                <MetaChip tone="money" className="w-fit tabular-nums">
+                  {formatCurrency(completedSummary.valorTotal)}
+                </MetaChip>
+              </MetaField>
+            ) : null}
+          </div>
+
+          {completedSummary.enderecoPartida.trim() ? (
+            <div className="min-w-0 space-y-1">
+              <MetaSectionTitle tone="address">Partida inicial</MetaSectionTitle>
+              <MetaChip tone="address" className="w-full items-start whitespace-normal">
+                <span className="line-clamp-2 text-left leading-relaxed">
+                  {completedSummary.enderecoPartida}
+                </span>
+              </MetaChip>
+            </div>
+          ) : null}
+
+          {onCopyMessage ? (
+            <Button
+              variant="copy"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={onCopyMessage}
+              isLoading={isCopying}
+            >
+              Copiar mensagem
+            </Button>
+          ) : null}
+        </CardContent>
+      </Card>
+    )
+  }
+
   if (!stop) {
     return (
       <Card glass className="min-w-0 overflow-hidden">
@@ -27,7 +116,7 @@ export function ProximaParadaCard({ stop }: ProximaParadaCardProps) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Todas as entregas foram concluídas ou não há paradas pendentes.
+            Não há paradas pendentes no momento.
           </p>
         </CardContent>
       </Card>

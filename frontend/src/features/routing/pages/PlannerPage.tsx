@@ -44,6 +44,8 @@ import { createPlannerStop } from '../utils/parseAddresses'
 import { normalizePlannerStopForm } from '../utils/urgentPriority'
 import {
   buildGoogleMapsNavigationUrls,
+  formatDistance,
+  formatDuration,
 } from '../utils/googleMapsUrl'
 import type {
   OptimizedRouteResult,
@@ -64,12 +66,14 @@ import {
 import {
   applyStatusUpdate,
   buildHistoricoEntry,
+  computeExecutionStats,
   getActiveStopsForRoute,
   getNextStop,
   getStopStatus,
   isActiveRouteStop,
   isAllStopsDelivered,
   mergeStopsWithStatus,
+  resolveEmbarqueEndereco,
   restoreStopRouteMetrics,
   snapshotStopRouteMetrics,
   sumStopRouteMetrics,
@@ -82,7 +86,7 @@ export function PlannerPage() {
   const queryClient = useQueryClient()
 
   const { data: enderecoPartidaData } = useEnderecoPartida()
-  const enderecoInicial =
+  const enderecoPartidaPadrao =
     enderecoPartidaData?.enderecoPartidaPadrao ?? DEFAULT_START_ADDRESS
 
   const {
@@ -148,6 +152,20 @@ export function PlannerPage() {
     [displayStops, liveEntregasData?.data],
   )
 
+  const enderecoPartidaRota = result?.enderecoInicial ?? enderecoPartidaPadrao
+
+  const embarqueEndereco = useMemo(
+    () => resolveEmbarqueEndereco(displayStops, enderecoPartidaRota),
+    [displayStops, enderecoPartidaRota],
+  )
+
+  const embarqueLabel = useMemo(() => {
+    const hasDelivered = displayStops.some(
+      (stop) => getStopStatus(stop) === 'ENTREGUE',
+    )
+    return hasDelivered ? 'Embarque atual' : 'Endereço de embarque'
+  }, [displayStops])
+
   const whatsappText = useMemo(() => {
     if (!result) return ''
     return formatRouteWhatsAppText(
@@ -161,9 +179,10 @@ export function PlannerPage() {
     const activeMetrics = sumStopRouteMetrics(
       getActiveStopsForRoute(enrichedStops),
     )
+    const completed = isAllStopsDelivered(enrichedStops)
     return formatRouteProgressWhatsAppText({
       stops: enrichedStops,
-      enderecoInicial: result.enderecoInicial,
+      enderecoInicial: completed ? enderecoPartidaRota : embarqueEndereco,
       distanciaTotal: metrics.distancia || result.distanciaTotal,
       tempoTotal: metrics.tempo || result.tempoTotal,
       aproximada: result.aproximada,
@@ -172,7 +191,13 @@ export function PlannerPage() {
       data: new Date().toISOString(),
       atualizadoEm: progressUpdatedAt,
     })
-  }, [enrichedStops, progressUpdatedAt, result])
+  }, [
+    embarqueEndereco,
+    enderecoPartidaRota,
+    enrichedStops,
+    progressUpdatedAt,
+    result,
+  ])
 
   const hasExecutionUpdates = useMemo(
     () => displayStops.some((stop) => getStopStatus(stop) !== 'PENDENTE'),
@@ -231,6 +256,34 @@ export function PlannerPage() {
       tempoTotal: fromStops.tempo || result?.tempoTotal || 0,
     }
   }, [displayStops, result])
+
+  const routeCompletedSummary = useMemo(() => {
+    if (!routeCompleted || !result) return null
+
+    const stats = computeExecutionStats(displayStops)
+    const valorTotal = enrichedStops.reduce(
+      (sum, stop) =>
+        sum + (stop.valorEntrega != null ? Number(stop.valorEntrega) : 0),
+      0,
+    )
+
+    return {
+      totalEntregas: stats.total,
+      entregues: stats.entregues,
+      distanciaTotal: routeMetrics.distanciaTotal,
+      tempoTotal: routeMetrics.tempoTotal,
+      valorTotal,
+      enderecoPartida: enderecoPartidaRota,
+      aproximada: result.aproximada,
+    }
+  }, [
+    displayStops,
+    enderecoPartidaRota,
+    enrichedStops,
+    result,
+    routeCompleted,
+    routeMetrics,
+  ])
 
   const routePlanned = Boolean(result)
   const executionActive = hasExecutionUpdates
@@ -360,12 +413,18 @@ export function PlannerPage() {
     }
 
     const planned = await planMutation.mutateAsync({
-      enderecoInicial,
+      enderecoInicial: resolveEmbarqueEndereco(
+        currentStops,
+        result?.enderecoInicial ?? enderecoPartidaPadrao,
+      ),
       paradas: currentStops,
       preservarOrdem: true,
       substituirRotaId: routeCompleted ? null : savedRotaId,
     })
-    applyOptimizedResult(currentStops, planned)
+    applyOptimizedResult(currentStops, {
+      ...planned,
+      enderecoInicial: result?.enderecoInicial ?? enderecoPartidaPadrao,
+    })
     setSavedRotaId(planned.rotaId ?? null)
     setOrderDirty(false)
     setReorderLocked(true)
@@ -380,7 +439,7 @@ export function PlannerPage() {
     }
 
     const planned = await planMutation.mutateAsync({
-      enderecoInicial,
+      enderecoInicial: enderecoPartidaPadrao,
       paradas: stops,
       substituirRotaId: routeCompleted ? null : savedRotaId,
     })
@@ -432,8 +491,13 @@ export function PlannerPage() {
       return
     }
 
+    const embarque = resolveEmbarqueEndereco(
+      currentStops,
+      result?.enderecoInicial ?? enderecoPartidaPadrao,
+    )
+
     const optimized = await optimizeMutation.mutateAsync({
-      enderecoInicial,
+      enderecoInicial: embarque,
       paradas: active,
     })
 
@@ -477,6 +541,7 @@ export function PlannerPage() {
     setStops(finalStops)
     setResult({
       ...optimized,
+      enderecoInicial: result?.enderecoInicial ?? enderecoPartidaPadrao,
       paradas: finalStops,
       totalEntregas: finalStops.length,
       distanciaTotal:
@@ -525,11 +590,13 @@ export function PlannerPage() {
     }
 
     if (rotaConcluida) {
+      const summary = computeExecutionStats(nextStops)
+      const metrics = sumStopRouteMetrics(nextStops)
       clearActiveRoute()
       invalidateDeliveryRelated(queryClient)
       queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
       toast(
-        'Rota concluída — movida para o histórico. Você já pode planejar outra.',
+        `Rota concluída: ${summary.entregues} entrega(s) · ${formatDistance(metrics.distancia || result?.distanciaTotal || 0)} · ${formatDuration(metrics.tempo || result?.tempoTotal || 0)}. Movida para o histórico.`,
         'success',
       )
       return
@@ -615,7 +682,7 @@ export function PlannerPage() {
       return
     }
 
-    const urls = buildGoogleMapsNavigationUrls(enderecoInicial, ordered)
+    const urls = buildGoogleMapsNavigationUrls(embarqueEndereco, ordered)
     urls.forEach((url, index) => {
       window.setTimeout(() => window.open(url, '_blank', 'noopener,noreferrer'), index * 400)
     })
@@ -686,7 +753,8 @@ export function PlannerPage() {
             totalEntregas={displayStops.length}
             distanciaTotal={routeMetrics.distanciaTotal}
             tempoTotal={routeMetrics.tempoTotal}
-            enderecoInicial={enderecoInicial}
+            enderecoInicial={routePlanned ? embarqueEndereco : enderecoPartidaPadrao}
+            enderecoLabel={routePlanned ? embarqueLabel : 'Endereço de embarque'}
             aproximada={result?.aproximada}
           />
 
@@ -803,7 +871,16 @@ export function PlannerPage() {
               />
 
               {routePlanned ? (
-                <ProximaParadaCard stop={nextStop} />
+                <ProximaParadaCard
+                  stop={nextStop}
+                  completedSummary={routeCompletedSummary}
+                  onCopyMessage={
+                    routeCompleted && progressWhatsappText
+                      ? handleCopyProgressWhatsApp
+                      : undefined
+                  }
+                  isCopying={copyMutation.isPending}
+                />
               ) : null}
 
               {selectedStop ? (

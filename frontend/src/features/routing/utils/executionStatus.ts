@@ -286,6 +286,40 @@ export function computeExecutionStats(stops: PlannerStop[]) {
   return { total, pendentes, emRota, entregues, problemas, percentual }
 }
 
+export function formatStopEmbarqueAddress(stop: PlannerStop): string {
+  return [stop.endereco, stop.bairro].filter(Boolean).join(' — ')
+}
+
+export function getLastDeliveredStop(stops: PlannerStop[]): PlannerStop | null {
+  const delivered = stops
+    .filter((stop) => getStopStatus(stop) === 'ENTREGUE')
+    .sort((a, b) => {
+      const aTime = a.statusAtualizadoEm
+        ? Date.parse(a.statusAtualizadoEm)
+        : (a.ordem ?? 0)
+      const bTime = b.statusAtualizadoEm
+        ? Date.parse(b.statusAtualizadoEm)
+        : (b.ordem ?? 0)
+      if (aTime !== bTime) return aTime - bTime
+      return (a.ordem ?? 0) - (b.ordem ?? 0)
+    })
+
+  return delivered.at(-1) ?? null
+}
+
+/** Embarque dinâmico: padrão no início; depois o último endereço entregue. */
+export function resolveEmbarqueEndereco(
+  stops: PlannerStop[],
+  enderecoPartidaInicial: string,
+): string {
+  const lastDelivered = getLastDeliveredStop(stops)
+  if (!lastDelivered) {
+    return enderecoPartidaInicial
+  }
+
+  return formatStopEmbarqueAddress(lastDelivered) || enderecoPartidaInicial
+}
+
 export function getNextStop(stops: PlannerStop[]): PlannerStop | null {
   const ordered = [...stops].sort(
     (a, b) => (a.ordem ?? 0) - (b.ordem ?? 0),

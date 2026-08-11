@@ -10,6 +10,9 @@ import {
   shouldClearPlannerRoute,
   applyStatusUpdate,
   mergeStopsWithStatus,
+  resolveEmbarqueEndereco,
+  getLastDeliveredStop,
+  formatStopEmbarqueAddress,
 } from './executionStatus'
 import type { PlannerStop } from '../schemas/routing.schema'
 
@@ -143,5 +146,44 @@ describe('executionStatus', () => {
     const merged = mergeStopsWithStatus(base, updated)
     expect(merged[0]?.distancia).toBe(5200)
     expect(merged[0]?.tempo).toBe(900)
+  })
+
+  it('usa endereço padrão enquanto nenhuma entrega foi concluída', () => {
+    const stops = [
+      baseStop({ tempId: '1', statusExecucao: 'PENDENTE', ordem: 1 }),
+      baseStop({ tempId: '2', statusExecucao: 'EM_ROTA', ordem: 2 }),
+    ]
+
+    expect(
+      resolveEmbarqueEndereco(stops, 'Depósito Central'),
+    ).toBe('Depósito Central')
+  })
+
+  it('atualiza embarque para o último endereço entregue', () => {
+    const stops = [
+      baseStop({
+        tempId: '1',
+        statusExecucao: 'ENTREGUE',
+        ordem: 1,
+        endereco: 'Rua A, 100',
+        bairro: 'Centro',
+        statusAtualizadoEm: '2026-08-08T10:00:00.000Z',
+      }),
+      baseStop({
+        tempId: '2',
+        statusExecucao: 'ENTREGUE',
+        ordem: 2,
+        endereco: 'Rua B, 200',
+        bairro: 'Aldeota',
+        statusAtualizadoEm: '2026-08-08T11:00:00.000Z',
+      }),
+      baseStop({ tempId: '3', statusExecucao: 'PENDENTE', ordem: 3 }),
+    ]
+
+    expect(formatStopEmbarqueAddress(stops[1]!)).toBe('Rua B, 200 — Aldeota')
+    expect(getLastDeliveredStop(stops)?.tempId).toBe('2')
+    expect(resolveEmbarqueEndereco(stops, 'Depósito Central')).toBe(
+      'Rua B, 200 — Aldeota',
+    )
   })
 })

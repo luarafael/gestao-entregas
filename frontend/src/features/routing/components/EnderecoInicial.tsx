@@ -35,7 +35,7 @@ export function EnderecoInicial() {
     return (
       <Card glass>
         <CardHeader>
-          <CardTitle>Endereço de partida</CardTitle>
+          <CardTitle>Endereço padrão de embarque</CardTitle>
           <IconMapPin className="size-5 text-primary" />
         </CardHeader>
         <CardContent>
@@ -48,10 +48,14 @@ export function EnderecoInicial() {
   return (
     <Card glass>
       <CardHeader>
-        <CardTitle>Endereço de partida</CardTitle>
+        <CardTitle>Endereço padrão de embarque</CardTitle>
         <IconMapPin className="size-5 text-primary" />
       </CardHeader>
       <CardContent className="space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Usado apenas ao iniciar uma nova rota. Durante a execução, o embarque
+          passa a ser o último endereço entregue.
+        </p>
         {editing ? (
           <>
             <Input

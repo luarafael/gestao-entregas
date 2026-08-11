@@ -28,10 +28,12 @@ import {
 import { routingService } from '../services/routing.service'
 import { deliveryService } from '@/features/deliveries/services/delivery.service'
 import { formatDistance, formatDuration } from '../utils/googleMapsUrl'
+import { useCopyWhatsAppText } from '@/features/accounting/hooks/usePrestacao'
 import {
   buildRouteWhatsAppPayload,
   formatRouteWhatsAppText,
 } from '../utils/whatsappRouteMessage'
+import { buildRouteProgressMessageFromRota } from '../utils/whatsappRouteProgressMessage'
 import { mergeStopsWithLiveEntregas } from '../utils/routeStopPayment'
 import type { RotaPlanejada } from '../schemas/routing.schema'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
@@ -69,15 +71,40 @@ function mapRotaToWhatsAppPayload(rota: RotaPlanejada) {
 export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
   const [page, setPage] = useState(1)
   const [sendingId, setSendingId] = useState<string | null>(null)
+  const [copyingId, setCopyingId] = useState<string | null>(null)
   const [sendModalOpen, setSendModalOpen] = useState(false)
   const [sendPayload, setSendPayload] = useState<WhatsAppSendPayload | null>(null)
   const historyQuery = useRouteHistory(page)
   const deleteMutation = useDeleteRoute()
   const duplicateMutation = useDuplicateRoute()
+  const copyMutation = useCopyWhatsAppText()
   const canDelete = useIsAdmin()
 
   const items = historyQuery.data?.data ?? []
   const meta = historyQuery.data?.meta
+
+  const handleCopyCompletedMessage = async (rotaId: string) => {
+    try {
+      setCopyingId(rotaId)
+      const rota = await routingService.getById(rotaId)
+      let execucoes: Awaited<ReturnType<typeof routingService.getExecucao>> = []
+
+      if (rota.concluidaEm) {
+        try {
+          execucoes = await routingService.getExecucao(rotaId)
+        } catch {
+          execucoes = []
+        }
+      }
+
+      const text = buildRouteProgressMessageFromRota(rota, execucoes)
+      await copyMutation.mutateAsync(text)
+    } catch {
+      toast('Erro ao copiar mensagem da rota', 'error')
+    } finally {
+      setCopyingId(null)
+    }
+  }
 
   const handleSendWhatsApp = async (rotaId: string) => {
     try {
@@ -180,10 +207,20 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
 
                   <div className="mt-3 flex w-full min-w-0 flex-wrap gap-2 border-t border-border/40 pt-3">
                     {isConcluida ? (
-                      <p className="w-full text-xs text-muted-foreground">
-                        Rota concluída — use Duplicar para montar uma nova com
-                        as mesmas paradas.
-                      </p>
+                      <>
+                        <p className="w-full text-xs text-muted-foreground">
+                          Rota concluída — use Duplicar para montar uma nova com
+                          as mesmas paradas.
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="copy"
+                          isLoading={copyingId === rota.id}
+                          onClick={() => handleCopyCompletedMessage(rota.id)}
+                        >
+                          Copiar mensagem
+                        </Button>
+                      </>
                     ) : (
                       <Button
                         size="sm"

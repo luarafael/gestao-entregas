@@ -7,6 +7,7 @@ interface ResumoRotaProps {
   distanciaTotal: number
   tempoTotal: number
   enderecoInicial: string
+  enderecoLabel?: string
   aproximada?: boolean
 }
 
@@ -15,6 +16,7 @@ export function ResumoRota({
   distanciaTotal,
   tempoTotal,
   enderecoInicial,
+  enderecoLabel = 'Endereço de embarque',
   aproximada = false,
 }: ResumoRotaProps) {
   return (
@@ -42,7 +44,7 @@ export function ResumoRota({
           delay={0.1}
         />
         <StatCard
-          title="Endereço inicial"
+          title={enderecoLabel}
           value={enderecoInicial.slice(0, 28) + (enderecoInicial.length > 28 ? '…' : '')}
           description={enderecoInicial}
           icon={<IconMapPin className="size-5" />}
