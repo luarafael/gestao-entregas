@@ -88,6 +88,7 @@ export const listEntregasSchema = z.object({
   motoboyId: z.string().trim().min(1).optional(),
   nomeCliente: z.string().trim().min(1).optional(),
   origemCadastro: z.enum(['MOTOBOY', 'CLIENTE']).optional(),
+  excludeConcluidasEmRotas: z.coerce.boolean().optional(),
 })
 
 export const createEntregaClienteSchema = z.object({

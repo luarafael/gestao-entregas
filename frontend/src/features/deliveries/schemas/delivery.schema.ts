@@ -88,6 +88,7 @@ export interface DeliveryFilters {
   sortOrder: SortOrder
   motoboyId?: string
   origemCadastro?: OrigemCadastroEntrega
+  excludeConcluidasEmRotas?: boolean
 }
 
 export const DATE_FILTER_OPTIONS: { value: DateFilter; label: string }[] = [

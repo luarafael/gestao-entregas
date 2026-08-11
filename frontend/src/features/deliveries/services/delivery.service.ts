@@ -32,6 +32,10 @@ function buildQuery(filters: DeliveryFilters): string {
     params.set('origemCadastro', filters.origemCadastro)
   }
 
+  if (filters.excludeConcluidasEmRotas) {
+    params.set('excludeConcluidasEmRotas', 'true')
+  }
+
   return params.toString()
 }
 

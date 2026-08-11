@@ -16,6 +16,7 @@ export interface ListEntregasFilters {
   motoboyId?: string
   nomeCliente?: string
   origemCadastro?: 'MOTOBOY' | 'CLIENTE'
+  excludeConcluidasEmRotas?: boolean
 }
 
 type EntregaStatsByDate = {
@@ -53,6 +54,24 @@ export class EntregaRepository {
     return prisma.entrega.findUnique({ where: { id } })
   }
 
+  async findEntregaIdsConcluidasEmRotas() {
+    const paradas = await prisma.rotaParada.findMany({
+      where: {
+        entregaId: { not: null },
+        OR: [
+          { rota: { concluidaEm: { not: null } } },
+          { execucoes: { some: { status: 'ENTREGUE' } } },
+        ],
+      },
+      select: { entregaId: true },
+      distinct: ['entregaId'],
+    })
+
+    return paradas
+      .map((parada) => parada.entregaId)
+      .filter((id): id is string => Boolean(id))
+  }
+
   async findMany(filters: ListEntregasFilters) {
     const reference = filters.referenceDate ?? new Date()
     const { start, end } = getUtcDateOnlyRange(filters.filter, reference)
@@ -82,6 +101,13 @@ export class EntregaRepository {
         { bairro: { contains: filters.search, mode: 'insensitive' } },
         { cidade: { contains: filters.search, mode: 'insensitive' } },
       ]
+    }
+
+    if (filters.excludeConcluidasEmRotas) {
+      const excludedIds = await this.findEntregaIdsConcluidasEmRotas()
+      if (excludedIds.length > 0) {
+        where.id = { notIn: excludedIds }
+      }
     }
 
     const [data, total] = await Promise.all([

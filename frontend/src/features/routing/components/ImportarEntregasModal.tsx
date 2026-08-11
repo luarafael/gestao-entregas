@@ -9,7 +9,6 @@ import { useDeliveries } from '@/features/deliveries/hooks/useDeliveries'
 import { useDebounce } from '@/shared/hooks'
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatDateBR } from '@/shared/utils/format'
-import type { Entrega } from '@/shared/types/api.types'
 import type { DateFilter } from '@/features/deliveries/schemas/delivery.schema'
 import { createPlannerStop } from '../utils/parseAddresses'
 import type { PlannerStop } from '../schemas/routing.schema'
@@ -30,7 +29,6 @@ export function ImportarEntregasModal({
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<DateFilter>('today')
   const [bairro, setBairro] = useState('')
-  const [status, setStatus] = useState<'ALL' | Entrega['status']>('ALL')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const debouncedSearch = useDebounce(search)
 
@@ -42,13 +40,14 @@ export function ImportarEntregasModal({
     sortBy: 'horario',
     sortOrder: 'desc',
     origemCadastro: 'MOTOBOY',
+    excludeConcluidasEmRotas: true,
   })
 
   const deliveries = useMemo(() => {
     const list = data?.data ?? []
     return list.filter((delivery) => {
       if (existingEntregaIds.has(delivery.id)) return false
-      if (status !== 'ALL' && delivery.status !== status) return false
+      if (delivery.status === 'CANCELADA') return false
       if (
         bairro &&
         !delivery.bairro.toLowerCase().includes(bairro.toLowerCase())
@@ -57,7 +56,7 @@ export function ImportarEntregasModal({
       }
       return true
     })
-  }, [bairro, data?.data, existingEntregaIds, status])
+  }, [bairro, data?.data, existingEntregaIds])
 
   const toggle = (id: string) => {
     setSelected((current) => {
@@ -97,7 +96,7 @@ export function ImportarEntregasModal({
       open={open}
       onClose={onClose}
       title="Importar entregas cadastradas"
-      description="Selecione entregas do módulo Entregas. Remover do planejador não exclui o cadastro original."
+      description="Entregas já concluídas em rotas anteriores não aparecem aqui. Remover do planejador não exclui o cadastro original."
       className="max-h-[85vh] max-w-3xl overflow-y-auto"
     >
       <div className="space-y-4">
@@ -113,7 +112,7 @@ export function ImportarEntregasModal({
             onChange={(event) => setBairro(event.target.value)}
           />
           <select
-            className="h-10 rounded-xl border border-border/70 bg-surface/50 px-3 text-sm"
+            className="h-10 rounded-xl border border-border/70 bg-surface/50 px-3 text-sm sm:col-span-2"
             value={filter}
             onChange={(event) => setFilter(event.target.value as DateFilter)}
           >
@@ -121,17 +120,6 @@ export function ImportarEntregasModal({
             <option value="yesterday">Ontem</option>
             <option value="week">Esta semana</option>
             <option value="month">Este mês</option>
-          </select>
-          <select
-            className="h-10 rounded-xl border border-border/70 bg-surface/50 px-3 text-sm"
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value as 'ALL' | Entrega['status'])
-            }
-          >
-            <option value="ALL">Todos status</option>
-            <option value="ENTREGUE">Entregue</option>
-            <option value="CANCELADA">Cancelada</option>
           </select>
         </div>
 
@@ -156,7 +144,8 @@ export function ImportarEntregasModal({
           <div className="max-h-72 space-y-2 overflow-y-auto">
             {deliveries.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Nenhuma entrega disponível para importar com esses filtros.
+                Nenhuma entrega disponível para importar. Entregas já concluídas em
+                rotas ou canceladas ficam ocultas.
               </p>
             ) : (
               deliveries.map((delivery) => (
@@ -178,7 +167,7 @@ export function ImportarEntregasModal({
                       {delivery.endereco} — {delivery.bairro}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDateBR(delivery.data)} · {delivery.status} ·{' '}
+                      {formatDateBR(delivery.data)} ·{' '}
                       {formatCurrency(Number(delivery.valorEntrega))}
                     </p>
                   </div>
