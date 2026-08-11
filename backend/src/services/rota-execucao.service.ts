@@ -7,6 +7,7 @@ import type {
   UpdateExecucaoParadaInput,
 } from '../schemas/rota-execucao.schema.js'
 import {
+  findNextParadaIdForEmRota,
   isRouteExecucaoConcluida,
   resolveMotoboyIdFromRota,
 } from '../utils/route-motoboy.utils.js'
@@ -77,6 +78,21 @@ export class RotaExecucaoService {
 
     if (input.status === 'ENTREGUE' && parada.entregaId) {
       await entregaRepository.markDelivered(parada.entregaId, deliveredAt)
+    }
+
+    if (input.status === 'ENTREGUE') {
+      const execucoesAtual = await rotaExecucaoRepository.findByRotaId(rotaId)
+      const nextParadaId = findNextParadaIdForEmRota(
+        rota.paradas,
+        execucoesAtual,
+      )
+
+      if (nextParadaId) {
+        await rotaExecucaoRepository.updateByParadaId(rotaId, nextParadaId, {
+          status: 'EM_ROTA',
+          dataHoraStatus: deliveredAt,
+        })
+      }
     }
 
     const rotaConcluida = await this.tryConcludeRouteEntregas(rotaId)

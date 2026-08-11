@@ -35,6 +35,37 @@ export function routeBelongsToMotoboy(
   })
 }
 
+type RotaParadaOrdemRef = { id: string; ordem: number }
+type RotaExecucaoParadaRef = {
+  paradaId: string | null
+  status: StatusExecucaoParada | string
+}
+
+export function findNextParadaIdForEmRota(
+  paradas: RotaParadaOrdemRef[],
+  execucoes: RotaExecucaoParadaRef[],
+): string | null {
+  const statusByParadaId = new Map<string, string>()
+
+  for (const execucao of execucoes) {
+    if (execucao.paradaId) {
+      statusByParadaId.set(execucao.paradaId, execucao.status)
+    }
+  }
+
+  const ordered = [...paradas].sort((a, b) => a.ordem - b.ordem)
+
+  if (ordered.some((parada) => statusByParadaId.get(parada.id) === 'EM_ROTA')) {
+    return null
+  }
+
+  const nextPending = ordered.find(
+    (parada) => (statusByParadaId.get(parada.id) ?? 'PENDENTE') === 'PENDENTE',
+  )
+
+  return nextPending?.id ?? null
+}
+
 export function isRouteExecucaoConcluida(
   execucoes: RotaExecucaoRef[],
   paradaCount: number,

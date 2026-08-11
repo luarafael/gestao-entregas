@@ -86,4 +86,55 @@ describe('syncPlannerFromServer', () => {
     expect(result).toBe('draft-kept')
     expect(routingService.getActiveToday).not.toHaveBeenCalled()
   })
+
+  it('limpa planejador quando rota salva foi concluida no servidor', async () => {
+    usePlannerStore.setState({
+      savedRotaId: 'rota-concluida',
+      stops: [
+        {
+          tempId: 'parada-1',
+          paradaId: 'parada-1',
+          cliente: 'Cliente',
+          endereco: 'Rua B',
+          bairro: 'Centro',
+          prioridade: 'NORMAL',
+          ordem: 1,
+          statusExecucao: 'PENDENTE',
+        },
+      ],
+      result: {
+        enderecoInicial: 'Rua A',
+        distanciaTotal: 100,
+        tempoTotal: 60,
+        aproximada: false,
+        paradas: [],
+      } as never,
+    })
+
+    vi.mocked(routingService.getActiveToday).mockResolvedValue({ rota: null })
+    vi.mocked(routingService.getById).mockResolvedValue({
+      id: 'rota-concluida',
+      concluidaEm: '2026-08-11T18:00:00.000Z',
+      enderecoInicial: 'Rua A',
+      distanciaTotal: 100,
+      tempoTotal: 60,
+      aproximada: false,
+      paradas: [{ id: 'parada-1', ordem: 1 }],
+    } as never)
+    vi.mocked(routingService.getExecucao).mockResolvedValue([
+      {
+        paradaId: 'parada-1',
+        status: 'ENTREGUE',
+        observacao: null,
+        dataHoraStatus: '2026-08-11T18:00:00.000Z',
+      },
+    ] as never)
+
+    const result = await syncPlannerFromServer()
+
+    expect(result).toBe('cleared')
+    expect(usePlannerStore.getState().savedRotaId).toBeNull()
+    expect(usePlannerStore.getState().stops).toHaveLength(0)
+    expect(routingService.reconcileRouteConclusion).not.toHaveBeenCalled()
+  })
 })

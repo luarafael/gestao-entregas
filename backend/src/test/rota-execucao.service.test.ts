@@ -54,6 +54,7 @@ describe('RotaExecucaoService', () => {
       paradas: [
         {
           id: 'p1',
+          ordem: 1,
           entregaId: 'e1',
           endereco: 'Rua A',
           bairro: 'Centro',
@@ -63,6 +64,7 @@ describe('RotaExecucaoService', () => {
         },
         {
           id: 'p2',
+          ordem: 2,
           entregaId: 'e2',
           endereco: 'Rua B',
           bairro: 'Meireles',
@@ -83,11 +85,47 @@ describe('RotaExecucaoService', () => {
       observacao: null,
     })
 
+    expect(rotaExecucaoRepository.updateByParadaId).toHaveBeenCalledWith(
+      'rota-1',
+      'p2',
+      expect.objectContaining({ status: 'EM_ROTA' }),
+    )
     expect(entregaRepository.markDelivered).toHaveBeenCalledWith(
       'e1',
       expect.any(Date),
     )
     expect(entregaRepository.create).not.toHaveBeenCalled()
+  })
+
+  it('nao promove proxima parada quando rota ja foi concluida', async () => {
+    rotaRepository.findById.mockResolvedValue({
+      id: 'rota-1',
+      motoboyId: 'm1',
+      concluidaEm: null,
+      paradas: [
+        {
+          id: 'p1',
+          ordem: 1,
+          entregaId: 'e1',
+          endereco: 'Rua A',
+          bairro: 'Centro',
+          cliente: 'João',
+          observacao: null,
+          valorEntrega: 10,
+        },
+      ],
+    })
+
+    rotaExecucaoRepository.findByRotaId.mockResolvedValue([
+      { paradaId: 'p1', status: 'ENTREGUE', dataHoraStatus: new Date() },
+    ])
+
+    await rotaExecucaoService.updateParada('rota-1', 'p1', {
+      status: 'ENTREGUE',
+      observacao: null,
+    })
+
+    expect(rotaExecucaoRepository.updateByParadaId).toHaveBeenCalledTimes(1)
   })
 
   it('conclui entregas do motoboy quando todas as paradas forem entregues', async () => {

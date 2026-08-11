@@ -9,6 +9,7 @@ import {
   isExecucaoConcluida,
   shouldClearPlannerRoute,
   applyStatusUpdate,
+  applyDeliveryStatusUpdates,
   mergeStopsWithStatus,
   resolveEmbarqueEndereco,
   getLastDeliveredStop,
@@ -107,6 +108,46 @@ describe('executionStatus', () => {
         execucoes: [{ status: 'ENTREGUE' }, { status: 'PENDENTE' }],
       }),
     ).toBe(true)
+  })
+
+  it('promove proxima parada pendente para em rota ao entregar', () => {
+    const stops: PlannerStop[] = [
+      baseStop({ tempId: '1', statusExecucao: 'EM_ROTA', ordem: 1 }),
+      baseStop({ tempId: '2', statusExecucao: 'PENDENTE', ordem: 2 }),
+      baseStop({ tempId: '3', statusExecucao: 'PENDENTE', ordem: 3 }),
+    ]
+
+    const { stops: updated, autoEmRota } = applyDeliveryStatusUpdates(
+      stops,
+      stops[0]!,
+      'ENTREGUE',
+    )
+
+    expect(updated.find((stop) => stop.tempId === '1')?.statusExecucao).toBe(
+      'ENTREGUE',
+    )
+    expect(updated.find((stop) => stop.tempId === '2')?.statusExecucao).toBe(
+      'EM_ROTA',
+    )
+    expect(autoEmRota?.tempId).toBe('2')
+  })
+
+  it('nao promove proxima parada quando ja existe uma em rota', () => {
+    const stops: PlannerStop[] = [
+      baseStop({ tempId: '1', statusExecucao: 'PENDENTE', ordem: 1 }),
+      baseStop({ tempId: '2', statusExecucao: 'EM_ROTA', ordem: 2 }),
+    ]
+
+    const { stops: updated, autoEmRota } = applyDeliveryStatusUpdates(
+      stops,
+      stops[0]!,
+      'ENTREGUE',
+    )
+
+    expect(updated.find((stop) => stop.tempId === '2')?.statusExecucao).toBe(
+      'EM_ROTA',
+    )
+    expect(autoEmRota).toBeNull()
   })
 
   it('congela km e tempo ao marcar entregue', () => {

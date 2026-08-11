@@ -360,6 +360,72 @@ export function mergeStopsWithStatus(
   })
 }
 
+export function mergeExecucoesIntoStops(
+  stops: PlannerStop[],
+  execucoes: Array<{
+    paradaId: string | null
+    status: string
+    observacao: string | null
+    dataHoraStatus: string | null
+  }>,
+): PlannerStop[] {
+  const byParadaId = new Map(
+    execucoes
+      .filter(
+        (item): item is typeof item & { paradaId: string } =>
+          Boolean(item.paradaId),
+      )
+      .map((item) => [item.paradaId, item]),
+  )
+
+  return stops.map((stop) => {
+    if (!stop.paradaId) return stop
+
+    const execucao = byParadaId.get(stop.paradaId)
+    if (!execucao) return stop
+
+    const updated = applyStatusUpdate(
+      stop,
+      execucao.status as StatusExecucao,
+      execucao.observacao,
+    )
+
+    return {
+      ...updated,
+      statusAtualizadoEm: execucao.dataHoraStatus ?? updated.statusAtualizadoEm,
+    }
+  })
+}
+
+export function applyDeliveryStatusUpdates(
+  stops: PlannerStop[],
+  stop: PlannerStop,
+  status: StatusExecucao,
+  observacao?: string | null,
+): { stops: PlannerStop[]; autoEmRota: PlannerStop | null } {
+  const updatedStop = applyStatusUpdate(stop, status, observacao)
+  const withUpdated = stops.map((item) =>
+    item.tempId === stop.tempId ? updatedStop : item,
+  )
+
+  if (status !== 'ENTREGUE') {
+    return { stops: withUpdated, autoEmRota: null }
+  }
+
+  const next = getNextStop(withUpdated)
+  if (!next || getStopStatus(next) !== 'PENDENTE') {
+    return { stops: withUpdated, autoEmRota: null }
+  }
+
+  const autoEmRota = applyStatusUpdate(next, 'EM_ROTA')
+  return {
+    stops: withUpdated.map((item) =>
+      item.tempId === next.tempId ? autoEmRota : item,
+    ),
+    autoEmRota,
+  }
+}
+
 export function applyStatusUpdate(
   stop: PlannerStop,
   status: StatusExecucao,

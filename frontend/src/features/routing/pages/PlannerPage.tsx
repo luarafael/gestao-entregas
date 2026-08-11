@@ -72,7 +72,8 @@ import {
   mergeStopsWithLiveEntregas,
 } from '../utils/routeStopPayment'
 import {
-  applyStatusUpdate,
+  applyDeliveryStatusUpdates,
+  mergeExecucoesIntoStops,
   buildHistoricoEntry,
   computeExecutionStats,
   getActiveStopsForRoute,
@@ -91,7 +92,7 @@ import { DEFAULT_START_ADDRESS } from '../schemas/routing.schema'
 
 export function PlannerPage() {
   usePlannerBootstrap()
-  usePlannerSync(true)
+  usePlannerSync(true, { notifyOnClear: true })
   const queryClient = useQueryClient()
   const isAdmin = useIsAdmin()
   const [motoboyFilter, setMotoboyFilter] = useState<MotoboySelectValue>('')
@@ -583,17 +584,22 @@ export function PlannerPage() {
     status: StatusExecucao,
     observacao?: string | null,
   ) => {
-    const updated = applyStatusUpdate(stop, status, observacao)
-    const nextStops = displayStops.map((item) =>
-      item.tempId === stop.tempId ? updated : item,
+    const { stops: nextStops, autoEmRota } = applyDeliveryStatusUpdates(
+      displayStops,
+      stop,
+      status,
+      observacao,
     )
     syncStops(nextStops)
     setProgressUpdatedAt(new Date().toISOString())
     setHistoricoExecucao((current) => [
       ...current,
-      buildHistoricoEntry(updated),
+      buildHistoricoEntry(
+        nextStops.find((item) => item.tempId === stop.tempId) ?? stop,
+      ),
+      ...(autoEmRota ? [buildHistoricoEntry(autoEmRota)] : []),
     ])
-    setSelectedTempId(updated.tempId)
+    setSelectedTempId(autoEmRota?.tempId ?? stop.tempId)
 
     let rotaConcluida = false
 
@@ -608,6 +614,13 @@ export function PlannerPage() {
           },
         )
         rotaConcluida = response.rotaConcluida
+
+        const syncedStops = mergeExecucoesIntoStops(
+          nextStops,
+          response.execucoes,
+        )
+        syncStops(syncedStops)
+        setProgressUpdatedAt(new Date().toISOString())
       } catch {
         toast('Erro ao salvar status no servidor', 'error')
       }
