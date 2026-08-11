@@ -1,4 +1,3 @@
-import type { StatusEntrega } from '../../generated/prisma/client.js'
 import { prisma } from '../lib/prisma.js'
 import type { ReportPeriod } from '../schemas/report.schema.js'
 import {
@@ -31,6 +30,28 @@ function toDayTotals(item: {
     valorPendencias: Number(item.valorPendencias),
     temPrestacao: true,
   }
+}
+
+type EntregaReportFilters = {
+  origemCadastro?: 'MOTOBOY' | 'CLIENTE'
+  motoboyId?: string
+}
+
+function entregaDayValue(entrega: {
+  origemCadastro: string
+  valorEntrega: unknown
+  valorProduto: unknown
+  valorEntregaMotoboy: unknown
+  pagoPeloCliente: boolean
+}) {
+  if (entrega.origemCadastro === 'CLIENTE') {
+    return (
+      Number(entrega.valorProduto ?? 0) +
+      Number(entrega.valorEntregaMotoboy ?? 0)
+    )
+  }
+
+  return entrega.pagoPeloCliente ? 0 : Number(entrega.valorEntrega ?? 0)
 }
 
 export class ReportRepository {
@@ -95,45 +116,43 @@ export class ReportRepository {
     limit: number,
     reference = new Date(),
     motoboyId?: string,
+    origemCadastro?: 'MOTOBOY' | 'CLIENTE',
   ) {
     const { start, end } = getUtcDateOnlyRange(period, reference)
-    const baseWhere = {
-      data: { gte: start, lte: end },
-      status: 'ENTREGUE' as StatusEntrega,
-      ...(motoboyId ? { motoboyId } : {}),
+    const entregas = await prisma.entrega.findMany({
+      where: {
+        data: { gte: start, lte: end },
+        status: 'ENTREGUE',
+        ...(origemCadastro ? { origemCadastro } : {}),
+        ...(motoboyId ? { motoboyId } : {}),
+      },
+      select: {
+        bairro: true,
+        origemCadastro: true,
+        valorEntrega: true,
+        valorProduto: true,
+        valorEntregaMotoboy: true,
+        pagoPeloCliente: true,
+      },
+    })
+
+    const byBairro = new Map<string, { entregas: number; valor: number }>()
+
+    for (const entrega of entregas) {
+      const current = byBairro.get(entrega.bairro) ?? { entregas: 0, valor: 0 }
+      current.entregas += 1
+      current.valor += entregaDayValue(entrega)
+      byBairro.set(entrega.bairro, current)
     }
 
-    const grouped = await prisma.entrega.groupBy({
-      by: ['bairro'],
-      where: baseWhere,
-      _count: { id: true },
-      orderBy: {
-        _count: { id: 'desc' },
-      },
-      take: limit,
-    })
-
-    const groupedValor = await prisma.entrega.groupBy({
-      by: ['bairro'],
-      where: {
-        ...baseWhere,
-        pagoPeloCliente: false,
-      },
-      _sum: { valorEntrega: true },
-    })
-
-    const valorByBairro = new Map(
-      groupedValor.map((item) => [
-        item.bairro,
-        Number(item._sum.valorEntrega ?? 0),
-      ]),
-    )
-
-    return grouped.map((item) => ({
-      bairro: item.bairro,
-      entregas: item._count.id,
-      valor: valorByBairro.get(item.bairro) ?? 0,
-    }))
+    return [...byBairro.entries()]
+      .sort((a, b) => b[1].entregas - a[1].entregas)
+      .slice(0, limit)
+      .map(([bairro, stats]) => ({
+        bairro,
+        entregas: stats.entregas,
+        valor: stats.valor,
+      }))
   }
 
   async getPrestacaoTrend(
@@ -242,6 +261,96 @@ export class ReportRepository {
       valorFinalPrestacoes,
       pendenciasAbertas: pendenciaStats._count.id,
       valorPendenciasAbertas: Number(pendenciaStats._sum.valor ?? 0),
+    }
+  }
+
+  async getEntregasDailyBreakdown(
+    period: ReportPeriod,
+    reference = new Date(),
+    filters: EntregaReportFilters = {},
+  ) {
+    const { start, end } = getUtcDateOnlyRange(period, reference)
+    const entregas = await prisma.entrega.findMany({
+      where: {
+        data: { gte: start, lte: end },
+        status: 'ENTREGUE',
+        ...(filters.origemCadastro
+          ? { origemCadastro: filters.origemCadastro }
+          : {}),
+        ...(filters.motoboyId ? { motoboyId: filters.motoboyId } : {}),
+      },
+      select: {
+        data: true,
+        origemCadastro: true,
+        valorEntrega: true,
+        valorProduto: true,
+        valorEntregaMotoboy: true,
+        pagoPeloCliente: true,
+      },
+    })
+
+    const totalsByDay = new Map<string, DayTotals>()
+
+    for (const entrega of entregas) {
+      const date = formatDateOnlyISO(entrega.data)
+      const current = totalsByDay.get(date) ?? {
+        entregas: 0,
+        valor: 0,
+        valorEntregas: 0,
+        valorPendencias: 0,
+        temPrestacao: false,
+      }
+
+      current.entregas += 1
+      const dayValue = entregaDayValue(entrega)
+      current.valor += dayValue
+      current.valorEntregas += dayValue
+      current.temPrestacao = true
+      totalsByDay.set(date, current)
+    }
+
+    return iterateUtcDays(start, end).map((date) => {
+      const totals = totalsByDay.get(date)
+
+      return {
+        date,
+        entregas: totals?.entregas ?? 0,
+        valor: totals?.valor ?? 0,
+        valorEntregas: totals?.valorEntregas ?? 0,
+        valorPendencias: 0,
+        temPrestacao: totals?.temPrestacao ?? false,
+      }
+    })
+  }
+
+  async getEntregasPeriodSummary(
+    period: ReportPeriod,
+    reference = new Date(),
+    filters: EntregaReportFilters = {},
+  ) {
+    const breakdown = await this.getEntregasDailyBreakdown(
+      period,
+      reference,
+      filters,
+    )
+    const daysWithData = breakdown.filter((day) => day.entregas > 0)
+    const totalEntregas = breakdown.reduce((sum, day) => sum + day.entregas, 0)
+    const valorEntregas = breakdown.reduce((sum, day) => sum + day.valor, 0)
+    const averages = calculatePeriodAverages(
+      { totalEntregas, valorEntregas },
+      daysWithData.length,
+    )
+
+    return {
+      period,
+      totalEntregas,
+      valorEntregas,
+      mediaEntregasPorDia: averages.mediaEntregasPorDia,
+      mediaValorPorDia: averages.mediaValorPorDia,
+      totalPrestacoes: daysWithData.length,
+      valorFinalPrestacoes: valorEntregas,
+      pendenciasAbertas: 0,
+      valorPendenciasAbertas: 0,
     }
   }
 }

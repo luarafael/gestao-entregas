@@ -2,6 +2,8 @@ import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   IconAlert,
+  IconBuilding,
+  IconCreditCard,
   IconPackage,
   IconTrending,
   IconWallet,
@@ -23,7 +25,7 @@ import {
 } from '@/shared/components/MotoboySelect'
 import { cn, formatCurrency } from '@/shared/utils/cn'
 import { formatTimeBR } from '@/shared/utils/format'
-import type { Entrega } from '@/shared/types/api.types'
+import type { DashboardStats, Entrega } from '@/shared/types/api.types'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import {
@@ -31,12 +33,24 @@ import {
   useTodayDeliveries,
 } from '@/features/dashboard/hooks/useDashboard'
 import {
+  dashboardScopeToOrigemCadastro,
+  dashboardScopeToReportOrigem,
+  getDashboardScopeDescription,
+  type DashboardScope,
+} from '@/features/dashboard/types'
+import { ScopeToggle } from '@/shared/components/ScopeToggle'
+import {
   useNeighborhoodReport,
   usePeriodDailyBreakdown,
   useReportSummary,
 } from '@/features/reports/hooks/useReports'
 import { getPeriodLabel } from '@/features/reports/utils/chart.utils'
 import { FormaPagamentoBadge } from '@/features/deliveries/components/FormaPagamentoBadge'
+import { DeliveryCardHeader } from '@/features/deliveries/components/DeliveryCardChips'
+import {
+  DeliveryPagamentoCell,
+  DeliveryValoresCell,
+} from '@/features/deliveries/components/DeliveryTableCells'
 
 const DailyTrendChart = lazy(() =>
   import('@/features/reports/components/DailyTrendChart').then((module) => ({
@@ -54,12 +68,14 @@ function ChartFallback() {
   return <div className="h-72 min-w-0 animate-pulse rounded-2xl bg-surface/60" />
 }
 
-function TodayDeliveriesList({
+function TodayMotoboyDeliveriesList({
   deliveries,
   showMotoboy,
+  showOrigemBadge = false,
 }: {
   deliveries: Entrega[]
   showMotoboy: boolean
+  showOrigemBadge?: boolean
 }) {
   if (deliveries.length === 0) {
     return (
@@ -100,6 +116,13 @@ function TodayDeliveriesList({
                       title={`Motoboy: ${delivery.motoboy.nome}`}
                     >
                       {delivery.motoboy.nome}
+                    </MetaChip>
+                  ) : null}
+                  {showOrigemBadge ? (
+                    <MetaChip tone="imported" className="text-[10px]">
+                      {delivery.origemCadastro === 'CLIENTE'
+                        ? 'Cliente'
+                        : 'Motoboy'}
                     </MetaChip>
                   ) : null}
                   {delivery.pagoPeloCliente ? (
@@ -151,33 +174,223 @@ function TodayDeliveriesList({
   )
 }
 
+function TodayClienteDeliveriesList({ deliveries }: { deliveries: Entrega[] }) {
+  if (deliveries.length === 0) {
+    return (
+      <EmptyState
+        icon={<IconPackage className="size-6" />}
+        title="Nenhum pedido de cliente hoje"
+        description="Cadastre pedidos na aba Cliente em Entregas."
+        action={
+          <Link
+            to="/entregas"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Ir para Entregas
+          </Link>
+        }
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {deliveries.map((delivery) => {
+        const endereco = [delivery.endereco, delivery.cidade]
+          .filter(Boolean)
+          .join(' — ')
+
+        return (
+          <article key={delivery.id} className={cn(PAGE_CARD_ARTICLE)}>
+            <div className="flex flex-col gap-3">
+              <DeliveryCardHeader
+                horario={formatTimeBR(delivery.horario)}
+                nomeCliente={delivery.nomeCliente}
+                telefone={delivery.telefoneCliente}
+                endereco={endereco}
+                imported={Boolean(delivery.entregaMotoboyId)}
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <DeliveryValoresCell delivery={delivery} />
+                <DeliveryPagamentoCell delivery={delivery} />
+              </div>
+            </div>
+          </article>
+        )
+      })}
+    </div>
+  )
+}
+
+function DashboardDayStats({
+  scope,
+  stats,
+}: {
+  scope: DashboardScope
+  stats?: DashboardStats
+}) {
+  if (scope === 'cliente') {
+    return (
+      <>
+        <StatCard
+          title="Pedidos hoje"
+          value={String(stats?.entregasHoje ?? 0)}
+          description="Cadastrados na aba Cliente"
+          icon={<IconPackage className="size-5" />}
+          accent="primary"
+          delay={0}
+        />
+        <StatCard
+          title="Valor produtos"
+          value={formatCurrency(stats?.valorProdutoHoje ?? 0)}
+          description="Soma dos produtos"
+          icon={<IconBuilding className="size-5" />}
+          accent="success"
+          delay={0.05}
+        />
+        <StatCard
+          title="Taxa motoboy"
+          value={formatCurrency(stats?.valorEntregaMotoboyHoje ?? 0)}
+          description="Repasse das entregas"
+          icon={<IconWallet className="size-5" />}
+          accent="warning"
+          delay={0.1}
+        />
+        <StatCard
+          title="Pagamento"
+          value={`${stats?.pedidosPagosHoje ?? 0} pagos`}
+          description={`${stats?.pedidosNaoPagosHoje ?? 0} não pagos`}
+          icon={<IconCreditCard className="size-5" />}
+          accent="neutral"
+          delay={0.15}
+        />
+      </>
+    )
+  }
+
+  if (scope === 'geral') {
+    return (
+      <>
+        <StatCard
+          title="Entregas hoje"
+          value={String(stats?.entregasHoje ?? 0)}
+          description={`${stats?.pedidosClientesHoje ?? 0} pedido(s) de cliente`}
+          icon={<IconPackage className="size-5" />}
+          accent="primary"
+          delay={0}
+        />
+        <StatCard
+          title="Valor recebido"
+          value={formatCurrency(stats?.valorRecebidoHoje ?? 0)}
+          description="Motoboy + produtos clientes"
+          icon={<IconWallet className="size-5" />}
+          accent="success"
+          delay={0.05}
+        />
+        <StatCard
+          title="Pendências"
+          value={String(stats?.totalPendencias ?? 0)}
+          description="Itens em aberto"
+          icon={<IconAlert className="size-5" />}
+          accent="warning"
+          delay={0.1}
+        />
+        <StatCard
+          title="Valor total do dia"
+          value={formatCurrency(stats?.valorTotalDia ?? 0)}
+          description="Entregas + pendências"
+          icon={<IconTrending className="size-5" />}
+          accent="neutral"
+          delay={0.15}
+        />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <StatCard
+        title="Entregas Hoje"
+        value={String(stats?.entregasHoje ?? 0)}
+        description="Corridas dos motoboys"
+        icon={<IconPackage className="size-5" />}
+        accent="primary"
+        delay={0}
+      />
+      <StatCard
+        title="Valor Recebido Hoje"
+        value={formatCurrency(stats?.valorRecebidoHoje ?? 0)}
+        description="Soma das entregas"
+        icon={<IconWallet className="size-5" />}
+        accent="success"
+        delay={0.05}
+      />
+      <StatCard
+        title="Pendências"
+        value={String(stats?.totalPendencias ?? 0)}
+        description="Itens em aberto"
+        icon={<IconAlert className="size-5" />}
+        accent="warning"
+        delay={0.1}
+      />
+      <StatCard
+        title="Valor Total do Dia"
+        value={formatCurrency(stats?.valorTotalDia ?? 0)}
+        description="Entregas + pendências"
+        icon={<IconTrending className="size-5" />}
+        accent="neutral"
+        delay={0.15}
+      />
+    </>
+  )
+}
+
 export function DashboardPage() {
   const isAdmin = useIsAdmin()
   const userId = useAuthStore((state) => state.user?.id)
+  const [dashboardScope, setDashboardScope] = useState<DashboardScope>('motoboy')
   const [motoboyFilter, setMotoboyFilter] =
     useState<MotoboySelectValue>('all')
 
-  const motoboyId = isAdmin
-    ? motoboyFilter === 'all'
-      ? undefined
-      : motoboyFilter
-    : userId
+  const effectiveScope: DashboardScope = isAdmin ? dashboardScope : 'motoboy'
+  const origemCadastro = dashboardScopeToOrigemCadastro(effectiveScope)
+  const reportOrigem = dashboardScopeToReportOrigem(effectiveScope)
+
+  const motoboyId =
+    effectiveScope === 'motoboy'
+      ? isAdmin
+        ? motoboyFilter === 'all'
+          ? undefined
+          : motoboyFilter
+        : userId
+      : undefined
 
   const queriesEnabled = isAdmin || Boolean(userId)
 
-  const statsQuery = useDashboardStats(motoboyId, queriesEnabled)
-  const deliveriesQuery = useTodayDeliveries(motoboyId, queriesEnabled)
-  const weekSummaryQuery = useReportSummary('week', motoboyId, queriesEnabled)
+  const statsQuery = useDashboardStats(motoboyId, origemCadastro, queriesEnabled)
+  const deliveriesQuery = useTodayDeliveries(
+    motoboyId,
+    origemCadastro,
+    queriesEnabled,
+  )
+  const weekSummaryQuery = useReportSummary(
+    'week',
+    motoboyId,
+    queriesEnabled,
+    reportOrigem,
+  )
   const dailyBreakdownQuery = usePeriodDailyBreakdown(
     'week',
     motoboyId,
     queriesEnabled,
+    reportOrigem,
   )
   const neighborhoodQuery = useNeighborhoodReport(
     'week',
     5,
     motoboyId,
     queriesEnabled,
+    reportOrigem,
   )
 
   const stats = statsQuery.data
@@ -189,26 +402,34 @@ export function DashboardPage() {
   return (
     <PageShell>
       <section className="min-w-0">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <h2 className="text-2xl font-semibold tracking-tight">
               Resumo do dia
             </h2>
             <p className="text-sm text-muted-foreground">
-              {isAdmin
-                ? motoboyId
-                  ? 'Visão individual do motoboy selecionado.'
-                  : 'Visão geral de todos os motoboys.'
-                : 'Visão do seu dia e indicadores da semana.'}
+              {getDashboardScopeDescription(
+                effectiveScope,
+                isAdmin,
+                Boolean(motoboyId),
+              )}
             </p>
           </div>
-          {isAdmin ? (
-            <MotoboySelect
-              value={motoboyFilter}
-              onChange={setMotoboyFilter}
-              allowAll
-            />
-          ) : null}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {isAdmin ? (
+              <ScopeToggle
+                value={dashboardScope}
+                onChange={setDashboardScope}
+              />
+            ) : null}
+            {isAdmin && effectiveScope === 'motoboy' ? (
+              <MotoboySelect
+                value={motoboyFilter}
+                onChange={setMotoboyFilter}
+                allowAll
+              />
+            ) : null}
+          </div>
         </div>
 
         {!queriesEnabled || isLoading ? (
@@ -219,38 +440,7 @@ export function DashboardPage() {
           </div>
         ) : (
           <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              title="Entregas Hoje"
-              value={String(stats?.entregasHoje ?? 0)}
-              description="Total registrado hoje"
-              icon={<IconPackage className="size-5" />}
-              accent="primary"
-              delay={0}
-            />
-            <StatCard
-              title="Valor Recebido Hoje"
-              value={formatCurrency(stats?.valorRecebidoHoje ?? 0)}
-              description="Soma das entregas"
-              icon={<IconWallet className="size-5" />}
-              accent="success"
-              delay={0.05}
-            />
-            <StatCard
-              title="Pendências"
-              value={String(stats?.totalPendencias ?? 0)}
-              description="Itens em aberto"
-              icon={<IconAlert className="size-5" />}
-              accent="warning"
-              delay={0.1}
-            />
-            <StatCard
-              title="Valor Total do Dia"
-              value={formatCurrency(stats?.valorTotalDia ?? 0)}
-              description="Entregas + pendências"
-              icon={<IconTrending className="size-5" />}
-              accent="neutral"
-              delay={0.15}
-            />
+            <DashboardDayStats scope={effectiveScope} stats={stats} />
           </div>
         )}
       </section>
@@ -326,10 +516,16 @@ export function DashboardPage() {
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-lg font-semibold tracking-tight">
-              Entregas do dia
+              {effectiveScope === 'cliente'
+                ? 'Pedidos do dia'
+                : 'Entregas do dia'}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Últimas entregas registradas
+              {effectiveScope === 'cliente'
+                ? 'Últimos pedidos cadastrados na aba Cliente'
+                : effectiveScope === 'geral'
+                  ? 'Motoboy e clientes registrados hoje'
+                  : 'Últimas corridas registradas'}
             </p>
           </div>
           <Link
@@ -360,10 +556,15 @@ export function DashboardPage() {
               </button>
             }
           />
+        ) : effectiveScope === 'cliente' ? (
+          <TodayClienteDeliveriesList deliveries={deliveries} />
         ) : (
-          <TodayDeliveriesList
+          <TodayMotoboyDeliveriesList
             deliveries={deliveries}
-            showMotoboy={isAdmin && !motoboyId}
+            showMotoboy={
+              effectiveScope === 'geral' || (isAdmin && !motoboyId)
+            }
+            showOrigemBadge={effectiveScope === 'geral'}
           />
         )}
       </PagePanel>

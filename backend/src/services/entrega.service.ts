@@ -194,7 +194,11 @@ export class EntregaService {
     return entregaRepository.delete(id)
   }
 
-  async getDashboardStats(reference?: Date | string, motoboyId?: string) {
+  async getDashboardStats(
+    reference?: Date | string,
+    motoboyId?: string,
+    origemCadastro?: 'MOTOBOY' | 'CLIENTE',
+  ) {
     const day =
       reference === undefined
         ? toUtcDateOnlyFromBusinessTz()
@@ -202,16 +206,41 @@ export class EntregaService {
           ? toUtcDateOnly(reference)
           : toUtcDateOnly(formatDateOnlyISO(reference))
 
-    const [entregaStats, pendenciaStats] = await Promise.all([
-      entregaRepository.getStatsByDate(day, motoboyId ? { motoboyId } : undefined),
-      pendenciaRepository.getPendingTotal(motoboyId),
-    ])
+    const statsFilters = {
+      ...(motoboyId ? { motoboyId } : {}),
+      ...(origemCadastro ? { origemCadastro } : {}),
+    }
+
+    const entregaStats = await entregaRepository.getStatsByDate(day, statsFilters)
+
+    if (origemCadastro === 'CLIENTE') {
+      return {
+        entregasHoje: entregaStats.totalEntregas,
+        valorRecebidoHoje: entregaStats.valorProdutoTotal ?? 0,
+        totalPendencias: entregaStats.pedidosNaoPagos ?? 0,
+        valorTotalDia: entregaStats.valorTotal,
+        valorProdutoHoje: entregaStats.valorProdutoTotal ?? 0,
+        valorEntregaMotoboyHoje: entregaStats.valorEntregaMotoboyTotal ?? 0,
+        pedidosPagosHoje: entregaStats.pedidosPagos ?? 0,
+        pedidosNaoPagosHoje: entregaStats.pedidosNaoPagos ?? 0,
+      }
+    }
+
+    const pendenciaStats = await pendenciaRepository.getPendingTotal(motoboyId)
 
     return {
       entregasHoje: entregaStats.totalEntregas,
       valorRecebidoHoje: entregaStats.valorTotal,
       totalPendencias: pendenciaStats.totalPendencias,
       valorTotalDia: entregaStats.valorTotal + pendenciaStats.valorPendencias,
+      ...(origemCadastro
+        ? {}
+        : {
+            valorProdutoHoje: entregaStats.valorProdutoTotal ?? 0,
+            pedidosClientesHoje:
+              (entregaStats.pedidosPagos ?? 0) +
+              (entregaStats.pedidosNaoPagos ?? 0),
+          }),
     }
   }
 

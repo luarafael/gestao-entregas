@@ -18,6 +18,17 @@ export interface ListEntregasFilters {
   origemCadastro?: 'MOTOBOY' | 'CLIENTE'
 }
 
+type EntregaStatsByDate = {
+  totalEntregas: number
+  valorTotal: number
+  entregasPagasPeloCliente: number
+  valorPagasPeloCliente: number
+  valorProdutoTotal?: number
+  valorEntregaMotoboyTotal?: number
+  pedidosPagos?: number
+  pedidosNaoPagos?: number
+}
+
 export class EntregaRepository {
   async create(
     data: Omit<CreateEntregaInput, 'motoboyId'>,
@@ -315,17 +326,91 @@ export class EntregaRepository {
 
   async getStatsByDate(
     date: Date,
-    filters?: { motoboyId?: string; nomeCliente?: string },
-  ) {
+    filters?: {
+      motoboyId?: string
+      nomeCliente?: string
+      origemCadastro?: 'MOTOBOY' | 'CLIENTE'
+    },
+  ): Promise<EntregaStatsByDate> {
     const day = toUtcDateOnly(formatDateOnlyISO(date))
     const baseWhere: Prisma.EntregaWhereInput = {
       data: day,
       status: 'ENTREGUE' as StatusEntrega,
-      origemCadastro: 'MOTOBOY',
+      ...(filters?.origemCadastro
+        ? { origemCadastro: filters.origemCadastro }
+        : {}),
       ...(filters?.motoboyId ? { motoboyId: filters.motoboyId } : {}),
       ...(filters?.nomeCliente
         ? { nomeCliente: { equals: filters.nomeCliente, mode: 'insensitive' } }
         : {}),
+    }
+
+    if (filters?.origemCadastro === 'CLIENTE') {
+      const [total, produto, entregaMotoboy, pagos, naoPagos] =
+        await Promise.all([
+          prisma.entrega.aggregate({
+            where: baseWhere,
+            _count: { id: true },
+          }),
+          prisma.entrega.aggregate({
+            where: baseWhere,
+            _sum: { valorProduto: true },
+          }),
+          prisma.entrega.aggregate({
+            where: baseWhere,
+            _sum: { valorEntregaMotoboy: true },
+          }),
+          prisma.entrega.aggregate({
+            where: { ...baseWhere, statusPagamentoCliente: 'PAGO' },
+            _count: { id: true },
+          }),
+          prisma.entrega.aggregate({
+            where: { ...baseWhere, statusPagamentoCliente: 'NAO_PAGO' },
+            _count: { id: true },
+          }),
+        ])
+
+      const valorProdutoTotal = Number(produto._sum.valorProduto ?? 0)
+      const valorEntregaMotoboyTotal = Number(
+        entregaMotoboy._sum.valorEntregaMotoboy ?? 0,
+      )
+
+      return {
+        totalEntregas: total._count.id,
+        valorTotal: valorProdutoTotal + valorEntregaMotoboyTotal,
+        valorProdutoTotal,
+        valorEntregaMotoboyTotal,
+        pedidosPagos: pagos._count.id,
+        pedidosNaoPagos: naoPagos._count.id,
+        entregasPagasPeloCliente: 0,
+        valorPagasPeloCliente: 0,
+      }
+    }
+
+    if (!filters?.origemCadastro) {
+      const [motoboyStats, clientStats] = await Promise.all([
+        this.getStatsByDate(date, {
+          motoboyId: filters?.motoboyId,
+          nomeCliente: filters?.nomeCliente,
+          origemCadastro: 'MOTOBOY',
+        }),
+        this.getStatsByDate(date, {
+          nomeCliente: filters?.nomeCliente,
+          origemCadastro: 'CLIENTE',
+        }),
+      ])
+
+      return {
+        totalEntregas:
+          motoboyStats.totalEntregas + clientStats.totalEntregas,
+        valorTotal: motoboyStats.valorTotal + clientStats.valorTotal,
+        valorProdutoTotal: clientStats.valorProdutoTotal ?? 0,
+        valorEntregaMotoboyTotal: clientStats.valorEntregaMotoboyTotal ?? 0,
+        pedidosPagos: clientStats.pedidosPagos ?? 0,
+        pedidosNaoPagos: clientStats.pedidosNaoPagos ?? 0,
+        entregasPagasPeloCliente: motoboyStats.entregasPagasPeloCliente,
+        valorPagasPeloCliente: motoboyStats.valorPagasPeloCliente,
+      }
     }
 
     const [total, billable, paidByClient] = await Promise.all([
@@ -349,6 +434,10 @@ export class EntregaRepository {
       valorTotal: Number(billable._sum.valorEntrega ?? 0),
       entregasPagasPeloCliente: paidByClient._count.id,
       valorPagasPeloCliente: Number(paidByClient._sum.valorEntrega ?? 0),
+      valorProdutoTotal: 0,
+      valorEntregaMotoboyTotal: 0,
+      pedidosPagos: 0,
+      pedidosNaoPagos: 0,
     }
   }
 }

@@ -125,7 +125,7 @@ describe('EntregaService', () => {
 
     expect(entregaRepository.getStatsByDate).toHaveBeenCalledWith(
       expect.any(Date),
-      undefined,
+      {},
     )
     expect(pendenciaRepository.getPendingTotal).toHaveBeenCalledWith(undefined)
     expect(stats).toEqual({
@@ -133,6 +133,8 @@ describe('EntregaService', () => {
       valorRecebidoHoje: 90,
       totalPendencias: 1,
       valorTotalDia: 110,
+      valorProdutoHoje: 0,
+      pedidosClientesHoje: 0,
     })
   })
 

@@ -8,6 +8,7 @@ export const dashboardStatsQuerySchema = z.object({
     .optional()
     .transform((value) => (value ? toUtcDateOnly(value) : undefined)),
   motoboyId: z.string().trim().min(1).optional(),
+  origemCadastro: z.enum(['MOTOBOY', 'CLIENTE']).optional(),
 })
 
 export type DashboardStatsQuery = z.infer<typeof dashboardStatsQuerySchema>

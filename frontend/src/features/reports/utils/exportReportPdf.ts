@@ -4,6 +4,7 @@ import type {
   ReportPeriod,
   ReportSummary,
 } from '@/shared/types/api.types'
+import type { DashboardScope } from '@/features/dashboard/types'
 import { formatCurrency } from '@/shared/utils/cn'
 import { formatDateBR } from '@/shared/utils/format'
 import {
@@ -24,6 +25,7 @@ export interface ReportPdfInput {
   dailyBreakdown: DailyTrendPoint[]
   neighborhoods: NeighborhoodReportPoint[]
   scopeLabel?: string
+  scope?: DashboardScope
 }
 
 export function buildReportPdfFilename(period: ReportPeriod) {
@@ -44,13 +46,13 @@ export function exportReportPdf(input: ReportPdfInput) {
   y = addKeyValueRow(
     doc,
     y,
-    'Entregas',
+    input.scope === 'cliente' ? 'Pedidos' : 'Entregas',
     String(input.summary.totalEntregas),
   )
   y = addKeyValueRow(
     doc,
     y,
-    'Valor das entregas',
+    input.scope === 'cliente' ? 'Valor total' : 'Valor das entregas',
     formatCurrency(input.summary.valorEntregas),
   )
   y = addKeyValueRow(
@@ -59,30 +61,40 @@ export function exportReportPdf(input: ReportPdfInput) {
     'Média diária (entregas)',
     String(input.summary.mediaEntregasPorDia),
   )
-  y = addKeyValueRow(
-    doc,
-    y,
-    'Prestações geradas',
-    String(input.summary.totalPrestacoes),
-  )
-  y = addKeyValueRow(
-    doc,
-    y,
-    'Valor final (prestações)',
-    formatCurrency(input.summary.valorFinalPrestacoes),
-  )
-  y = addKeyValueRow(
-    doc,
-    y,
-    'Pendências abertas',
-    String(input.summary.pendenciasAbertas),
-  )
-  y = addKeyValueRow(
-    doc,
-    y,
-    'Valor pendências abertas',
-    formatCurrency(input.summary.valorPendenciasAbertas),
-  )
+
+  if (input.scope !== 'cliente' && input.scope !== 'geral') {
+    y = addKeyValueRow(
+      doc,
+      y,
+      'Prestações geradas',
+      String(input.summary.totalPrestacoes),
+    )
+    y = addKeyValueRow(
+      doc,
+      y,
+      'Valor final (prestações)',
+      formatCurrency(input.summary.valorFinalPrestacoes),
+    )
+    y = addKeyValueRow(
+      doc,
+      y,
+      'Pendências abertas',
+      String(input.summary.pendenciasAbertas),
+    )
+    y = addKeyValueRow(
+      doc,
+      y,
+      'Valor pendências abertas',
+      formatCurrency(input.summary.valorPendenciasAbertas),
+    )
+  } else if (input.scope === 'geral') {
+    y = addKeyValueRow(
+      doc,
+      y,
+      'Dias com movimento',
+      String(input.summary.totalPrestacoes),
+    )
+  }
   y = addKeyValueRow(
     doc,
     y,

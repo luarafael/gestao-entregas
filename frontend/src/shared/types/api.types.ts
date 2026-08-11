@@ -3,6 +3,11 @@ export interface DashboardStats {
   valorRecebidoHoje: number
   totalPendencias: number
   valorTotalDia: number
+  valorProdutoHoje?: number
+  valorEntregaMotoboyHoje?: number
+  pedidosPagosHoje?: number
+  pedidosNaoPagosHoje?: number
+  pedidosClientesHoje?: number
 }
 
 export interface Entrega {

@@ -40,6 +40,7 @@ entregaRoutes.get(
     const stats = await entregaService.getDashboardStats(
       query.data,
       resolveMotoboyScope(req.user!, query.motoboyId),
+      query.origemCadastro,
     )
     res.json(stats)
   }),

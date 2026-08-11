@@ -67,6 +67,7 @@ describe('ReportService', () => {
       5,
       expect.any(Date),
       undefined,
+      'MOTOBOY',
     )
     expect(result[0]?.bairro).toBe('Centro')
   })
