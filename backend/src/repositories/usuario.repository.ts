@@ -15,6 +15,8 @@ export interface ListMotoboysFilters {
   limit: number
   search?: string
   ativo?: boolean
+  excludeEmail?: string
+  excludeUserId?: string
 }
 
 const motoboyPublicSelect = {
@@ -22,6 +24,17 @@ const motoboyPublicSelect = {
   nome: true,
   email: true,
   pix: true,
+  fotoPerfil: true,
+  role: true,
+  ativo: true,
+  criadoEm: true,
+  atualizadoEm: true,
+} as const
+
+const adminPublicSelect = {
+  id: true,
+  nome: true,
+  email: true,
   fotoPerfil: true,
   role: true,
   ativo: true,
@@ -46,6 +59,48 @@ export const usuarioRepository = {
     return prisma.usuario.findFirst({
       where: { id, role: 'MOTOBOY' },
       select: motoboyPublicSelect,
+    })
+  },
+
+  async findAdmins(filters: ListMotoboysFilters) {
+    const skip = (filters.page - 1) * filters.limit
+    const search = filters.search?.trim()
+
+    const where: Prisma.UsuarioWhereInput = {
+      role: 'ADMIN',
+      ...(filters.excludeEmail
+        ? { email: { not: filters.excludeEmail.toLowerCase().trim() } }
+        : {}),
+      ...(filters.excludeUserId ? { id: { not: filters.excludeUserId } } : {}),
+      ...(filters.ativo !== undefined ? { ativo: filters.ativo } : {}),
+      ...(search
+        ? {
+            OR: [
+              { nome: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    }
+
+    const [data, total] = await Promise.all([
+      prisma.usuario.findMany({
+        where,
+        skip,
+        take: filters.limit,
+        orderBy: [{ ativo: 'desc' }, { nome: 'asc' }],
+        select: adminPublicSelect,
+      }),
+      prisma.usuario.count({ where }),
+    ])
+
+    return { data, total }
+  },
+
+  findAdminById(id: string) {
+    return prisma.usuario.findFirst({
+      where: { id, role: 'ADMIN' },
+      select: adminPublicSelect,
     })
   },
 
@@ -90,6 +145,44 @@ export const usuarioRepository = {
         ...(input.pix !== undefined ? { pix: input.pix } : {}),
       },
       select: motoboyPublicSelect,
+    })
+  },
+
+  createAdmin(input: Pick<CreateUsuarioInput, 'nome' | 'email' | 'senhaHash'>) {
+    return prisma.usuario.create({
+      data: {
+        nome: input.nome.trim(),
+        email: input.email.toLowerCase().trim(),
+        senhaHash: input.senhaHash,
+        role: 'ADMIN',
+        mustChangePassword: true,
+      },
+      select: adminPublicSelect,
+    })
+  },
+
+  updateAdmin(
+    id: string,
+    data: {
+      nome?: string
+      email?: string
+      senhaHash?: string
+      mustChangePassword?: boolean
+    },
+  ) {
+    return prisma.usuario.update({
+      where: { id },
+      data: {
+        ...(data.nome !== undefined ? { nome: data.nome.trim() } : {}),
+        ...(data.email !== undefined
+          ? { email: data.email.toLowerCase().trim() }
+          : {}),
+        ...(data.senhaHash !== undefined ? { senhaHash: data.senhaHash } : {}),
+        ...(data.mustChangePassword !== undefined
+          ? { mustChangePassword: data.mustChangePassword }
+          : {}),
+      },
+      select: adminPublicSelect,
     })
   },
 
@@ -160,6 +253,23 @@ export const usuarioRepository = {
     })
   },
 
+  deleteAdmin(id: string) {
+    return prisma.usuario.delete({
+      where: { id, role: 'ADMIN' },
+      select: adminPublicSelect,
+    })
+  },
+
+  countActiveAdmins(excludeId?: string) {
+    return prisma.usuario.count({
+      where: {
+        role: 'ADMIN',
+        ativo: true,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    })
+  },
+
   upsertAdmin(input: CreateUsuarioInput) {
     return prisma.usuario.upsert({
       where: { email: input.email.toLowerCase().trim() },
@@ -174,6 +284,7 @@ export const usuarioRepository = {
         email: input.email.toLowerCase().trim(),
         senhaHash: input.senhaHash,
         role: 'ADMIN',
+        mustChangePassword: true,
       },
     })
   },

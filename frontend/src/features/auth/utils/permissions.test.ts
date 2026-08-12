@@ -22,10 +22,17 @@ describe('permissions', () => {
     expect(canAccessRoute('MOTOBOY', '/relatorios')).toBe(true)
     expect(canAccessRoute('MOTOBOY', '/prestacao')).toBe(false)
     expect(canAccessRoute('MOTOBOY', '/motoboys')).toBe(false)
+    expect(canAccessRoute('MOTOBOY', '/administradores')).toBe(false)
     expect(canAccessRoute('MOTOBOY', '/pendencias')).toBe(true)
     expect(canAccessRoute('MOTOBOY', '/meu-dia')).toBe(true)
     expect(canAccessRoute('MOTOBOY', '/entregas')).toBe(true)
     expect(canAccessRoute('MOTOBOY', '/planejador')).toBe(true)
+  })
+
+  it('libera todas as rotas para admin', () => {
+    expect(canAccessRoute('ADMIN', '/administradores')).toBe(true)
+    expect(canAccessRoute('ADMIN', '/prestacao')).toBe(true)
+    expect(canAccessRoute('ADMIN', '/motoboys')).toBe(true)
   })
 
   it('exibe rotulo em portugues', () => {

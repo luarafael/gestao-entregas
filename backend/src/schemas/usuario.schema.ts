@@ -43,7 +43,24 @@ export const setMotoboyAtivoSchema = z.object({
   ativo: z.boolean(),
 })
 
+export const createAdminSchema = z.object({
+  nome: z.string().trim().min(1, 'Nome é obrigatório'),
+  email: z.string().trim().email('E-mail inválido'),
+  senha: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+})
+
+export const updateAdminSchema = z.object({
+  nome: z.string().trim().min(1, 'Nome é obrigatório').optional(),
+  email: z.string().trim().email('E-mail inválido').optional(),
+  senha: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres').optional(),
+})
+
+export const listAdminsSchema = listMotoboysSchema
+
 export type CreateMotoboyInput = z.infer<typeof createMotoboySchema>
 export type UpdateMotoboyInput = z.infer<typeof updateMotoboySchema>
 export type ListMotoboysInput = z.infer<typeof listMotoboysSchema>
 export type SetMotoboyAtivoInput = z.infer<typeof setMotoboyAtivoSchema>
+export type CreateAdminInput = z.infer<typeof createAdminSchema>
+export type UpdateAdminInput = z.infer<typeof updateAdminSchema>
+export type ListAdminsInput = z.infer<typeof listAdminsSchema>

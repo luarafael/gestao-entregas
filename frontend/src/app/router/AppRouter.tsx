@@ -50,6 +50,12 @@ const MotoboysPage = lazy(() =>
   })),
 )
 
+const AdminsPage = lazy(() =>
+  import('@/features/admins/pages/AdminsPage').then((module) => ({
+    default: module.AdminsPage,
+  })),
+)
+
 const DashboardPage = lazy(() =>
   import('@/features/dashboard/pages/DashboardPage').then((module) => ({
     default: module.DashboardPage,
@@ -111,6 +117,7 @@ const routes = [
               { path: 'aprovacoes', element: <AprovacoesPage /> },
               { path: 'monitoramento', element: <MonitoramentoPage /> },
               { path: 'motoboys', element: <MotoboysPage /> },
+              { path: 'administradores', element: <AdminsPage /> },
               { path: 'entregas', element: <DeliveriesPage /> },
               { path: 'pendencias', element: <PendingPage /> },
               { path: 'prestacao', element: <PrestacaoPage /> },
