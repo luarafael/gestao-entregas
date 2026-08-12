@@ -3,6 +3,7 @@ export interface AuthUser {
   nome: string
   email: string
   role: 'ADMIN' | 'MOTOBOY'
+  mustChangePassword: boolean
   pix?: string | null
   fotoPerfil?: string | null
 }

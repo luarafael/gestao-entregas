@@ -10,6 +10,7 @@ const authState = {
     nome: 'Administrador',
     email: 'admin@test.com',
     role: 'ADMIN' as const,
+    mustChangePassword: false,
   },
   isHydrated: true,
   restoreSession: vi.fn(async () => true),

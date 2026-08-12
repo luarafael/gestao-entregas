@@ -24,7 +24,14 @@ export function LoginPage() {
 
     try {
       await login(email.trim(), senha)
+      const user = useAuthStore.getState().user
       toast('Login realizado com sucesso', 'success')
+
+      if (user?.mustChangePassword) {
+        navigate('/redefinir-senha', { replace: true })
+        return
+      }
+
       navigate(from, { replace: true })
     } catch (error) {
       const message =

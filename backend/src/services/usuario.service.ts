@@ -72,6 +72,7 @@ export class UsuarioService {
       email: input.email,
       senhaHash,
       pix: input.pix,
+      ...(senhaHash ? { mustChangePassword: true } : {}),
     })
   }
 

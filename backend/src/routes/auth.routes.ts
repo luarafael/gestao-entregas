@@ -4,7 +4,7 @@ import {
   asyncHandler,
   validateBody,
 } from '../middleware/index.js'
-import { loginSchema, updatePixSchema, updateFotoPerfilSchema } from '../schemas/auth.schema.js'
+import { loginSchema, updatePixSchema, updateFotoPerfilSchema, changePasswordSchema } from '../schemas/auth.schema.js'
 import { authService } from '../services/auth.service.js'
 import { requireAuth, requireRole } from '../middleware/auth.middleware.js'
 
@@ -60,6 +60,16 @@ authRoutes.patch(
       req.user!.id,
       req.body.fotoPerfil,
     )
+    res.json(user)
+  }),
+)
+
+authRoutes.patch(
+  '/me/senha',
+  requireAuth,
+  validateBody(changePasswordSchema),
+  asyncHandler(async (req, res) => {
+    const user = await authService.changePassword(req.user!.id, req.body)
     res.json(user)
   }),
 )

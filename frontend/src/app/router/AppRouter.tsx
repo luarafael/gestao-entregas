@@ -14,6 +14,12 @@ const LoginPage = lazy(() =>
   })),
 )
 
+const ChangePasswordPage = lazy(() =>
+  import('@/features/auth/pages/ChangePasswordPage').then((module) => ({
+    default: module.ChangePasswordPage,
+  })),
+)
+
 const MeuDiaPage = lazy(() =>
   import('@/features/motoboy/pages/MeuDiaPage').then((module) => ({
     default: module.MeuDiaPage,
@@ -95,6 +101,7 @@ const routes = [
       {
         element: <ProtectedRoute />,
         children: [
+          { path: '/redefinir-senha', element: <ChangePasswordPage /> },
           {
             element: <AppLayout />,
             children: [

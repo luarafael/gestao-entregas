@@ -49,7 +49,15 @@ export function ProtectedRoute() {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  if (user && !canAccessRoute(user.role, location.pathname)) {
+  if (user?.mustChangePassword && location.pathname !== '/redefinir-senha') {
+    return <Navigate to="/redefinir-senha" replace />
+  }
+
+  if (user && !user.mustChangePassword && location.pathname === '/redefinir-senha') {
+    return <Navigate to={getDefaultHomePath(user.role)} replace />
+  }
+
+  if (user && location.pathname !== '/redefinir-senha' && !canAccessRoute(user.role, location.pathname)) {
     return <Navigate to={getDefaultHomePath(user.role)} replace />
   }
 
@@ -66,6 +74,10 @@ export function PublicOnlyRoute() {
   }
 
   if (token) {
+    if (user?.mustChangePassword) {
+      return <Navigate to="/redefinir-senha" replace />
+    }
+
     return <Navigate to={user ? getDefaultHomePath(user.role) : '/'} replace />
   }
 

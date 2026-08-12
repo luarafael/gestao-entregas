@@ -239,6 +239,7 @@ model Usuario {
   nome         String
   email        String      @unique
   senhaHash    String      @map("senha_hash")
+  mustChangePassword Boolean @default(true) @map("must_change_password")
   pix          String?
   fotoPerfil   String?     @map("foto_perfil")
   role         UsuarioRole @default(MOTOBOY)

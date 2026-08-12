@@ -1,6 +1,6 @@
-import { UnauthorizedError } from '../errors/app.error.js'
+import { UnauthorizedError, ValidationError } from '../errors/app.error.js'
 import { usuarioRepository } from '../repositories/usuario.repository.js'
-import type { LoginInput } from '../schemas/auth.schema.js'
+import type { LoginInput, ChangePasswordInput } from '../schemas/auth.schema.js'
 import { hashPassword, verifyPassword } from '../utils/password.utils.js'
 import { signAuthToken } from '../utils/jwt.utils.js'
 
@@ -9,6 +9,7 @@ function toPublicUser(user: {
   nome: string
   email: string
   role: 'ADMIN' | 'MOTOBOY'
+  mustChangePassword: boolean
   pix?: string | null
   fotoPerfil?: string | null
 }) {
@@ -17,6 +18,7 @@ function toPublicUser(user: {
     nome: user.nome,
     email: user.email,
     role: user.role,
+    mustChangePassword: user.mustChangePassword,
     fotoPerfil: user.fotoPerfil ?? null,
     ...(user.role === 'MOTOBOY' ? { pix: user.pix ?? null } : {}),
   }
@@ -64,7 +66,8 @@ export class AuthService {
     }
 
     const updated = await usuarioRepository.updatePix(userId, pix)
-    return toPublicUser(updated)
+    void updated
+    return this.getMe(userId)
   }
 
   async updateFotoPerfil(userId: string, fotoPerfil: string | null) {
@@ -74,7 +77,25 @@ export class AuthService {
       throw new UnauthorizedError('Usuário não encontrado ou inativo')
     }
 
-    const updated = await usuarioRepository.updateFotoPerfil(userId, fotoPerfil)
+    await usuarioRepository.updateFotoPerfil(userId, fotoPerfil)
+    return this.getMe(userId)
+  }
+
+  async changePassword(userId: string, input: ChangePasswordInput) {
+    const user = await usuarioRepository.findById(userId)
+
+    if (!user || !user.ativo) {
+      throw new UnauthorizedError('Usuário não encontrado ou inativo')
+    }
+
+    if (!user.mustChangePassword) {
+      throw new ValidationError(
+        'A redefinição de senha só é necessária no primeiro acesso',
+      )
+    }
+
+    const senhaHash = await hashPassword(input.senha)
+    const updated = await usuarioRepository.updatePassword(userId, senhaHash)
     return toPublicUser(updated)
   }
 

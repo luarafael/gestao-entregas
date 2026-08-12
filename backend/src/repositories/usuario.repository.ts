@@ -100,6 +100,7 @@ export const usuarioRepository = {
       email?: string
       senhaHash?: string
       pix?: string | null
+      mustChangePassword?: boolean
     },
   ) {
     return prisma.usuario.update({
@@ -111,8 +112,21 @@ export const usuarioRepository = {
           : {}),
         ...(data.senhaHash !== undefined ? { senhaHash: data.senhaHash } : {}),
         ...(data.pix !== undefined ? { pix: data.pix } : {}),
+        ...(data.mustChangePassword !== undefined
+          ? { mustChangePassword: data.mustChangePassword }
+          : {}),
       },
       select: motoboyPublicSelect,
+    })
+  },
+
+  updatePassword(id: string, senhaHash: string) {
+    return prisma.usuario.update({
+      where: { id },
+      data: {
+        senhaHash,
+        mustChangePassword: false,
+      },
     })
   },
 

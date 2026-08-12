@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   findByEmail: vi.fn(),
   findById: vi.fn(),
   upsertAdmin: vi.fn(),
+  updatePassword: vi.fn(),
 }))
 
 vi.mock('../repositories/usuario.repository.js', () => ({
@@ -13,6 +14,9 @@ vi.mock('../repositories/usuario.repository.js', () => ({
     findByEmail: mocks.findByEmail,
     findById: mocks.findById,
     upsertAdmin: mocks.upsertAdmin,
+    updatePassword: mocks.updatePassword,
+    updatePix: vi.fn(),
+    updateFotoPerfil: vi.fn(),
   },
 }))
 
@@ -40,6 +44,7 @@ describe('AuthService', () => {
       senhaHash: 'hash',
       role: 'ADMIN',
       ativo: true,
+      mustChangePassword: false,
       fotoPerfil: null,
     })
 
@@ -54,8 +59,60 @@ describe('AuthService', () => {
       nome: 'Admin',
       email: 'admin@test.com',
       role: 'ADMIN',
+      mustChangePassword: false,
       fotoPerfil: null,
     })
+  })
+
+  it('retorna mustChangePassword true no login do primeiro acesso', async () => {
+    mocks.findByEmail.mockResolvedValue({
+      id: 'user-2',
+      nome: 'Motoboy',
+      email: 'motoboy@test.com',
+      senhaHash: 'hash',
+      role: 'MOTOBOY',
+      ativo: true,
+      mustChangePassword: true,
+      pix: null,
+      fotoPerfil: null,
+    })
+
+    const result = await service.login({
+      email: 'motoboy@test.com',
+      senha: '123456',
+    })
+
+    expect(result.user.mustChangePassword).toBe(true)
+  })
+
+  it('define senha no primeiro acesso', async () => {
+    mocks.findById.mockResolvedValue({
+      id: 'user-2',
+      nome: 'Motoboy',
+      email: 'motoboy@test.com',
+      role: 'MOTOBOY',
+      ativo: true,
+      mustChangePassword: true,
+      pix: null,
+      fotoPerfil: null,
+    })
+    mocks.updatePassword.mockResolvedValue({
+      id: 'user-2',
+      nome: 'Motoboy',
+      email: 'motoboy@test.com',
+      role: 'MOTOBOY',
+      mustChangePassword: false,
+      pix: null,
+      fotoPerfil: null,
+    })
+
+    const user = await service.changePassword('user-2', {
+      senha: 'nova123',
+      confirmacaoSenha: 'nova123',
+    })
+
+    expect(mocks.updatePassword).toHaveBeenCalledWith('user-2', 'hashed-password')
+    expect(user.mustChangePassword).toBe(false)
   })
 
   it('rejeita login de usuário inexistente', async () => {
@@ -73,6 +130,8 @@ describe('AuthService', () => {
       email: 'admin@test.com',
       role: 'ADMIN',
       ativo: true,
+      mustChangePassword: false,
+      fotoPerfil: null,
     })
 
     const user = await service.getMe('user-1')

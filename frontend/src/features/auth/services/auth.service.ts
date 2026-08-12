@@ -30,4 +30,11 @@ export const authService = {
       body: JSON.stringify({ fotoPerfil }),
     })
   },
+
+  changePassword(senha: string, confirmacaoSenha: string) {
+    return apiFetch<AuthUser>('/api/auth/me/senha', {
+      method: 'PATCH',
+      body: JSON.stringify({ senha, confirmacaoSenha }),
+    })
+  },
 }

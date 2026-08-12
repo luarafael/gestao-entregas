@@ -32,11 +32,24 @@ export const updateFotoPerfilSchema = z.object({
 
 export type UpdateFotoPerfilInput = z.infer<typeof updateFotoPerfilSchema>
 
+export const changePasswordSchema = z
+  .object({
+    senha: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+    confirmacaoSenha: z.string().min(1, 'Confirme a nova senha'),
+  })
+  .refine((data) => data.senha === data.confirmacaoSenha, {
+    message: 'As senhas não coincidem',
+    path: ['confirmacaoSenha'],
+  })
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
+
 export const usuarioPublicSchema = z.object({
   id: z.string(),
   nome: z.string(),
   email: z.string().email(),
   role: z.enum(['ADMIN', 'MOTOBOY']),
+  mustChangePassword: z.boolean(),
   pix: z.string().nullable().optional(),
   fotoPerfil: z.string().nullable().optional(),
 })

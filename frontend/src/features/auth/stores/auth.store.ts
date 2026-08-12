@@ -11,11 +11,15 @@ import { syncUserAvatar } from '../utils/syncUserAvatar'
 import { useProfileStore } from '../stores/profile.store'
 
 function normalizeUser(user: AuthUser): AuthUser {
-  if ((user.role as string) === 'OPERADOR') {
-    return { ...user, role: 'MOTOBOY' }
-  }
+  const base =
+    (user.role as string) === 'OPERADOR'
+      ? { ...user, role: 'MOTOBOY' as const }
+      : user
 
-  return user
+  return {
+    ...base,
+    mustChangePassword: base.mustChangePassword ?? false,
+  }
 }
 
 interface AuthState {
@@ -26,6 +30,7 @@ interface AuthState {
   clearSession: () => void
   setHydrated: (value: boolean) => void
   login: (email: string, senha: string) => Promise<void>
+  changePassword: (senha: string, confirmacaoSenha: string) => Promise<void>
   logout: () => void
   restoreSession: () => Promise<boolean>
 }
@@ -54,6 +59,14 @@ export const useAuthStore = create<AuthState>()(
       login: async (email, senha) => {
         const result = await authService.login(email, senha)
         get().setSession(result.token, result.user)
+      },
+
+      changePassword: async (senha, confirmacaoSenha) => {
+        const user = await authService.changePassword(senha, confirmacaoSenha)
+        const token = get().token
+        if (token) {
+          get().setSession(token, user)
+        }
       },
 
       logout: () => {
