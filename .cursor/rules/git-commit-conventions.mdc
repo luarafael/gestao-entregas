@@ -1,0 +1,37 @@
+---
+description: Commits convencionais em portugues, sem Co-authored-by
+alwaysApply: true
+---
+
+# Commits Git
+
+## Formato
+
+- Use **Conventional Commits** em português: `feat:`, `fix:`, `docs:`, `refactor:`, etc.
+- Mensagem curta (1 linha) no imperativo/descrição direta.
+- Corpo opcional só quando agregar contexto que a linha não cobre.
+
+Exemplos:
+
+```
+feat: web push para notificacoes com app fechado
+fix: corrigir sync do planejador ao concluir rota no celular
+docs: variaveis VAPID no template de deploy
+```
+
+## Proibido
+
+- **Nunca** incluir `Co-authored-by:` (Cursor, Copilot ou qualquer agente) no corpo do commit.
+- **Nunca** usar `--trailer "Co-authored-by:..."`.
+- **Nunca** reescrever histórico (`filter-branch`, `rebase` force, amend em commits já pushados) só para limpar co-author — evite criar o trailer desde o início.
+
+## Ao commitar
+
+1. Só commitar quando o usuário pedir explicitamente.
+2. Passar a mensagem com `git commit -m "mensagem"` — **somente a mensagem**, sem trailers extras.
+3. No PowerShell, usar aspas simples ou `-m "texto"` direto; evitar heredoc (não funciona no PS).
+
+## Push
+
+- Não dar push em `main` sem pedido explícito do usuário.
+- Se o histórico precisar ser reescrito, avisar antes e pedir confirmação.

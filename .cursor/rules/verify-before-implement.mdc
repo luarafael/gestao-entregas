@@ -1,0 +1,36 @@
+---
+description: Verificar pre-requisitos e arquivos relacionados antes de implementar; pedir permissao se faltar algo
+alwaysApply: true
+---
+
+# Verificar antes de implementar
+
+Antes de codar uma feature ou fix, **confirme que os arquivos existentes já estão prontos** para receber a mudança. Não implemente “no escuro” assumindo que tudo está sincronizado.
+
+## Checklist de prontidão (adaptar ao escopo)
+
+1. **Banco**: `schema.prisma` + migration SQL alinhada (nomes reais das colunas no Postgres).
+2. **Contrato API**: schema Zod backend ↔ service frontend ↔ `api.types.ts`.
+3. **Dependências**: `package.json` **e** lockfiles corretos.
+   - Monorepo na raiz: `package-lock.json`.
+   - Docker/Railway usa **`backend/package-lock.json`** isolado — atualizar com `npm install --package-lock-only --workspaces=false` dentro de `backend/`.
+4. **Deploy/config**: `Dockerfile`, `.env.example`, `.env.cliente.example`, variáveis Railway/Vercel.
+5. **Rotas e guards**: router, `AuthGate`, permissões por role.
+6. **Testes** das áreas tocadas.
+
+## Se algo estiver desatualizado ou faltando
+
+1. **Pare** antes de implementar a feature completa.
+2. **Informe ao usuário** o que falta, em lista objetiva (arquivo + o que precisa).
+3. **Peça permissão** para atualizar esses arquivos primeiro.
+4. Só depois da confirmação (ou se o usuário já tiver pedido “pode atualizar tudo”) prossiga com a implementação.
+
+Exemplo de mensagem:
+
+> Para adicionar `web-push`, falta atualizar `backend/package-lock.json` (usado no Docker). Posso sincronizar o lock e só então implementar o serviço?
+
+## O que não fazer
+
+- Não commitar `package.json` sem o lockfile correspondente ao contexto de build (raiz **e/ou** `backend/`).
+- Não criar endpoint sem checar schema, repository e consumer no frontend.
+- Não assumir que migration já rodou em produção — avisar quando precisar de `db:migrate:deploy`.
