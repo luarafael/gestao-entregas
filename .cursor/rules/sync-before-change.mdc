@@ -38,7 +38,7 @@ COALESCE("valorEntrega", 0)
 
 - Confirmar filtro `origemCadastro`, endpoint dedicado e campo usado na importação.
 - Motoboy tab e Planejador devem listar só entregas `MOTOBOY`.
-- Testar build + testes das áreas tocadas antes de commit.
+- Testar **build completo** (`npm run build` na raiz) + testes das áreas tocadas antes de commit.
 
 ## Migrations em produção
 

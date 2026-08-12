@@ -17,6 +17,20 @@ Antes de codar uma feature ou fix, **confirme que os arquivos existentes já est
 4. **Deploy/config**: `Dockerfile`, `.env.example`, `.env.cliente.example`, variáveis Railway/Vercel.
 5. **Rotas e guards**: router, `AuthGate`, permissões por role.
 6. **Testes** das áreas tocadas.
+7. **TypeScript (obrigatório)** — projeto 100% TS; erro de tipo no deploy **não pode acontecer**:
+   - Ao adicionar dependência no **backend**, conferir tipos: pacote já tipado ou `@types/<pacote>` em `devDependencies`.
+   - Após mudar `backend/`, rodar `npm run build --workspace=backend` (`tsc` strict).
+   - Após mudar `frontend/`, rodar `npm run build --workspace=frontend` (`tsc -b`).
+   - Antes de commit/push: `npm run build` na raiz (backend **e** frontend — igual ao Railway/Vercel).
+
+## Dependências sem tipos
+
+Se `@types/<pacote>` não existir:
+
+1. Preferir alternativa tipada, ou
+2. Criar `backend/src/types/<pacote>.d.ts` com `declare module '<pacote>';` (último recurso, documentar por quê).
+
+Nunca commitar import de pacote JS sem resolver tipos — o `tsc` do backend falha em produção.
 
 ## Se algo estiver desatualizado ou faltando
 
