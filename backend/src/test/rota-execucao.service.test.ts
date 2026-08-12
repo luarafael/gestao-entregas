@@ -31,6 +31,18 @@ vi.mock('../repositories/entrega.repository.js', () => ({
   entregaRepository,
 }))
 
+vi.mock('../repositories/usuario.repository.js', () => ({
+  usuarioRepository: {
+    findById: vi.fn(),
+  },
+}))
+
+vi.mock('../services/push-notification.service.js', () => ({
+  pushNotificationService: {
+    notifyAdminsDeliveryCompleted: vi.fn(),
+  },
+}))
+
 import { rotaExecucaoService } from '../services/rota-execucao.service.js'
 
 describe('RotaExecucaoService', () => {

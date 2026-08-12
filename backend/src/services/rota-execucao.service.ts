@@ -2,6 +2,8 @@ import { NotFoundError } from '../errors/app.error.js'
 import { entregaRepository } from '../repositories/entrega.repository.js'
 import { rotaExecucaoRepository } from '../repositories/rota-execucao.repository.js'
 import { rotaRepository } from '../repositories/rota.repository.js'
+import { usuarioRepository } from '../repositories/usuario.repository.js'
+import { pushNotificationService } from './push-notification.service.js'
 import type {
   BulkSyncExecucaoInput,
   UpdateExecucaoParadaInput,
@@ -60,6 +62,11 @@ export class RotaExecucaoService {
 
     await rotaExecucaoRepository.initForRota(rotaId)
 
+    const execucoesBefore = await rotaExecucaoRepository.findByRotaId(rotaId)
+    const previousStatus = execucoesBefore.find(
+      (item) => item.paradaId === paradaId,
+    )?.status
+
     const deliveredAt = new Date()
 
     const result = await rotaExecucaoRepository.updateByParadaId(
@@ -92,6 +99,10 @@ export class RotaExecucaoService {
           status: 'EM_ROTA',
           dataHoraStatus: deliveredAt,
         })
+      }
+
+      if (previousStatus !== 'ENTREGUE') {
+        void this.notifyDeliveryCompleted(rota, parada, deliveredAt)
       }
     }
 
@@ -131,6 +142,27 @@ export class RotaExecucaoService {
 
   async reconcileRouteConclusion(rotaId: string) {
     return this.tryConcludeRouteEntregas(rotaId)
+  }
+
+  private async notifyDeliveryCompleted(
+    rota: NonNullable<Awaited<ReturnType<typeof rotaRepository.findById>>>,
+    parada: { id: string; cliente: string | null },
+    deliveredAt: Date,
+  ) {
+    const motoboyId = rota.motoboyId
+    if (!motoboyId) {
+      return
+    }
+
+    const motoboy = await usuarioRepository.findById(motoboyId)
+    const cliente = parada.cliente?.trim() || 'Cliente'
+
+    pushNotificationService.notifyAdminsDeliveryCompleted({
+      execucaoId: `${rota.id}-${parada.id}`,
+      motoboyNome: motoboy?.nome ?? 'Motoboy',
+      cliente,
+      dataHoraStatus: deliveredAt,
+    })
   }
 
   private async tryConcludeRouteEntregas(rotaId: string): Promise<boolean> {

@@ -7,6 +7,7 @@ import { prestacaoMotoboyRoutes } from './prestacao-motoboy.routes.js'
 import { prestacaoRoutes } from './prestacao.routes.js'
 import { reportRoutes } from './report.routes.js'
 import { rotaRoutes } from './rota.routes.js'
+import { pushSubscriptionRoutes } from './push-subscription.routes.js'
 import { usuarioRoutes } from './usuario.routes.js'
 import { requireAuth, requireRole } from '../middleware/auth.middleware.js'
 
@@ -24,3 +25,4 @@ apiRoutes.use('/prestacoes-motoboy', prestacaoMotoboyRoutes)
 apiRoutes.use('/reports', reportRoutes)
 apiRoutes.use('/entregas', entregaRoutes)
 apiRoutes.use('/rotas', rotaRoutes)
+apiRoutes.use('/notifications', pushSubscriptionRoutes)

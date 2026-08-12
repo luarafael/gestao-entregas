@@ -11,6 +11,7 @@ import {
   getNotificationPermission,
   isNotificationBannerDismissed,
   requestNotificationPermission,
+  subscribeToWebPush,
 } from '@/shared/utils/pushNotification'
 
 export function NotificationPermissionBanner() {
@@ -31,6 +32,7 @@ export function NotificationPermissionBanner() {
     setPermission(result)
 
     if (result === 'granted') {
+      await subscribeToWebPush()
       dismissNotificationBanner()
       setVisible(false)
     }

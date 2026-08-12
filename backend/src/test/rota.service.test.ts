@@ -44,6 +44,12 @@ vi.mock('../services/osrm.service.js', () => ({
   },
 }))
 
+vi.mock('../services/push-notification.service.js', () => ({
+  pushNotificationService: {
+    notifyMotoboyNewRoute: vi.fn(),
+  },
+}))
+
 import { entregaRepository } from '../repositories/entrega.repository.js'
 import { rotaExecucaoRepository } from '../repositories/rota-execucao.repository.js'
 import { rotaRepository } from '../repositories/rota.repository.js'

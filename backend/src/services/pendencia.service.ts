@@ -1,6 +1,7 @@
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors/app.error.js'
 import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 import { pendenciaRepository } from '../repositories/pendencia.repository.js'
+import { pushNotificationService } from './push-notification.service.js'
 import type {
   CreatePendenciaInput,
   ListPendenciasInput,
@@ -25,12 +26,21 @@ export class PendenciaService {
       })
     }
 
-    return pendenciaRepository.create({
+    const pendencia = await pendenciaRepository.create({
       ...input,
       status: 'PENDENTE',
       tipo: 'REPASSE_MOTOBOY',
       motoboyId: user.id,
     })
+
+    pushNotificationService.notifyAdminsNewPendencia({
+      pendenciaId: pendencia.id,
+      motoboyNome: user.nome,
+      descricao: pendencia.descricao,
+      criadoEm: pendencia.criadoEm,
+    })
+
+    return pendencia
   }
 
   async findById(user: AuthenticatedUser, id: string) {

@@ -1,4 +1,6 @@
 import { getServiceWorkerRegistration } from '@/features/pwa/register-pwa'
+import { pushSubscriptionService } from '@/features/notifications/services/pushSubscription.service'
+import { urlBase64ToUint8Array } from '@/features/notifications/utils/webPush.utils'
 import {
   isMobileDevice,
   isStandalonePwa,
@@ -101,4 +103,62 @@ export async function showNativeNotification(
     }
     notification.close()
   }
+}
+
+async function resolveVapidPublicKey(): Promise<string | null> {
+  const envKey = import.meta.env.VITE_VAPID_PUBLIC_KEY?.trim()
+  if (envKey) {
+    return envKey
+  }
+
+  try {
+    const config = await pushSubscriptionService.getConfig()
+    return config.enabled ? config.vapidPublicKey : null
+  } catch {
+    return null
+  }
+}
+
+export async function subscribeToWebPush(): Promise<boolean> {
+  if (!('PushManager' in window)) {
+    return false
+  }
+
+  if (getNotificationPermission() !== 'granted') {
+    return false
+  }
+
+  const vapidPublicKey = await resolveVapidPublicKey()
+  if (!vapidPublicKey) {
+    return false
+  }
+
+  const registration = await getServiceWorkerRegistration()
+  if (!registration) {
+    return false
+  }
+
+  let subscription = await registration.pushManager.getSubscription()
+
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    })
+  }
+
+  const json = subscription.toJSON()
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) {
+    return false
+  }
+
+  await pushSubscriptionService.subscribe({
+    endpoint: json.endpoint,
+    keys: {
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth,
+    },
+  })
+
+  return true
 }

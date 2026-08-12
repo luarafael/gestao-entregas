@@ -23,6 +23,7 @@ import {
 } from '../utils/date.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { generateMotoboyPrestacaoWhatsAppText } from './whatsapp.service.js'
+import { pushNotificationService } from './push-notification.service.js'
 
 export class PrestacaoMotoboyService {
   private normalizeDate(input?: Date) {
@@ -165,6 +166,12 @@ export class PrestacaoMotoboyService {
       pix,
     )
 
+    pushNotificationService.notifyAdminsNewApproval({
+      prestacaoId: prestacao.id,
+      motoboyNome,
+      data: prestacao.data,
+    })
+
     return {
       prestacao,
       entregas,
@@ -241,12 +248,19 @@ export class PrestacaoMotoboyService {
 
     await pendenciaRepository.markRepasseReceivedByMotoboy(prestacao.motoboyId)
 
-    return prestacaoMotoboyRepository.update(id, {
+    const updated = await prestacaoMotoboyRepository.update(id, {
       status: 'APROVADA',
       aprovadaEm: new Date(),
       rejeitadaEm: null,
       motivoRejeicao: null,
     })
+
+    pushNotificationService.notifyMotoboyPrestacaoApproved(
+      prestacao.motoboyId,
+      prestacao.data,
+    )
+
+    return updated
   }
 
   async reject(
@@ -267,12 +281,19 @@ export class PrestacaoMotoboyService {
       throw new ConflictError('Esta prestação não está aguardando aprovação')
     }
 
-    return prestacaoMotoboyRepository.update(id, {
+    const updated = await prestacaoMotoboyRepository.update(id, {
       status: 'REJEITADA',
       motivoRejeicao: input.motivoRejeicao,
       rejeitadaEm: new Date(),
       aprovadaEm: null,
     })
+
+    pushNotificationService.notifyMotoboyPrestacaoRejected(prestacao.motoboyId, {
+      data: prestacao.data,
+      motivoRejeicao: input.motivoRejeicao,
+    })
+
+    return updated
   }
 
   async getWhatsAppText(user: AuthenticatedUser, id: string) {

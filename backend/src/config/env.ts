@@ -25,6 +25,9 @@ export const env = {
   MOTOBOY_EMAIL: process.env.MOTOBOY_EMAIL ?? '',
   MOTOBOY_PASSWORD: process.env.MOTOBOY_PASSWORD ?? '',
   MOTOBOY_NAME: process.env.MOTOBOY_NAME ?? 'Motoboy',
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY ?? '',
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY ?? '',
+  VAPID_SUBJECT: process.env.VAPID_SUBJECT ?? 'mailto:admin@sistema.local',
 } as const
 
 validateProductionEnv(env)

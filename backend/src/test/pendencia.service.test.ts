@@ -16,6 +16,12 @@ vi.mock('../repositories/pendencia.repository.js', () => ({
   pendenciaRepository,
 }))
 
+vi.mock('../services/push-notification.service.js', () => ({
+  pushNotificationService: {
+    notifyAdminsNewPendencia: vi.fn(),
+  },
+}))
+
 const adminUser: AuthenticatedUser = {
   id: 'admin-1',
   email: 'admin@test.com',
@@ -68,7 +74,12 @@ describe('PendenciaService', () => {
   })
 
   it('motoboy cria pendência de repasse', async () => {
-    pendenciaRepository.create.mockResolvedValue({ id: '1', tipo: 'REPASSE_MOTOBOY' })
+    pendenciaRepository.create.mockResolvedValue({
+      id: '1',
+      tipo: 'REPASSE_MOTOBOY',
+      descricao: 'Repasse não pago',
+      criadoEm: new Date('2026-08-05T12:00:00Z'),
+    })
 
     await service.create(motoboyUser, {
       descricao: 'Repasse não pago',

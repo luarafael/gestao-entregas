@@ -2,6 +2,7 @@ import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '.
 import type { AuthenticatedUser } from '../middleware/auth.middleware.js'
 import { entregaRepository } from '../repositories/entrega.repository.js'
 import { rotaRepository } from '../repositories/rota.repository.js'
+import { pushNotificationService } from './push-notification.service.js'
 import { rotaExecucaoRepository } from '../repositories/rota-execucao.repository.js'
 import type {
   ListRotasInput,
@@ -476,6 +477,15 @@ export class RotaService {
 
     const rota = await rotaRepository.create({ ...input, data: day, motoboyId })
     await rotaExecucaoRepository.initForRota(rota.id)
+
+    if (motoboyId) {
+      pushNotificationService.notifyMotoboyNewRoute(motoboyId, {
+        rotaId: rota.id,
+        totalParadas: rota.paradas.length,
+        enderecoInicial: rota.enderecoInicial,
+      })
+    }
+
     return rota
   }
 

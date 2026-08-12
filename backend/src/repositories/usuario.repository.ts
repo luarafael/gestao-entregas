@@ -190,4 +190,13 @@ export const usuarioRepository = {
       },
     })
   },
+
+  async findActiveAdminIds() {
+    const admins = await prisma.usuario.findMany({
+      where: { role: 'ADMIN', ativo: true },
+      select: { id: true },
+    })
+
+    return admins.map((admin) => admin.id)
+  },
 }

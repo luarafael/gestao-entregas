@@ -39,6 +39,13 @@ vi.mock('../repositories/prestacao-motoboy.repository.js', () => ({
 vi.mock('../repositories/usuario.repository.js', () => ({
   usuarioRepository,
 }))
+vi.mock('../services/push-notification.service.js', () => ({
+  pushNotificationService: {
+    notifyAdminsNewApproval: vi.fn(),
+    notifyMotoboyPrestacaoApproved: vi.fn(),
+    notifyMotoboyPrestacaoRejected: vi.fn(),
+  },
+}))
 
 const motoboyUser: AuthenticatedUser = {
   id: 'motoboy-1',
