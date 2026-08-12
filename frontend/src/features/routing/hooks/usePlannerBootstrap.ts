@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { toast } from '@/shared/stores/toast.store'
 import { invalidateDeliveryRelated } from '@/shared/lib/invalidate-related'
+import { useNotifyUser } from '@/features/notifications/utils/notifyUser'
 import { ROTAS_QUERY_KEY } from './useRouting'
 import { usePlannerStore } from '../stores/planner.store'
 import { syncPlannerFromServer } from '../utils/plannerSync'
@@ -51,6 +51,7 @@ export function usePlannerSync(
   options?: { notifyOnClear?: boolean },
 ) {
   const queryClient = useQueryClient()
+  const notify = useNotifyUser()
   const syncingRef = useRef(false)
   const notifyOnClear = options?.notifyOnClear ?? false
 
@@ -68,10 +69,16 @@ export function usePlannerSync(
 
           invalidateDeliveryRelated(queryClient)
           queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
-          toast(
-            'Rota concluída em outro dispositivo — removida do planejador.',
-            'info',
-          )
+          notify({
+            type: 'route',
+            title: 'Rota concluída',
+            message:
+              'Rota concluída em outro dispositivo — removida do planejador.',
+            href: '/planejador',
+            tag: 'planner-sync-cleared',
+            showToast: true,
+            toastVariant: 'info',
+          })
         })
         .catch(() => undefined)
         .finally(() => {
@@ -90,5 +97,5 @@ export function usePlannerSync(
       window.removeEventListener('focus', runSync)
       window.clearInterval(intervalId)
     }
-  }, [enabled, notifyOnClear, queryClient])
+  }, [enabled, notify, notifyOnClear, queryClient])
 }

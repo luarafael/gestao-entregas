@@ -86,8 +86,8 @@ export function PwaInstallPrompt() {
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {isIos
-                ? 'Toque em Compartilhar e depois em "Adicionar à Tela de Início" para acesso rápido.'
-                : 'Adicione o app à tela inicial do celular para abrir como um aplicativo.'}
+                ? 'Toque em Compartilhar e depois em "Adicionar à Tela de Início". Depois de instalado, permita notificações para receber avisos de rotas e entregas.'
+                : 'Adicione o app à tela inicial do celular para abrir como um aplicativo e receber notificações.'}
             </p>
           </div>
 

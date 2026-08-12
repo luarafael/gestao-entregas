@@ -3,6 +3,7 @@ import {
   isMobileDevice,
   isStandalonePwa,
 } from '@/features/pwa/utils/pwa.utils'
+import { getServiceWorkerRegistration } from '@/features/pwa/register-pwa'
 import {
   markNotificationPermissionAsked,
   requestNotificationPermission,
@@ -13,6 +14,10 @@ import {
 vi.mock('@/features/pwa/utils/pwa.utils', () => ({
   isMobileDevice: vi.fn(() => false),
   isStandalonePwa: vi.fn(() => false),
+}))
+
+vi.mock('@/features/pwa/register-pwa', () => ({
+  getServiceWorkerRegistration: vi.fn(),
 }))
 
 describe('pushNotification', () => {
@@ -32,6 +37,11 @@ describe('pushNotification', () => {
   })
 
   it('não dispara nativa sem permissão', async () => {
+    const showNotification = vi.fn()
+    vi.mocked(getServiceWorkerRegistration).mockResolvedValue({
+      showNotification,
+    } as unknown as ServiceWorkerRegistration)
+
     Object.defineProperty(window, 'Notification', {
       configurable: true,
       value: {
@@ -44,18 +54,16 @@ describe('pushNotification', () => {
     await showNativeNotification('Título', { body: 'Corpo' })
 
     expect(Notification.requestPermission).toHaveBeenCalled()
+    expect(showNotification).not.toHaveBeenCalled()
   })
 
   it('dispara nativa no mobile com permissão concedida', async () => {
     vi.mocked(isMobileDevice).mockReturnValue(true)
 
     const showNotification = vi.fn()
-    Object.defineProperty(navigator, 'serviceWorker', {
-      configurable: true,
-      value: {
-        ready: Promise.resolve({ showNotification }),
-      },
-    })
+    vi.mocked(getServiceWorkerRegistration).mockResolvedValue({
+      showNotification,
+    } as unknown as ServiceWorkerRegistration)
 
     Object.defineProperty(window, 'Notification', {
       configurable: true,
@@ -71,7 +79,11 @@ describe('pushNotification', () => {
 
     expect(showNotification).toHaveBeenCalledWith(
       'Nova rota',
-      expect.objectContaining({ body: '3 entregas' }),
+      expect.objectContaining({
+        body: '3 entregas',
+        renotify: true,
+        vibrate: [200, 100, 200],
+      }),
     )
   })
 
@@ -79,12 +91,9 @@ describe('pushNotification', () => {
     vi.mocked(isStandalonePwa).mockReturnValue(true)
 
     const showNotification = vi.fn()
-    Object.defineProperty(navigator, 'serviceWorker', {
-      configurable: true,
-      value: {
-        ready: Promise.resolve({ showNotification }),
-      },
-    })
+    vi.mocked(getServiceWorkerRegistration).mockResolvedValue({
+      showNotification,
+    } as unknown as ServiceWorkerRegistration)
 
     Object.defineProperty(window, 'Notification', {
       configurable: true,

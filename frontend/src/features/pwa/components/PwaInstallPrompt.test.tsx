@@ -38,6 +38,7 @@ describe('PwaInstallPrompt', () => {
 
     expect(screen.getByText(/Instalar/i)).toBeInTheDocument()
     expect(screen.getByText(/Adicionar à Tela de Início/i)).toBeInTheDocument()
+    expect(screen.getByText(/permita notificações/i)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Agora não' }))
 

@@ -26,6 +26,8 @@ export function useAdminNotifications(enabled: boolean) {
     queryFn: () => aprovacoesService.listPending(),
     enabled,
     refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
   const eventosQuery = useQuery({
@@ -33,6 +35,8 @@ export function useAdminNotifications(enabled: boolean) {
     queryFn: () => monitoramentoService.getEventos(sinceRef.current),
     enabled,
     refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
   const pendenciaEventosQuery = useQuery({
@@ -40,6 +44,8 @@ export function useAdminNotifications(enabled: boolean) {
     queryFn: () => pendingService.getEventos(pendenciaSinceRef.current),
     enabled,
     refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
   useEffect(() => {

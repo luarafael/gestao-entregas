@@ -22,6 +22,8 @@ export function useMotoboyNotifications(enabled: boolean) {
     queryFn: () => routingService.getEventos(sinceRef.current),
     enabled,
     refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
   const prestacaoEventosQuery = useQuery({
@@ -29,6 +31,8 @@ export function useMotoboyNotifications(enabled: boolean) {
     queryFn: () => prestacaoMotoboyService.getEventos(sinceRef.current),
     enabled,
     refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
   useEffect(() => {
