@@ -44,10 +44,6 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
     return 'granted'
   }
 
-  if (Notification.permission === 'denied') {
-    return 'denied'
-  }
-
   try {
     return await Notification.requestPermission()
   } catch {

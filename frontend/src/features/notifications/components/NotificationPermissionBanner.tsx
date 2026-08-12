@@ -16,7 +16,10 @@ import {
 
 export function NotificationPermissionBanner() {
   const [visible, setVisible] = useState(() => shouldShowBanner())
-  const [permission, setPermission] = useState(getNotificationPermission())
+  const [isEnabling, setIsEnabling] = useState(false)
+  const [blocked, setBlocked] = useState(
+    () => getNotificationPermission() === 'denied',
+  )
 
   if (!visible) {
     return null
@@ -28,13 +31,22 @@ export function NotificationPermissionBanner() {
   }
 
   const handleEnable = async () => {
-    const result = await requestNotificationPermission()
-    setPermission(result)
+    setIsEnabling(true)
+    setBlocked(false)
 
-    if (result === 'granted') {
-      await subscribeToWebPush()
-      dismissNotificationBanner()
-      setVisible(false)
+    try {
+      const result = await requestNotificationPermission()
+
+      if (result === 'granted') {
+        await subscribeToWebPush()
+        dismissNotificationBanner()
+        setVisible(false)
+        return
+      }
+
+      setBlocked(result === 'denied')
+    } finally {
+      setIsEnabling(false)
     }
   }
 
@@ -63,20 +75,20 @@ export function NotificationPermissionBanner() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {permission !== 'denied' ? (
-            <Button size="sm" onClick={handleEnable}>
-              Permitir notificações
-            </Button>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Notificações bloqueadas. Abra as configurações do navegador e
-              permita notificações para este site.
-            </p>
-          )}
+          <Button size="sm" onClick={() => void handleEnable()} isLoading={isEnabling}>
+            Ativar
+          </Button>
           <Button size="sm" variant="ghost" onClick={handleDismiss}>
             Agora não
           </Button>
         </div>
+
+        {blocked ? (
+          <p className="text-xs text-muted-foreground">
+            O celular não mostrou o aviso. Toque em Ativar de novo para tentar
+            liberar pelo próprio app.
+          </p>
+        ) : null}
       </div>
     </div>
   )

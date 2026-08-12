@@ -43,5 +43,6 @@ COALESCE("valorEntrega", 0)
 ## Migrations em produção
 
 - Preferir `prisma migrate dev` localmente para gerar SQL consistente.
+- **Deploy:** `prisma migrate deploy` já roda no boot (Railway `Dockerfile`, Docker Compose, `npm run dev` / `npm start` do backend). Não pedir comando manual após push.
 - Se migration falhar: verificar se DDL já foi aplicado parcialmente antes de `resolve --rolled-back` ou `--applied`.
 - Nunca referenciar coluna no SQL sem confirmar o nome no banco real.

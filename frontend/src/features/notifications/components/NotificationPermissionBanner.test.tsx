@@ -42,7 +42,7 @@ describe('NotificationPermissionBanner', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('exibe no mobile e solicita permissão ao tocar', async () => {
+  it('exibe no mobile e solicita permissão ao tocar em Ativar', async () => {
     const user = userEvent.setup()
 
     render(<NotificationPermissionBanner />)
@@ -51,14 +51,26 @@ describe('NotificationPermissionBanner', () => {
       screen.getByText(/Ativar notificações no celular/i),
     ).toBeInTheDocument()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Permitir notificações' }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Ativar' }))
 
     expect(Notification.requestPermission).toHaveBeenCalled()
     expect(
       screen.queryByText(/Ativar notificações no celular/i),
     ).not.toBeInTheDocument()
+  })
+
+  it('mantem o botao Ativar mesmo se a permissao ja estiver bloqueada', () => {
+    Object.defineProperty(window, 'Notification', {
+      configurable: true,
+      value: {
+        permission: 'denied',
+        requestPermission: vi.fn().mockResolvedValue('denied'),
+      },
+    })
+
+    render(<NotificationPermissionBanner />)
+
+    expect(screen.getByRole('button', { name: 'Ativar' })).toBeInTheDocument()
   })
 
   it('permite dispensar o banner', async () => {

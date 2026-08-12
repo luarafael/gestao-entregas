@@ -47,4 +47,4 @@ Exemplo de mensagem:
 
 - Não commitar `package.json` sem o lockfile correspondente ao contexto de build (raiz **e/ou** `backend/`).
 - Não criar endpoint sem checar schema, repository e consumer no frontend.
-- Não assumir que migration já rodou em produção — avisar quando precisar de `db:migrate:deploy`.
+- Não assumir que migration já rodou **localmente** sem `npm run dev` (o `dev` do backend já executa `prisma migrate deploy`). Em **produção (Railway/Docker)** o `migrate deploy` já roda no boot do container — não pedir `db:migrate:deploy` manual após deploy.
