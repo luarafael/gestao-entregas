@@ -119,12 +119,12 @@ export class PendenciaRepository {
     })
   }
 
-  async findPendingRepasseByMotoboy(motoboyId: string) {
+  async findPendingRepasseByMotoboy(motoboyId: string, untilDate?: Date) {
     const result = await prisma.pendencia.aggregate({
       where: {
         motoboyId,
         status: 'PENDENTE',
-        tipo: 'REPASSE_MOTOBOY',
+        ...(untilDate ? { referenteAoDia: { lte: untilDate } } : {}),
       },
       _count: { id: true },
       _sum: { valor: true },
@@ -136,25 +136,14 @@ export class PendenciaRepository {
     }
   }
 
-  async findOpenRepasseListByMotoboy(motoboyId: string) {
+  async findOpenRepasseListByMotoboy(motoboyId: string, untilDate?: Date) {
     return prisma.pendencia.findMany({
       where: {
         motoboyId,
         status: 'PENDENTE',
-        tipo: 'REPASSE_MOTOBOY',
+        ...(untilDate ? { referenteAoDia: { lte: untilDate } } : {}),
       },
       orderBy: { referenteAoDia: 'asc' },
-    })
-  }
-
-  async markRepasseReceivedByMotoboy(motoboyId: string) {
-    return prisma.pendencia.updateMany({
-      where: {
-        motoboyId,
-        status: 'PENDENTE',
-        tipo: 'REPASSE_MOTOBOY',
-      },
-      data: { status: 'RECEBIDO' },
     })
   }
 
@@ -162,7 +151,6 @@ export class PendenciaRepository {
     const result = await prisma.pendencia.aggregate({
       where: {
         status: 'PENDENTE',
-        tipo: 'CLIENTE',
         ...(motoboyId ? { motoboyId } : {}),
       },
       _count: { id: true },

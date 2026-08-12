@@ -281,7 +281,7 @@ export function generateMotoboyPrestacaoWhatsAppText(
   }
 
   if (pendencias.length > 0) {
-    lines.push(`${WA.hourglass} *Repasse pendente:*`)
+    lines.push(`${WA.hourglass} *Pendências:*`)
 
     for (const pendencia of pendencias) {
       lines.push(

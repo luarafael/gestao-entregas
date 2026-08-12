@@ -27,7 +27,7 @@ export interface PendingFilters {
 export const STATUS_OPTIONS: { value: PendingStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'Todos' },
   { value: 'PENDENTE', label: 'Pendente' },
-  { value: 'RECEBIDO', label: 'Recebido' },
+  { value: 'RECEBIDO', label: 'Pago' },
 ]
 
 export function toApiPayload(data: PendingFormData) {

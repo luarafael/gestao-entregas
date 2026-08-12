@@ -210,7 +210,7 @@ export function MinhaPrestacaoPage() {
                     tone="money"
                   />
                   <PreviewItem
-                    label="Repasse pendente"
+                    label="Pendências"
                     value={formatCurrency(preview?.valorPendencias ?? 0)}
                     tone="pending"
                   />

@@ -43,8 +43,8 @@ export class PrestacaoMotoboyService {
 
     const [entregaStats, repasseStats, pendencias] = await Promise.all([
       entregaRepository.getStatsByDate(day, { motoboyId }),
-      pendenciaRepository.findPendingRepasseByMotoboy(motoboyId),
-      pendenciaRepository.findOpenRepasseListByMotoboy(motoboyId),
+      pendenciaRepository.findPendingRepasseByMotoboy(motoboyId, day),
+      pendenciaRepository.findOpenRepasseListByMotoboy(motoboyId, day),
     ])
 
     const valorPendencias = repasseStats.valorPendencias
@@ -246,8 +246,6 @@ export class PrestacaoMotoboyService {
       throw new ConflictError('Esta prestação não está aguardando aprovação')
     }
 
-    await pendenciaRepository.markRepasseReceivedByMotoboy(prestacao.motoboyId)
-
     const updated = await prestacaoMotoboyRepository.update(id, {
       status: 'APROVADA',
       aprovadaEm: new Date(),
@@ -302,7 +300,10 @@ export class PrestacaoMotoboyService {
 
     const [entregas, pendencias] = await Promise.all([
       entregaRepository.findByDate(date, { motoboyId: prestacao.motoboyId }),
-      pendenciaRepository.findOpenRepasseListByMotoboy(prestacao.motoboyId),
+      pendenciaRepository.findOpenRepasseListByMotoboy(
+        prestacao.motoboyId,
+        date,
+      ),
     ])
 
     return {

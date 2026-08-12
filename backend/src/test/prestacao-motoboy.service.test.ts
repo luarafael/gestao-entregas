@@ -15,7 +15,6 @@ const entregaRepository = vi.hoisted(() => ({
 const pendenciaRepository = vi.hoisted(() => ({
   findPendingRepasseByMotoboy: vi.fn(),
   findOpenRepasseListByMotoboy: vi.fn(),
-  markRepasseReceivedByMotoboy: vi.fn(),
 }))
 
 const prestacaoMotoboyRepository = vi.hoisted(() => ({
@@ -169,7 +168,7 @@ describe('PrestacaoMotoboyService', () => {
     )
   })
 
-  it('aprova prestação e marca repasses como recebidos', async () => {
+  it('aprova prestação sem encerrar pendências abertas', async () => {
     prestacaoMotoboyRepository.findById.mockResolvedValue({
       id: 'pm1',
       status: 'ENVIADA',
@@ -182,8 +181,31 @@ describe('PrestacaoMotoboyService', () => {
 
     await service.approve(adminUser, 'pm1')
 
-    expect(pendenciaRepository.markRepasseReceivedByMotoboy).toHaveBeenCalledWith(
+    expect(prestacaoMotoboyRepository.update).toHaveBeenCalledWith(
+      'pm1',
+      expect.objectContaining({ status: 'APROVADA' }),
+    )
+  })
+
+  it('inclui pendências abertas até a data da prestação', async () => {
+    usuarioRepository.findMotoboyById.mockResolvedValue({
+      id: 'motoboy-1',
+      nome: 'João',
+      ativo: true,
+    })
+
+    await service.preview(adminUser, {
+      motoboyId: 'motoboy-1',
+      data: new Date('2026-08-12'),
+    })
+
+    expect(pendenciaRepository.findPendingRepasseByMotoboy).toHaveBeenCalledWith(
       'motoboy-1',
+      expect.any(Date),
+    )
+    expect(pendenciaRepository.findOpenRepasseListByMotoboy).toHaveBeenCalledWith(
+      'motoboy-1',
+      expect.any(Date),
     )
   })
 

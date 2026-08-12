@@ -21,7 +21,7 @@ export class PendenciaService {
 
       return pendenciaRepository.create({
         ...input,
-        tipo: 'CLIENTE',
+        tipo: 'REPASSE_MOTOBOY',
         motoboyId: input.motoboyId,
       })
     }
@@ -49,10 +49,6 @@ export class PendenciaService {
       throw new NotFoundError('Pendência não encontrada')
     }
 
-    if (!isAdminUser(user) && pendencia.tipo === 'CLIENTE') {
-      throw new ForbiddenError('Você não tem permissão para acessar esta pendência')
-    }
-
     assertOwnsResource(user, pendencia.motoboyId, 'Você não tem permissão para acessar esta pendência')
     return pendencia
   }
@@ -62,7 +58,6 @@ export class PendenciaService {
       ? filters
       : {
           ...filters,
-          tipo: 'REPASSE_MOTOBOY' as const,
           motoboyId: user.id,
         }
 

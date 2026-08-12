@@ -886,7 +886,7 @@ function MotoboyPreviewSection({
           />
         ) : null}
         <PreviewItem
-          label="Repasse pendente"
+          label="Pendências"
           value={formatCurrency(preview?.valorPendencias ?? 0)}
         />
         <PreviewItem

@@ -305,7 +305,7 @@ describe('generateMotoboyPrestacaoWhatsAppText', () => {
     expect(text).toMatch(/Centro.*João Silva.*R\$/)
     expect(text).not.toContain('Valor das entregas')
     expect(text).not.toContain('Obrigado')
-    expect(text).toContain('Repasse pendente')
+    expect(text).toContain('Pendências:')
     expect(text).toContain('Repasse:')
   })
 
@@ -323,7 +323,7 @@ describe('generateMotoboyPrestacaoWhatsAppText', () => {
 
     expect(text).toContain('Prestação do dia — Carlos')
     expect(text).not.toContain('Corridas')
-    expect(text).not.toContain('Repasse pendente')
+    expect(text).not.toContain('Pendências:')
     expect(text).not.toContain('Repasse:')
     expect(text).not.toContain('Nenhuma')
   })
@@ -337,7 +337,7 @@ describe('generateMotoboyPrestacaoWhatsAppText', () => {
     )
 
     expect(text).toContain('*Corridas:* 2')
-    expect(text).not.toContain('Repasse pendente')
+    expect(text).not.toContain('Pendências:')
     expect(text).toContain('Repasse:')
     expect(text).not.toContain('pago pelo cliente')
   })

@@ -58,7 +58,7 @@ export function MeuDiaPage() {
               delay={0.05}
             />
             <StatCard
-              title="Repasse pendente"
+              title="Pendências"
               value={formatCurrency(resumo?.valorPendenciasAbertas ?? 0)}
               description={`${resumo?.pendenciasAbertas ?? 0} pendência(s) com o admin`}
               icon={<IconClock className="size-5" />}

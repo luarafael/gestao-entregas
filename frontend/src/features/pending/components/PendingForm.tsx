@@ -150,7 +150,7 @@ export function PendingForm({
                 {...register('status')}
               >
                 <option value="PENDENTE">Pendente</option>
-                <option value="RECEBIDO">Recebido</option>
+                <option value="RECEBIDO">Pago</option>
               </select>
               {errors.status?.message ? (
                 <p className="text-xs text-danger">{errors.status.message}</p>

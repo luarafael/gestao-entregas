@@ -92,7 +92,7 @@ export function PendingList({
                 <Badge
                   variant={item.status === 'RECEBIDO' ? 'success' : 'warning'}
                 >
-                  {item.status === 'RECEBIDO' ? 'Recebido' : 'Pendente'}
+                  {item.status === 'RECEBIDO' ? 'Pago' : 'Pendente'}
                 </Badge>
                 {isAdmin && item.tipo === 'REPASSE_MOTOBOY' ? (
                   <MetaChip tone="pending">Repasse motoboy</MetaChip>
