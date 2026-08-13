@@ -67,6 +67,10 @@ async function sendToUserIds(
             },
           },
           body,
+          {
+            TTL: 60 * 60 * 24,
+            urgency: 'high',
+          },
         )
       } catch (error) {
         const statusCode =
@@ -79,7 +83,14 @@ async function sendToUserIds(
 
         if (statusCode === 404 || statusCode === 410) {
           await pushSubscriptionRepository.deleteById(subscription.id)
+          return
         }
+
+        console.error('Falha ao enviar web push', {
+          subscriptionId: subscription.id,
+          statusCode,
+          title: payload.title,
+        })
       }
     }),
   )

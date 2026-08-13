@@ -152,18 +152,21 @@ export class RotaExecucaoService {
     parada: { id: string; cliente: string | null },
     deliveredAt: Date,
   ) {
-    const motoboyId = rota.motoboyId
-    if (!motoboyId) {
-      return
-    }
+    let motoboyNome = 'Motoboy'
 
-    const motoboy = await usuarioRepository.findById(motoboyId)
-    const cliente = parada.cliente?.trim() || 'Cliente'
+    try {
+      if (rota.motoboyId) {
+        const motoboy = await usuarioRepository.findById(rota.motoboyId)
+        motoboyNome = motoboy?.nome?.trim() || 'Motoboy'
+      }
+    } catch (error) {
+      console.error('Falha ao buscar motoboy para notificação de entrega', error)
+    }
 
     pushNotificationService.notifyAdminsDeliveryCompleted({
       execucaoId: `${rota.id}-${parada.id}`,
-      motoboyNome: motoboy?.nome ?? 'Motoboy',
-      cliente,
+      motoboyNome,
+      cliente: parada.cliente?.trim() || 'Cliente',
       dataHoraStatus: deliveredAt,
     })
   }

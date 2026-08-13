@@ -68,6 +68,10 @@ describe('PushNotificationService', () => {
           keys: { p256dh: 'key', auth: 'auth' },
         },
         expect.stringContaining('Nova rota planejada'),
+        expect.objectContaining({
+          TTL: 60 * 60 * 24,
+          urgency: 'high',
+        }),
       )
     })
   })

@@ -14,7 +14,9 @@ const POLL_INTERVAL = 10_000
 export function useAdminNotifications(enabled: boolean) {
   const addNotification = useNotificationStore((state) => state.addNotification)
   const location = useLocation()
-  const readyRef = useRef(false)
+  const pendingReadyRef = useRef(false)
+  const deliveryReadyRef = useRef(false)
+  const pendenciaReadyRef = useRef(false)
   const knownPendingIdsRef = useRef<Set<string>>(new Set())
   const knownDeliveryIdsRef = useRef<Set<string>>(new Set())
   const knownPendenciaIdsRef = useRef<Set<string>>(new Set())
@@ -49,26 +51,15 @@ export function useAdminNotifications(enabled: boolean) {
   })
 
   useEffect(() => {
-    if (
-      !enabled ||
-      !pendingQuery.data ||
-      !eventosQuery.data ||
-      !pendenciaEventosQuery.data
-    ) {
+    if (!enabled || !pendingQuery.data) {
       return
     }
 
-    if (!readyRef.current) {
+    if (!pendingReadyRef.current) {
       knownPendingIdsRef.current = new Set(
         pendingQuery.data.data.map((item) => item.id),
       )
-      for (const evento of eventosQuery.data.eventos) {
-        knownDeliveryIdsRef.current.add(evento.id)
-      }
-      for (const evento of pendenciaEventosQuery.data.eventos) {
-        knownPendenciaIdsRef.current.add(evento.id)
-      }
-      readyRef.current = true
+      pendingReadyRef.current = true
       return
     }
 
@@ -92,6 +83,20 @@ export function useAdminNotifications(enabled: boolean) {
     }
 
     knownPendingIdsRef.current = currentPendingIds
+  }, [addNotification, enabled, pendingQuery.data])
+
+  useEffect(() => {
+    if (!enabled || !eventosQuery.data) {
+      return
+    }
+
+    if (!deliveryReadyRef.current) {
+      for (const evento of eventosQuery.data.eventos) {
+        knownDeliveryIdsRef.current.add(evento.id)
+      }
+      deliveryReadyRef.current = true
+      return
+    }
 
     for (const evento of eventosQuery.data.eventos) {
       if (knownDeliveryIdsRef.current.has(evento.id)) continue
@@ -109,9 +114,23 @@ export function useAdminNotifications(enabled: boolean) {
         message,
         href: '/monitoramento',
         tag: `delivery-${evento.id}`,
-        showToast: location.pathname === '/monitoramento',
+        showToast: location.pathname !== '/monitoramento',
         toastVariant: 'success',
       })
+    }
+  }, [addNotification, enabled, eventosQuery.data, location.pathname])
+
+  useEffect(() => {
+    if (!enabled || !pendenciaEventosQuery.data) {
+      return
+    }
+
+    if (!pendenciaReadyRef.current) {
+      for (const evento of pendenciaEventosQuery.data.eventos) {
+        knownPendenciaIdsRef.current.add(evento.id)
+      }
+      pendenciaReadyRef.current = true
+      return
     }
 
     for (const evento of pendenciaEventosQuery.data.eventos) {
@@ -133,12 +152,5 @@ export function useAdminNotifications(enabled: boolean) {
         toastVariant: 'info',
       })
     }
-  }, [
-    addNotification,
-    enabled,
-    eventosQuery.data,
-    location.pathname,
-    pendenciaEventosQuery.data,
-    pendingQuery.data,
-  ])
+  }, [addNotification, enabled, location.pathname, pendenciaEventosQuery.data])
 }

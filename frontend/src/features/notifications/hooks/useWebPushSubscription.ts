@@ -4,8 +4,26 @@ import { getNotificationPermission, subscribeToWebPush } from '@/shared/utils/pu
 export function useWebPushSubscription(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return
-    if (getNotificationPermission() !== 'granted') return
 
-    void subscribeToWebPush()
+    const sync = () => {
+      if (getNotificationPermission() !== 'granted') return
+      void subscribeToWebPush()
+    }
+
+    sync()
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        sync()
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', sync)
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', sync)
+    }
   }, [enabled])
 }

@@ -17,12 +17,16 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
         includeAssets: [
           'favicon.png',
           'favicon.svg',
           'app-logo.png',
           'pwa-icon-192.png',
           'pwa-icon-512.png',
+          'notification-sw.js',
         ],
         manifest: {
           name: appName,
@@ -53,34 +57,9 @@ export default defineConfig(({ mode }) => {
             },
           ],
         },
-        workbox: {
+        injectManifest: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-          importScripts: ['notification-sw.js'],
-          navigateFallback: '/index.html',
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365,
-                },
-              },
-            },
-            {
-              urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'gstatic-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365,
-                },
-              },
-            },
-          ],
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         },
         devOptions: {
           enabled: false,

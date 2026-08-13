@@ -44,6 +44,7 @@ vi.mock('../services/push-notification.service.js', () => ({
 }))
 
 import { rotaExecucaoService } from '../services/rota-execucao.service.js'
+import { pushNotificationService } from '../services/push-notification.service.js'
 
 describe('RotaExecucaoService', () => {
   beforeEach(() => {
@@ -416,5 +417,50 @@ describe('RotaExecucaoService', () => {
       'rota-legada',
       deliveredAt,
     )
+  })
+
+  it('notifica admins ao entregar mesmo sem motoboy na rota', async () => {
+    rotaRepository.findById.mockResolvedValue({
+      id: 'rota-1',
+      motoboyId: null,
+      concluidaEm: null,
+      paradas: [
+        {
+          id: 'p1',
+          ordem: 1,
+          entregaId: 'e1',
+          endereco: 'Rua A',
+          bairro: 'Centro',
+          cliente: 'João',
+          observacao: null,
+          valorEntrega: 10,
+        },
+      ],
+    })
+
+    rotaExecucaoRepository.findByRotaId
+      .mockResolvedValueOnce([
+        { paradaId: 'p1', status: 'PENDENTE', dataHoraStatus: null },
+      ])
+      .mockResolvedValue([
+        { paradaId: 'p1', status: 'ENTREGUE', dataHoraStatus: new Date() },
+      ])
+
+    await rotaExecucaoService.updateParada('rota-1', 'p1', {
+      status: 'ENTREGUE',
+      observacao: null,
+    })
+
+    await vi.waitFor(() => {
+      expect(
+        pushNotificationService.notifyAdminsDeliveryCompleted,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          execucaoId: 'rota-1-p1',
+          motoboyNome: 'Motoboy',
+          cliente: 'João',
+        }),
+      )
+    })
   })
 })

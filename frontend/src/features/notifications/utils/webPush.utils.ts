@@ -10,3 +10,21 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuf
 
   return outputArray
 }
+
+export function applicationServerKeysMatch(
+  existing: ArrayBuffer | null | undefined,
+  vapidPublicKey: string,
+): boolean {
+  if (!existing) {
+    return false
+  }
+
+  const current = new Uint8Array(existing)
+  const expected = urlBase64ToUint8Array(vapidPublicKey)
+
+  if (current.length !== expected.length) {
+    return false
+  }
+
+  return current.every((byte, index) => byte === expected[index])
+}

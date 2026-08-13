@@ -12,14 +12,16 @@ const POLL_INTERVAL = 10_000
 export function useMotoboyNotifications(enabled: boolean) {
   const addNotification = useNotificationStore((state) => state.addNotification)
   const location = useLocation()
-  const readyRef = useRef(false)
+  const routeReadyRef = useRef(false)
+  const prestacaoReadyRef = useRef(false)
   const knownRouteIdsRef = useRef<Set<string>>(new Set())
   const knownPrestacaoEventIdsRef = useRef<Set<string>>(new Set())
-  const sinceRef = useRef(new Date().toISOString())
+  const routeSinceRef = useRef(new Date().toISOString())
+  const prestacaoSinceRef = useRef(new Date().toISOString())
 
   const routeEventosQuery = useQuery({
     queryKey: ['motoboy-notifications', 'rotas'],
-    queryFn: () => routingService.getEventos(sinceRef.current),
+    queryFn: () => routingService.getEventos(routeSinceRef.current),
     enabled,
     refetchInterval: POLL_INTERVAL,
     refetchIntervalInBackground: true,
@@ -28,7 +30,7 @@ export function useMotoboyNotifications(enabled: boolean) {
 
   const prestacaoEventosQuery = useQuery({
     queryKey: ['motoboy-notifications', 'prestacao'],
-    queryFn: () => prestacaoMotoboyService.getEventos(sinceRef.current),
+    queryFn: () => prestacaoMotoboyService.getEventos(prestacaoSinceRef.current),
     enabled,
     refetchInterval: POLL_INTERVAL,
     refetchIntervalInBackground: true,
@@ -36,18 +38,15 @@ export function useMotoboyNotifications(enabled: boolean) {
   })
 
   useEffect(() => {
-    if (!enabled || !routeEventosQuery.data || !prestacaoEventosQuery.data) {
+    if (!enabled || !routeEventosQuery.data) {
       return
     }
 
-    if (!readyRef.current) {
+    if (!routeReadyRef.current) {
       for (const evento of routeEventosQuery.data.eventos) {
         knownRouteIdsRef.current.add(evento.id)
       }
-      for (const evento of prestacaoEventosQuery.data.eventos) {
-        knownPrestacaoEventIdsRef.current.add(evento.id)
-      }
-      readyRef.current = true
+      routeReadyRef.current = true
       return
     }
 
@@ -55,8 +54,8 @@ export function useMotoboyNotifications(enabled: boolean) {
       if (knownRouteIdsRef.current.has(evento.id)) continue
 
       knownRouteIdsRef.current.add(evento.id)
-      if (evento.criadoEm > sinceRef.current) {
-        sinceRef.current = evento.criadoEm
+      if (evento.criadoEm > routeSinceRef.current) {
+        routeSinceRef.current = evento.criadoEm
       }
 
       const message = `${evento.totalParadas} entrega(s) · Partida: ${evento.enderecoInicial}`
@@ -70,13 +69,27 @@ export function useMotoboyNotifications(enabled: boolean) {
         toastVariant: 'info',
       })
     }
+  }, [addNotification, enabled, location.pathname, routeEventosQuery.data])
+
+  useEffect(() => {
+    if (!enabled || !prestacaoEventosQuery.data) {
+      return
+    }
+
+    if (!prestacaoReadyRef.current) {
+      for (const evento of prestacaoEventosQuery.data.eventos) {
+        knownPrestacaoEventIdsRef.current.add(evento.id)
+      }
+      prestacaoReadyRef.current = true
+      return
+    }
 
     for (const evento of prestacaoEventosQuery.data.eventos) {
       if (knownPrestacaoEventIdsRef.current.has(evento.id)) continue
 
       knownPrestacaoEventIdsRef.current.add(evento.id)
-      if (evento.dataHora > sinceRef.current) {
-        sinceRef.current = evento.dataHora
+      if (evento.dataHora > prestacaoSinceRef.current) {
+        prestacaoSinceRef.current = evento.dataHora
       }
 
       const dataLabel = formatPrestacaoMotoboyDate(evento.data)
@@ -111,6 +124,5 @@ export function useMotoboyNotifications(enabled: boolean) {
     enabled,
     location.pathname,
     prestacaoEventosQuery.data,
-    routeEventosQuery.data,
   ])
 }

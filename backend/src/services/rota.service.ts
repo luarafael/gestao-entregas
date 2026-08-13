@@ -557,7 +557,7 @@ export class RotaService {
       await prepareMotoboyRouteSlot(motoboyId, day)
     }
 
-    return rotaRepository.create({
+    const duplicated = await rotaRepository.create({
       motoboyId: rota.motoboyId,
       enderecoInicial: rota.enderecoInicial,
       distanciaTotal: Number(rota.distanciaTotal),
@@ -583,6 +583,16 @@ export class RotaService {
         longitude: parada.longitude,
       })),
     })
+
+    if (motoboyId) {
+      pushNotificationService.notifyMotoboyNewRoute(motoboyId, {
+        rotaId: duplicated.id,
+        totalParadas: duplicated.paradas.length,
+        enderecoInicial: duplicated.enderecoInicial,
+      })
+    }
+
+    return duplicated
   }
 
   async findByEntregaId(entregaId: string) {

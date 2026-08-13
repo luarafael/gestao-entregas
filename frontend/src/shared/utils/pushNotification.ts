@@ -1,6 +1,9 @@
 import { getServiceWorkerRegistration } from '@/features/pwa/register-pwa'
 import { pushSubscriptionService } from '@/features/notifications/services/pushSubscription.service'
-import { urlBase64ToUint8Array } from '@/features/notifications/utils/webPush.utils'
+import {
+  applicationServerKeysMatch,
+  urlBase64ToUint8Array,
+} from '@/features/notifications/utils/webPush.utils'
 import {
   isMobileDevice,
   isStandalonePwa,
@@ -124,37 +127,52 @@ export async function subscribeToWebPush(): Promise<boolean> {
     return false
   }
 
-  const vapidPublicKey = await resolveVapidPublicKey()
-  if (!vapidPublicKey) {
-    return false
-  }
+  try {
+    const vapidPublicKey = await resolveVapidPublicKey()
+    if (!vapidPublicKey) {
+      return false
+    }
 
-  const registration = await getServiceWorkerRegistration()
-  if (!registration) {
-    return false
-  }
+    const registration = await getServiceWorkerRegistration()
+    if (!registration) {
+      return false
+    }
 
-  let subscription = await registration.pushManager.getSubscription()
+    let subscription = await registration.pushManager.getSubscription()
 
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    if (
+      subscription &&
+      !applicationServerKeysMatch(
+        subscription.options.applicationServerKey ?? null,
+        vapidPublicKey,
+      )
+    ) {
+      await subscription.unsubscribe()
+      subscription = null
+    }
+
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      })
+    }
+
+    const json = subscription.toJSON()
+    if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) {
+      return false
+    }
+
+    await pushSubscriptionService.subscribe({
+      endpoint: json.endpoint,
+      keys: {
+        p256dh: json.keys.p256dh,
+        auth: json.keys.auth,
+      },
     })
-  }
 
-  const json = subscription.toJSON()
-  if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) {
+    return true
+  } catch {
     return false
   }
-
-  await pushSubscriptionService.subscribe({
-    endpoint: json.endpoint,
-    keys: {
-      p256dh: json.keys.p256dh,
-      auth: json.keys.auth,
-    },
-  })
-
-  return true
 }
