@@ -9,8 +9,8 @@ import type {
   UpdateExecucaoParadaInput,
 } from '../schemas/rota-execucao.schema.js'
 import {
+  areAllParadasDelivered,
   findNextParadaIdForEmRota,
-  isRouteExecucaoConcluida,
   resolveMotoboyIdFromRota,
 } from '../utils/route-motoboy.utils.js'
 
@@ -88,6 +88,8 @@ export class RotaExecucaoService {
     }
 
     if (input.status === 'ENTREGUE') {
+      await this.syncAlreadyDeliveredParadas(rotaId)
+
       const execucoesAtual = await rotaExecucaoRepository.findByRotaId(rotaId)
       const nextParadaId = findNextParadaIdForEmRota(
         rota.paradas,
@@ -165,14 +167,52 @@ export class RotaExecucaoService {
     })
   }
 
+  private async syncAlreadyDeliveredParadas(rotaId: string) {
+    const rota = await rotaRepository.findById(rotaId)
+    if (!rota) return
+
+    const entregaIds = rota.paradas
+      .map((parada) => parada.entregaId)
+      .filter((id): id is string => Boolean(id))
+
+    const entregas =
+      entregaIds.length > 0 ? await entregaRepository.findByIds(entregaIds) : []
+    const entregaById = new Map(entregas.map((entrega) => [entrega.id, entrega]))
+    const execucoes = await rotaExecucaoRepository.findByRotaId(rotaId)
+    const execucaoByParadaId = new Map(
+      execucoes.map((execucao) => [execucao.paradaId, execucao]),
+    )
+
+    for (const parada of rota.paradas) {
+      const execucao = execucaoByParadaId.get(parada.id)
+      const entrega = parada.entregaId
+        ? entregaById.get(parada.entregaId)
+        : undefined
+
+      if (
+        entrega?.status === 'ENTREGUE' &&
+        execucao &&
+        execucao.status !== 'ENTREGUE'
+      ) {
+        await rotaExecucaoRepository.updateByParadaId(rotaId, parada.id, {
+          status: 'ENTREGUE',
+          dataHoraStatus: execucao.dataHoraStatus ?? new Date(),
+        })
+      }
+    }
+  }
+
   private async tryConcludeRouteEntregas(rotaId: string): Promise<boolean> {
     const rota = await rotaRepository.findById(rotaId)
     if (!rota || rota.paradas.length === 0 || rota.concluidaEm) {
       return false
     }
 
+    await rotaExecucaoRepository.initForRota(rotaId)
+    await this.syncAlreadyDeliveredParadas(rotaId)
+
     const execucoes = await rotaExecucaoRepository.findByRotaId(rotaId)
-    if (!isRouteExecucaoConcluida(execucoes, rota.paradas.length)) {
+    if (!areAllParadasDelivered(rota.paradas, execucoes)) {
       return false
     }
 
@@ -188,12 +228,12 @@ export class RotaExecucaoService {
     )
 
     const motoboyId = resolveMotoboyIdFromRota(rota, entregaMotoboyById)
-    const execucaoByParadaId = new Map(
+    const execucaoAtualByParadaId = new Map(
       execucoes.map((execucao) => [execucao.paradaId, execucao]),
     )
 
     for (const parada of rota.paradas) {
-      const execucao = execucaoByParadaId.get(parada.id)
+      const execucao = execucaoAtualByParadaId.get(parada.id)
       const deliveredAt = execucao?.dataHoraStatus ?? new Date()
 
       if (parada.entregaId) {

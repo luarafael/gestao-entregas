@@ -3,6 +3,7 @@ import { toast } from '@/shared/stores/toast.store'
 import { ApiError } from '@/shared/services/api'
 import { routingService } from '../services/routing.service'
 import type { PlannerStop } from '../schemas/routing.schema'
+import { usePlannerStore } from '../stores/planner.store'
 
 export const ROTAS_QUERY_KEY = 'rotas'
 
@@ -102,8 +103,12 @@ export function useDeleteRoute() {
 
   return useMutation({
     mutationFn: (id: string) => routingService.delete(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
+      const { savedRotaId, clearActiveRoute } = usePlannerStore.getState()
+      if (savedRotaId === id) {
+        clearActiveRoute()
+      }
       toast('Rota excluída', 'success')
     },
     onError: () => {

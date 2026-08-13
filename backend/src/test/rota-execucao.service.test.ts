@@ -205,6 +205,73 @@ describe('RotaExecucaoService', () => {
     )
   })
 
+  it('conclui a rota quando a ultima parada e entregue e as outras ja estavam entregues', async () => {
+    const statusByParada: Record<string, string> = {
+      p1: 'PENDENTE',
+      p2: 'PENDENTE',
+    }
+
+    rotaRepository.findById.mockResolvedValue({
+      id: 'rota-1',
+      motoboyId: 'm1',
+      concluidaEm: null,
+      paradas: [
+        {
+          id: 'p1',
+          entregaId: 'e1',
+          endereco: 'Rua A',
+          bairro: 'Centro',
+          cliente: 'João',
+          observacao: null,
+          valorEntrega: 10,
+        },
+        {
+          id: 'p2',
+          entregaId: 'e2',
+          endereco: 'Rua B',
+          bairro: 'Meireles',
+          cliente: 'Maria',
+          observacao: null,
+          valorEntrega: 12,
+        },
+      ],
+    })
+
+    entregaRepository.findByIds.mockResolvedValue([
+      { id: 'e1', motoboyId: 'm1', status: 'ENTREGUE' },
+      { id: 'e2', motoboyId: 'm1', status: 'ENTREGUE' },
+    ])
+
+    rotaExecucaoRepository.findByRotaId.mockImplementation(async () => [
+      {
+        paradaId: 'p1',
+        status: statusByParada.p1,
+        dataHoraStatus: null,
+      },
+      {
+        paradaId: 'p2',
+        status: statusByParada.p2,
+        dataHoraStatus: new Date(),
+      },
+    ])
+    rotaExecucaoRepository.updateByParadaId.mockImplementation(
+      async (_rotaId, paradaId, data) => {
+        statusByParada[paradaId] = data.status
+        return { count: 1 }
+      },
+    )
+
+    const result = await rotaExecucaoService.updateParada('rota-1', 'p2', {
+      status: 'ENTREGUE',
+      observacao: null,
+    })
+
+    expect(result.rotaConcluida).toBe(true)
+    expect(statusByParada.p1).toBe('ENTREGUE')
+    expect(statusByParada.p2).toBe('ENTREGUE')
+    expect(rotaRepository.markConcluded).toHaveBeenCalled()
+  })
+
   it('reconcilia rota legada já totalmente entregue', async () => {
     const deliveredAt = new Date('2026-08-08T15:30:00.000Z')
 

@@ -77,6 +77,26 @@ export function isRouteExecucaoConcluida(
   return execucoes.every((execucao) => execucao.status === 'ENTREGUE')
 }
 
+export function areAllParadasDelivered(
+  paradas: Array<{ id: string }>,
+  execucoes: Array<{ paradaId: string | null; status: string }>,
+): boolean {
+  if (paradas.length === 0) {
+    return false
+  }
+
+  const statusByParadaId = new Map<string, string>()
+  for (const execucao of execucoes) {
+    if (execucao.paradaId) {
+      statusByParadaId.set(execucao.paradaId, execucao.status)
+    }
+  }
+
+  return paradas.every(
+    (parada) => statusByParadaId.get(parada.id) === 'ENTREGUE',
+  )
+}
+
 export function resolveMotoboyIdFromRota(
   rota: { motoboyId: string | null; paradas: RotaParadaRef[] },
   entregaMotoboyById: Map<string, string | null>,

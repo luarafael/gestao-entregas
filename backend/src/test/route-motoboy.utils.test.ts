@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  areAllParadasDelivered,
   findNextParadaIdForEmRota,
   isRouteActiveFromExecucoes,
   isRouteExecucaoConcluida,
@@ -77,6 +78,19 @@ describe('route-motoboy utils', () => {
         2,
       ),
     ).toBe(false)
+  })
+
+  it('considera todas as paradas entregues mesmo com execucao orfã pendente', () => {
+    expect(
+      areAllParadasDelivered(
+        [{ id: 'p1' }, { id: 'p2' }],
+        [
+          { paradaId: 'p1', status: 'ENTREGUE' },
+          { paradaId: 'p2', status: 'ENTREGUE' },
+          { paradaId: 'p-antiga', status: 'PENDENTE' },
+        ],
+      ),
+    ).toBe(true)
   })
 
   it('identifica proxima parada pendente para em rota', () => {

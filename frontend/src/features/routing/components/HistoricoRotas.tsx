@@ -36,7 +36,6 @@ import {
 import { buildRouteProgressMessageFromRota } from '../utils/whatsappRouteProgressMessage'
 import { mergeStopsWithLiveEntregas } from '../utils/routeStopPayment'
 import type { RotaPlanejada } from '../schemas/routing.schema'
-import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import { RotaDetalheModal } from './RotaDetalheModal'
 
 interface HistoricoRotasProps {
@@ -80,7 +79,6 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
   const deleteMutation = useDeleteRoute()
   const duplicateMutation = useDuplicateRoute()
   const copyMutation = useCopyWhatsAppText()
-  const canDelete = useIsAdmin()
 
   const items = historyQuery.data?.data ?? []
   const meta = historyQuery.data?.meta
@@ -273,16 +271,14 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
                     >
                       Duplicar
                     </Button>
-                    {canDelete ? (
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        isLoading={deleteMutation.isPending}
-                        onClick={() => deleteMutation.mutate(rota.id)}
-                      >
-                        Excluir
-                      </Button>
-                    ) : null}
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      isLoading={deleteMutation.isPending}
+                      onClick={() => deleteMutation.mutate(rota.id)}
+                    >
+                      Excluir
+                    </Button>
                   </div>
                 </article>
               )})}

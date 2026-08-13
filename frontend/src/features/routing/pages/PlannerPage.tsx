@@ -14,6 +14,7 @@ import {
 import { IconRoute } from '@/shared/components/icons'
 import { formatCurrency } from '@/shared/utils/cn'
 import { toast } from '@/shared/stores/toast.store'
+import { ApiError } from '@/shared/services/api'
 import { WhatsAppPreview } from '@/features/accounting/components/WhatsAppPreview'
 import {
   WhatsAppSendModal,
@@ -401,6 +402,67 @@ export function PlannerPage() {
     resetRoutePlanning()
   }
 
+  const handleRemoveStop = async (tempId: string) => {
+    const source = result?.paradas ?? stops
+    const remaining = source.filter((stop) => stop.tempId !== tempId)
+
+    if (remaining.length === 0) {
+      const rotaId = savedRotaId
+      if (rotaId) {
+        try {
+          await routingService.delete(rotaId)
+        } catch (error) {
+          toast(
+            error instanceof ApiError
+              ? error.message
+              : 'Erro ao excluir a rota',
+            'error',
+          )
+          return
+        }
+      }
+
+      clearActiveRoute()
+      queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
+      toast('Rota excluída', 'success')
+      return
+    }
+
+    const reindexed = remaining.map((stop, index) => ({
+      ...stop,
+      ordem: index + 1,
+    }))
+    setStops(reindexed)
+    setResult((current) =>
+      current
+        ? {
+            ...current,
+            paradas: reindexed,
+            totalEntregas: reindexed.length,
+          }
+        : current,
+    )
+
+    if (savedRotaId && result) {
+      try {
+        await persistCalculatedRoute(
+          {
+            ...result,
+            paradas: reindexed,
+            totalEntregas: reindexed.length,
+          },
+          { silent: true },
+        )
+      } catch {
+        setOrderDirty(true)
+        toast(
+          'Parada removida. Recalcule a rota para atualizar o monitoramento.',
+          'info',
+        )
+      }
+    }
+  }
+
   const handleReorder = (fromIndex: number, toIndex: number) => {
     const source = result?.paradas ?? stops
     const next = [...source]
@@ -637,6 +699,26 @@ export function PlannerPage() {
         'success',
       )
       return
+    }
+
+    if (
+      status === 'ENTREGUE' &&
+      savedRotaId &&
+      isAllStopsDelivered(nextStops)
+    ) {
+      try {
+        const reconciled =
+          await routingService.reconcileRouteConclusion(savedRotaId)
+        if (reconciled.rotaConcluida) {
+          clearActiveRoute()
+          invalidateDeliveryRelated(queryClient)
+          queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
+          toast('Rota concluída e enviada ao histórico', 'success')
+          return
+        }
+      } catch {
+        // Mantém a rota no planejador para nova tentativa.
+      }
     }
 
     if (status === 'ENTREGUE' && autoRecalc) {
@@ -906,12 +988,7 @@ export function PlannerPage() {
                   setEditing(stop)
                   setFormOpen(true)
                 }}
-                onRemove={(tempId) => {
-                  setStops((current) =>
-                    current.filter((stop) => stop.tempId !== tempId),
-                  )
-                  resetRoutePlanning()
-                }}
+                onRemove={handleRemoveStop}
                 onReorder={handleReorder}
               />
 

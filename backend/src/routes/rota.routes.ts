@@ -186,9 +186,8 @@ rotaRoutes.post(
 
 rotaRoutes.delete(
   '/:id',
-  requireRole('ADMIN'),
   asyncHandler(async (req, res) => {
-    await rotaService.delete(getRouteParam(req, 'id'))
+    await rotaService.delete(req.user!, getRouteParam(req, 'id'))
     res.status(204).send()
   }),
 )

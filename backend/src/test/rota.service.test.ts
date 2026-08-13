@@ -217,3 +217,37 @@ describe('RotaService getActiveToday', () => {
     expect(result.rota?.id).toBe('rota-motoboy')
   })
 })
+
+describe('RotaService delete', () => {
+  const service = new RotaService()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('permite motoboy excluir a propria rota', async () => {
+    rotaRepository.findById.mockResolvedValue({
+      id: 'rota-1',
+      motoboyId: 'motoboy-1',
+      paradas: [],
+    })
+    rotaRepository.delete.mockResolvedValue({ id: 'rota-1' })
+
+    await service.delete(motoboyUser, 'rota-1')
+
+    expect(rotaRepository.delete).toHaveBeenCalledWith('rota-1')
+  })
+
+  it('impede motoboy de excluir rota de outro', async () => {
+    rotaRepository.findById.mockResolvedValue({
+      id: 'rota-2',
+      motoboyId: 'motoboy-2',
+      paradas: [],
+    })
+
+    await expect(service.delete(motoboyUser, 'rota-2')).rejects.toMatchObject({
+      statusCode: 403,
+    })
+    expect(rotaRepository.delete).not.toHaveBeenCalled()
+  })
+})

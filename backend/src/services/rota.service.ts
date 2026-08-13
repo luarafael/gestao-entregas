@@ -24,7 +24,7 @@ import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { toUtcDateOnlyFromBusinessTz } from '../utils/date.utils.js'
 import { googleRoutesService } from './googleRoutes.service.js'
 import { osrmService } from './osrm.service.js'
-import { isAdminUser } from '../utils/auth-scope.utils.js'
+import { assertOwnsResource, isAdminUser } from '../utils/auth-scope.utils.js'
 import {
   isRouteActiveFromExecucoes,
   resolveMotoboyIdFromRota as resolveMotoboyIdFromRotaUtil,
@@ -533,8 +533,18 @@ export class RotaService {
     return { rota: rota ?? null }
   }
 
-  async delete(id: string) {
-    await this.findById(id)
+  async delete(user: AuthenticatedUser, id: string) {
+    const rota = await this.findById(id)
+
+    if (!isAdminUser(user)) {
+      const motoboyId = await resolveMotoboyIdFromRota(rota)
+      assertOwnsResource(
+        user,
+        motoboyId,
+        'Você só pode excluir suas próprias rotas',
+      )
+    }
+
     return rotaRepository.delete(id)
   }
 
