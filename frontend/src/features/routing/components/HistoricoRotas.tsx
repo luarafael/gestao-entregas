@@ -37,6 +37,7 @@ import { buildRouteProgressMessageFromRota } from '../utils/whatsappRouteProgres
 import { mergeStopsWithLiveEntregas } from '../utils/routeStopPayment'
 import type { RotaPlanejada } from '../schemas/routing.schema'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
+import { RotaDetalheModal } from './RotaDetalheModal'
 
 interface HistoricoRotasProps {
   onLoadRoute: (rota: RotaPlanejada) => void
@@ -74,6 +75,7 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
   const [copyingId, setCopyingId] = useState<string | null>(null)
   const [sendModalOpen, setSendModalOpen] = useState(false)
   const [sendPayload, setSendPayload] = useState<WhatsAppSendPayload | null>(null)
+  const [detailRotaId, setDetailRotaId] = useState<string | null>(null)
   const historyQuery = useRouteHistory(page)
   const deleteMutation = useDeleteRoute()
   const duplicateMutation = useDuplicateRoute()
@@ -154,8 +156,17 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
                 return (
                 <article
                   key={rota.id}
-                  className={cn(PAGE_CARD_ARTICLE)}
+                  className={cn(
+                    PAGE_CARD_ARTICLE,
+                    'transition-colors hover:border-primary/40',
+                  )}
                 >
+                  <button
+                    type="button"
+                    className="w-full min-w-0 cursor-pointer rounded-lg text-left"
+                    aria-label={`Ver detalhes da rota de ${formatDateBR(rota.data)}`}
+                    onClick={() => setDetailRotaId(rota.id)}
+                  >
                   <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <MetaField label="Data">
                       <MetaChip tone="time" className="w-fit">
@@ -204,6 +215,11 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
                       </MetaChip>
                     </MetaField>
                   </div>
+
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Toque no card para ver as paradas desta rota
+                  </p>
+                  </button>
 
                   <div className="mt-3 flex w-full min-w-0 flex-wrap gap-2 border-t border-border/40 pt-3">
                     {isConcluida ? (
@@ -282,6 +298,11 @@ export function HistoricoRotas({ onLoadRoute }: HistoricoRotasProps) {
           ) : null}
         </CardContent>
       </Card>
+
+      <RotaDetalheModal
+        rotaId={detailRotaId}
+        onClose={() => setDetailRotaId(null)}
+      />
 
       <WhatsAppSendModal
         open={sendModalOpen}

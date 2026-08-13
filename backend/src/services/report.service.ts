@@ -1,6 +1,8 @@
 import { reportRepository } from '../repositories/report.repository.js'
+import { toUtcDateOnly } from '../utils/date.utils.js'
 import type {
   ReportDailyBreakdownQuery,
+  ReportDayDetailQuery,
   ReportNeighborhoodQuery,
   ReportPeriod,
   ReportSummaryQuery,
@@ -83,6 +85,16 @@ export class ReportService {
 
   getDashboardIndicators(period: ReportPeriod = 'week', motoboyId?: string) {
     return reportRepository.getPeriodSummary(period, new Date(), motoboyId)
+  }
+
+  getDayDetail(query: ReportDayDetailQuery) {
+    const filter = resolveEntregaReportFilter(query.origemCadastro)
+
+    return reportRepository.getDayDetail(toUtcDateOnly(query.date), {
+      ...filter,
+      motoboyId: query.motoboyId,
+      includeRotas: query.origemCadastro !== 'CLIENTE',
+    })
   }
 }
 

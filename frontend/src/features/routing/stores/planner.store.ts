@@ -8,6 +8,7 @@ import type {
 } from '../schemas/routing.schema'
 import {
   buildHistoricoEntry,
+  mergeExecucoesIntoStops,
   withDefaultStatus,
   type ExecucaoHistoricoItem,
 } from '../utils/executionStatus'
@@ -61,7 +62,10 @@ interface PlannerState {
   hydrateFromRota: (
     rota: RotaPlanejada,
     execucoes?: ExecucaoParada[],
-    options?: { tab?: 'planejar' | 'historico' },
+    options?: {
+      tab?: 'planejar' | 'historico'
+      preserveLocalEdits?: boolean
+    },
   ) => void
 }
 
@@ -186,35 +190,52 @@ export const usePlannerStore = create<PlannerState>()(
       },
 
       hydrateFromRota: (rota, execucoes = [], options) => {
-        const loaded = mapRotaToStops(rota, execucoes)
-        const historicoExecucao = loaded
-          .filter((stop) => stop.statusAtualizadoEm)
-          .map((stop) => buildHistoricoEntry(stop))
-        const latestStatusUpdate = loaded
-          .map((stop) => stop.statusAtualizadoEm)
-          .filter((value): value is string => Boolean(value))
-          .sort()
-          .at(-1)
+        set((state) => {
+          const preserveLocalEdits = options?.preserveLocalEdits === true
+          const keepLocalSequence =
+            preserveLocalEdits &&
+            !state.reorderLocked &&
+            state.stops.length > 0
 
-        set({
-          savedRotaId: rota.id,
-          stops: loaded,
-          result: {
-            enderecoInicial: rota.enderecoInicial,
-            origem: null,
-            distanciaTotal: Number(rota.distanciaTotal),
-            tempoTotal: rota.tempoTotal,
-            totalEntregas: loaded.length,
-            aproximada: rota.aproximada,
-            polyline: null,
-            sugestoes: [],
-            paradas: loaded,
-          },
-          reorderLocked: true,
-          orderDirty: false,
-          historicoExecucao,
-          progressUpdatedAt: latestStatusUpdate ?? new Date().toISOString(),
-          tab: options?.tab ?? 'planejar',
+          const loaded = keepLocalSequence
+            ? mergeExecucoesIntoStops(state.stops, execucoes).map(
+                withDefaultStatus,
+              )
+            : mapRotaToStops(rota, execucoes)
+
+          const historicoExecucao = loaded
+            .filter((stop) => stop.statusAtualizadoEm)
+            .map((stop) => buildHistoricoEntry(stop))
+          const latestStatusUpdate = loaded
+            .map((stop) => stop.statusAtualizadoEm)
+            .filter((value): value is string => Boolean(value))
+            .sort()
+            .at(-1)
+
+          return {
+            savedRotaId: rota.id,
+            stops: loaded,
+            result:
+              keepLocalSequence && state.result
+                ? { ...state.result, paradas: loaded }
+                : {
+                    enderecoInicial: rota.enderecoInicial,
+                    origem: null,
+                    distanciaTotal: Number(rota.distanciaTotal),
+                    tempoTotal: rota.tempoTotal,
+                    totalEntregas: loaded.length,
+                    aproximada: rota.aproximada,
+                    polyline: null,
+                    sugestoes: [],
+                    paradas: loaded,
+                  },
+            reorderLocked: preserveLocalEdits ? state.reorderLocked : true,
+            orderDirty: preserveLocalEdits ? state.orderDirty : false,
+            historicoExecucao,
+            progressUpdatedAt:
+              latestStatusUpdate ?? state.progressUpdatedAt,
+            tab: options?.tab ?? state.tab,
+          }
         })
       },
     }),

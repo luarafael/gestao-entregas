@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   reportDailyBreakdownQuerySchema,
+  reportDayDetailQuerySchema,
   reportDaysQuerySchema,
   reportNeighborhoodQuerySchema,
   reportSummaryQuerySchema,
@@ -33,6 +34,21 @@ describe('report schemas', () => {
 
     expect(parsed.period).toBe('month')
     expect(parsed.limit).toBe(8)
+  })
+
+  it('should parse day detail query with date', () => {
+    const parsed = reportDayDetailQuerySchema.parse({
+      date: '2026-08-10',
+      motoboyId: 'motoboy-1',
+      origemCadastro: 'MOTOBOY',
+    })
+
+    expect(parsed.date).toBe('2026-08-10')
+    expect(parsed.motoboyId).toBe('motoboy-1')
+  })
+
+  it('should reject invalid day detail date', () => {
+    expect(() => reportDayDetailQuerySchema.parse({ date: '10/08' })).toThrow()
   })
 
   it('should parse optional motoboyId on summary query', () => {

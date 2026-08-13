@@ -153,3 +153,24 @@ export function useUpdateEnderecoPartida() {
     },
   })
 }
+
+export function useRouteDetail(rotaId: string | null) {
+  return useQuery({
+    queryKey: [ROTAS_QUERY_KEY, 'detail', rotaId],
+    queryFn: async () => {
+      const rota = await routingService.getById(rotaId!)
+      let execucoes: Awaited<ReturnType<typeof routingService.getExecucao>> = []
+
+      if (rota.concluidaEm) {
+        try {
+          execucoes = await routingService.getExecucao(rota.id)
+        } catch {
+          execucoes = []
+        }
+      }
+
+      return { rota, execucoes }
+    },
+    enabled: Boolean(rotaId),
+  })
+}

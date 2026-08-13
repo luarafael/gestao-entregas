@@ -36,3 +36,13 @@ export const reportDailyBreakdownQuerySchema = z.object({
 export type ReportDailyBreakdownQuery = z.infer<
   typeof reportDailyBreakdownQuerySchema
 >
+
+export const reportDayDetailQuerySchema = z.object({
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
+  motoboyId: optionalMotoboyId,
+  origemCadastro: optionalReportOrigem,
+})
+
+export type ReportDayDetailQuery = z.infer<typeof reportDayDetailQuerySchema>

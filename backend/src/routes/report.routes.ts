@@ -6,9 +6,11 @@ import {
 } from '../middleware/index.js'
 import {
   reportDailyBreakdownQuerySchema,
+  reportDayDetailQuerySchema,
   reportNeighborhoodQuerySchema,
   reportSummaryQuerySchema,
   type ReportDailyBreakdownQuery,
+  type ReportDayDetailQuery,
   type ReportNeighborhoodQuery,
   type ReportSummaryQuery,
 } from '../schemas/report.schema.js'
@@ -53,6 +55,19 @@ reportRoutes.get(
       motoboyId: resolveMotoboyScope(req.user!, query.motoboyId),
     })
     res.json(data)
+  }),
+)
+
+reportRoutes.get(
+  '/day-detail',
+  validateQuery(reportDayDetailQuerySchema),
+  asyncHandler(async (req, res) => {
+    const query = getValidatedQuery<ReportDayDetailQuery>(req)
+    const detail = await reportService.getDayDetail({
+      ...query,
+      motoboyId: resolveMotoboyScope(req.user!, query.motoboyId),
+    })
+    res.json(detail)
   }),
 )
 

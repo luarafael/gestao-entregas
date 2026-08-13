@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import {
   useNotificationStore,
   type AppNotification,
@@ -21,24 +22,12 @@ export interface NotifyUserInput {
 export function useNotifyUser() {
   const addNotification = useNotificationStore((state) => state.addNotification)
 
-  return (input: NotifyUserInput) => {
-    addNotification({
-      type: input.type,
-      title: input.title,
-      message: input.message,
-      href: input.href,
-    })
-
-    void showNativeNotification(input.title, {
-      body: input.message,
-      tag: input.tag ?? `${input.type}-${input.title}`,
-      url: input.href,
-    })
-
-    if (input.showToast) {
-      toast(input.message, input.toastVariant ?? 'info')
-    }
-  }
+  return useCallback(
+    (input: NotifyUserInput) => {
+      notifyUser(addNotification, input)
+    },
+    [addNotification],
+  )
 }
 
 export function notifyUser(

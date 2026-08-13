@@ -6,6 +6,7 @@ import {
   useNeighborhoodReport,
   usePeriodDailyBreakdown,
   usePrestacaoTrend,
+  useReportDayDetail,
   useReportSummary,
 } from './useReports'
 import { apiFetch } from '@/shared/services/api'
@@ -68,5 +69,19 @@ describe('useReports', () => {
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  })
+
+  it('busca detalhe do dia selecionado', async () => {
+    vi.mocked(apiFetch).mockResolvedValue({ date: '2026-08-10', entregas: [] })
+
+    const { result } = renderHook(
+      () => useReportDayDetail('2026-08-10', 'm1', 'MOTOBOY'),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/reports/day-detail?date=2026-08-10&motoboyId=m1&origemCadastro=MOTOBOY',
+    )
   })
 })

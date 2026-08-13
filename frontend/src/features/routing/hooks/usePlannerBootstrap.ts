@@ -52,8 +52,13 @@ export function usePlannerSync(
 ) {
   const queryClient = useQueryClient()
   const notify = useNotifyUser()
+  const notifyRef = useRef(notify)
   const syncingRef = useRef(false)
   const notifyOnClear = options?.notifyOnClear ?? false
+
+  useEffect(() => {
+    notifyRef.current = notify
+  }, [notify])
 
   useEffect(() => {
     if (!enabled) return
@@ -69,7 +74,7 @@ export function usePlannerSync(
 
           invalidateDeliveryRelated(queryClient)
           queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
-          notify({
+          notifyRef.current({
             type: 'route',
             title: 'Rota concluída',
             message:
@@ -97,5 +102,5 @@ export function usePlannerSync(
       window.removeEventListener('focus', runSync)
       window.clearInterval(intervalId)
     }
-  }, [enabled, notify, notifyOnClear, queryClient])
+  }, [enabled, notifyOnClear, queryClient])
 }

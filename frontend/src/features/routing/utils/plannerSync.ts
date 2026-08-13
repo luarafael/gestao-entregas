@@ -25,7 +25,8 @@ async function hydrateRouteFromServer(
   rotaOrId: string | RotaPlanejada,
   stops: ReturnType<typeof usePlannerStore.getState>['stops'],
 ) {
-  const { hydrateFromRota, clearActiveRoute } = usePlannerStore.getState()
+  const { hydrateFromRota, clearActiveRoute, savedRotaId } =
+    usePlannerStore.getState()
   const rota =
     typeof rotaOrId === 'string'
       ? await routingService.getById(rotaOrId)
@@ -45,7 +46,9 @@ async function hydrateRouteFromServer(
     return 'cleared' as const
   }
 
-  hydrateFromRota(rota, execucoes)
+  hydrateFromRota(rota, execucoes, {
+    preserveLocalEdits: savedRotaId === rota.id,
+  })
   return 'hydrated-saved' as const
 }
 

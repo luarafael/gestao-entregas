@@ -4,6 +4,7 @@ import type {
   DailyTrendPoint,
   NeighborhoodReportPoint,
   PrestacaoTrendPoint,
+  ReportDayDetail,
   ReportPeriod,
   ReportSummary,
 } from '@/shared/types/api.types'
@@ -122,5 +123,27 @@ export function usePrestacaoTrend(
       ),
     enabled,
     staleTime: 5 * 60_000,
+  })
+}
+
+export function useReportDayDetail(
+  date: string | null,
+  motoboyId?: string,
+  origemCadastro?: ReportOrigemCadastro,
+) {
+  const scope = reportScopeKey(motoboyId, origemCadastro)
+
+  return useQuery({
+    queryKey: ['reports', 'day-detail', date, scope],
+    queryFn: () =>
+      apiFetch<ReportDayDetail>(
+        buildReportUrl('/api/reports/day-detail', {
+          date: date ?? undefined,
+          motoboyId,
+          origemCadastro,
+        }),
+      ),
+    enabled: Boolean(date),
+    staleTime: 60_000,
   })
 }

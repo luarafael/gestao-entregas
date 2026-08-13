@@ -4,7 +4,9 @@ import { getValorRecebivelEntrega } from '../utils/entrega-valor.utils.js'
 import {
   formatDateOnlyISO,
   getUtcDateOnlyRange,
+  toUtcDateOnly,
 } from '../utils/date.utils.js'
+import { motoboyRelationSelect } from './motoboy-select.js'
 import {
   calculatePeriodAverages,
   iterateUtcDays,
@@ -36,6 +38,10 @@ function toDayTotals(item: {
 type EntregaReportFilters = {
   origemCadastro?: 'MOTOBOY' | 'CLIENTE'
   motoboyId?: string
+}
+
+type DayDetailFilters = EntregaReportFilters & {
+  includeRotas?: boolean
 }
 
 function entregaDayValue(entrega: {
@@ -355,6 +361,119 @@ export class ReportRepository {
       valorFinalPrestacoes: valorEntregas,
       pendenciasAbertas: 0,
       valorPendenciasAbertas: 0,
+    }
+  }
+
+  async getDayDetail(date: Date, filters: DayDetailFilters = {}) {
+    const day = toUtcDateOnly(formatDateOnlyISO(date))
+
+    const [entregas, rotas] = await Promise.all([
+      prisma.entrega.findMany({
+        where: {
+          data: day,
+          status: 'ENTREGUE',
+          ...(filters.origemCadastro
+            ? { origemCadastro: filters.origemCadastro }
+            : {}),
+          ...(filters.motoboyId ? { motoboyId: filters.motoboyId } : {}),
+        },
+        orderBy: { horario: 'asc' },
+        include: {
+          motoboy: { select: motoboyRelationSelect },
+        },
+      }),
+      filters.includeRotas === false
+        ? Promise.resolve([])
+        : prisma.rotaPlanejada.findMany({
+            where: {
+              data: day,
+              ...(filters.motoboyId ? { motoboyId: filters.motoboyId } : {}),
+            },
+            orderBy: { criadoEm: 'desc' },
+            include: {
+              paradas: { orderBy: { ordem: 'asc' } },
+              motoboy: { select: motoboyRelationSelect },
+            },
+          }),
+    ])
+
+    const paradaByEntregaId = new Map<
+      string,
+      { distancia: number | null; tempo: number | null }
+    >()
+
+    for (const rota of rotas) {
+      for (const parada of rota.paradas) {
+        if (parada.entregaId && !paradaByEntregaId.has(parada.entregaId)) {
+          paradaByEntregaId.set(parada.entregaId, {
+            distancia:
+              parada.distancia != null ? Number(parada.distancia) : null,
+            tempo: parada.tempo,
+          })
+        }
+      }
+    }
+
+    const mappedEntregas = entregas.map((entrega) => {
+      const metrics = paradaByEntregaId.get(entrega.id)
+
+      return {
+        id: entrega.id,
+        horario: entrega.horario.toISOString(),
+        nomeCliente: entrega.nomeCliente,
+        telefoneCliente: entrega.telefoneCliente,
+        endereco: entrega.endereco,
+        bairro: entrega.bairro,
+        cidade: entrega.cidade,
+        observacao: entrega.observacao,
+        valorEntrega: Number(entrega.valorEntrega),
+        valorProduto:
+          entrega.valorProduto != null ? Number(entrega.valorProduto) : null,
+        valorEntregaMotoboy:
+          entrega.valorEntregaMotoboy != null
+            ? Number(entrega.valorEntregaMotoboy)
+            : null,
+        formaPagamento: entrega.formaPagamento,
+        pagoPeloCliente: entrega.pagoPeloCliente,
+        origemCadastro: entrega.origemCadastro,
+        motoboy: entrega.motoboy
+          ? { id: entrega.motoboy.id, nome: entrega.motoboy.nome }
+          : null,
+        valorRelatorio: entregaDayValue(entrega),
+        distancia: metrics?.distancia ?? null,
+        tempo: metrics?.tempo ?? null,
+      }
+    })
+
+    const valorTotal = mappedEntregas.reduce(
+      (sum, entrega) => sum + entrega.valorRelatorio,
+      0,
+    )
+    const distanciaTotal = rotas.reduce(
+      (sum, rota) => sum + Number(rota.distanciaTotal),
+      0,
+    )
+    const tempoTotal = rotas.reduce((sum, rota) => sum + rota.tempoTotal, 0)
+
+    return {
+      date: formatDateOnlyISO(day),
+      totalEntregas: mappedEntregas.length,
+      valorTotal: Number(valorTotal.toFixed(2)),
+      distanciaTotal: rotas.length > 0 ? distanciaTotal : null,
+      tempoTotal: rotas.length > 0 ? tempoTotal : null,
+      entregas: mappedEntregas,
+      rotas: rotas.map((rota) => ({
+        id: rota.id,
+        enderecoInicial: rota.enderecoInicial,
+        distanciaTotal: Number(rota.distanciaTotal),
+        tempoTotal: rota.tempoTotal,
+        aproximada: rota.aproximada,
+        concluidaEm: rota.concluidaEm?.toISOString() ?? null,
+        motoboy: rota.motoboy
+          ? { id: rota.motoboy.id, nome: rota.motoboy.nome }
+          : null,
+        totalParadas: rota.paradas.length,
+      })),
     }
   }
 }

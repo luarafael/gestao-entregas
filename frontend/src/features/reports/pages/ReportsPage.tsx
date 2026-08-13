@@ -175,7 +175,12 @@ export function ReportsPage() {
             isLoading={prestacaoTrendQuery.isLoading}
           />
         ) : null}
-        <DailyBreakdownTable scope={effectiveScope} data={dailyBreakdown} />
+        <DailyBreakdownTable
+          scope={effectiveScope}
+          data={dailyBreakdown}
+          motoboyId={motoboyId}
+          origemCadastro={reportOrigem}
+        />
       </section>
     </PageShell>
   )

@@ -104,3 +104,45 @@ export interface PrestacaoTrendPoint {
   valorFinal: number
   totalEntregas: number
 }
+
+export interface ReportDayDetailEntrega {
+  id: string
+  horario: string
+  nomeCliente: string | null
+  telefoneCliente: string | null
+  endereco: string
+  bairro: string
+  cidade: string | null
+  observacao: string | null
+  valorEntrega: number
+  valorProduto: number | null
+  valorEntregaMotoboy: number | null
+  formaPagamento: 'DINHEIRO' | 'PIX' | 'CARTAO' | null
+  pagoPeloCliente: boolean
+  origemCadastro: 'MOTOBOY' | 'CLIENTE'
+  motoboy: { id: string; nome: string } | null
+  valorRelatorio: number
+  distancia: number | null
+  tempo: number | null
+}
+
+export interface ReportDayDetailRota {
+  id: string
+  enderecoInicial: string
+  distanciaTotal: number
+  tempoTotal: number
+  aproximada: boolean
+  concluidaEm: string | null
+  motoboy: { id: string; nome: string } | null
+  totalParadas: number
+}
+
+export interface ReportDayDetail {
+  date: string
+  totalEntregas: number
+  valorTotal: number
+  distanciaTotal: number | null
+  tempoTotal: number | null
+  entregas: ReportDayDetailEntrega[]
+  rotas: ReportDayDetailRota[]
+}

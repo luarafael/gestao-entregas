@@ -6,6 +6,7 @@ const reportRepository = vi.hoisted(() => ({
   getPeriodDailyBreakdown: vi.fn(),
   getByNeighborhood: vi.fn(),
   getPrestacaoTrend: vi.fn(),
+  getDayDetail: vi.fn(),
 }))
 
 vi.mock('../repositories/report.repository.js', () => ({
@@ -94,6 +95,48 @@ describe('ReportService', () => {
       'week',
       expect.any(Date),
       'm1',
+    )
+  })
+
+  it('delega detalhe do dia com filtro de motoboy', async () => {
+    reportRepository.getDayDetail.mockResolvedValue({
+      date: '2026-08-10',
+      entregas: [],
+    })
+
+    await service.getDayDetail({
+      date: '2026-08-10',
+      motoboyId: 'm1',
+    })
+
+    expect(reportRepository.getDayDetail).toHaveBeenCalledWith(
+      new Date('2026-08-10T00:00:00.000Z'),
+      {
+        origemCadastro: 'MOTOBOY',
+        motoboyId: 'm1',
+        includeRotas: true,
+      },
+    )
+  })
+
+  it('omite rotas no detalhe do dia no escopo cliente', async () => {
+    reportRepository.getDayDetail.mockResolvedValue({
+      date: '2026-08-10',
+      entregas: [],
+    })
+
+    await service.getDayDetail({
+      date: '2026-08-10',
+      origemCadastro: 'CLIENTE',
+    })
+
+    expect(reportRepository.getDayDetail).toHaveBeenCalledWith(
+      new Date('2026-08-10T00:00:00.000Z'),
+      {
+        origemCadastro: 'CLIENTE',
+        motoboyId: undefined,
+        includeRotas: false,
+      },
     )
   })
 
