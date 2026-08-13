@@ -205,7 +205,7 @@ describe('RotaExecucaoService', () => {
     )
   })
 
-  it('conclui a rota quando a ultima parada e entregue e as outras ja estavam entregues', async () => {
+  it('promove a proxima parada para em rota e nao conclui ao entregar uma parada intermediaria', async () => {
     const statusByParada: Record<string, string> = {
       p1: 'PENDENTE',
       p2: 'PENDENTE',
@@ -218,6 +218,7 @@ describe('RotaExecucaoService', () => {
       paradas: [
         {
           id: 'p1',
+          ordem: 1,
           entregaId: 'e1',
           endereco: 'Rua A',
           bairro: 'Centro',
@@ -227,6 +228,114 @@ describe('RotaExecucaoService', () => {
         },
         {
           id: 'p2',
+          ordem: 2,
+          entregaId: 'e2',
+          endereco: 'Rua B',
+          bairro: 'Meireles',
+          cliente: 'Maria',
+          observacao: null,
+          valorEntrega: 12,
+        },
+      ],
+    })
+
+    rotaExecucaoRepository.findByRotaId.mockImplementation(async () => [
+      {
+        paradaId: 'p1',
+        status: statusByParada.p1,
+        dataHoraStatus: null,
+      },
+      {
+        paradaId: 'p2',
+        status: statusByParada.p2,
+        dataHoraStatus: null,
+      },
+    ])
+    rotaExecucaoRepository.updateByParadaId.mockImplementation(
+      async (_rotaId, paradaId, data) => {
+        statusByParada[paradaId] = data.status
+        return { count: 1 }
+      },
+    )
+
+    const result = await rotaExecucaoService.updateParada('rota-1', 'p1', {
+      status: 'ENTREGUE',
+      observacao: null,
+    })
+
+    expect(result.rotaConcluida).toBe(false)
+    expect(statusByParada.p1).toBe('ENTREGUE')
+    expect(statusByParada.p2).toBe('EM_ROTA')
+    expect(rotaRepository.markConcluded).not.toHaveBeenCalled()
+  })
+
+  it('nao conclui a rota ao sair de pendente para em rota', async () => {
+    rotaRepository.findById.mockResolvedValue({
+      id: 'rota-1',
+      motoboyId: 'm1',
+      concluidaEm: null,
+      paradas: [
+        {
+          id: 'p1',
+          ordem: 1,
+          entregaId: 'e1',
+          endereco: 'Rua A',
+          bairro: 'Centro',
+          cliente: 'João',
+          observacao: null,
+          valorEntrega: 10,
+        },
+        {
+          id: 'p2',
+          ordem: 2,
+          entregaId: 'e2',
+          endereco: 'Rua B',
+          bairro: 'Meireles',
+          cliente: 'Maria',
+          observacao: null,
+          valorEntrega: 12,
+        },
+      ],
+    })
+
+    rotaExecucaoRepository.findByRotaId.mockResolvedValue([
+      { paradaId: 'p1', status: 'EM_ROTA', dataHoraStatus: new Date() },
+      { paradaId: 'p2', status: 'PENDENTE', dataHoraStatus: null },
+    ])
+
+    const result = await rotaExecucaoService.updateParada('rota-1', 'p1', {
+      status: 'EM_ROTA',
+      observacao: null,
+    })
+
+    expect(result.rotaConcluida).toBe(false)
+    expect(rotaRepository.markConcluded).not.toHaveBeenCalled()
+  })
+
+  it('conclui a rota somente quando a ultima parada e entregue', async () => {
+    const statusByParada: Record<string, string> = {
+      p1: 'ENTREGUE',
+      p2: 'EM_ROTA',
+    }
+
+    rotaRepository.findById.mockResolvedValue({
+      id: 'rota-1',
+      motoboyId: 'm1',
+      concluidaEm: null,
+      paradas: [
+        {
+          id: 'p1',
+          ordem: 1,
+          entregaId: 'e1',
+          endereco: 'Rua A',
+          bairro: 'Centro',
+          cliente: 'João',
+          observacao: null,
+          valorEntrega: 10,
+        },
+        {
+          id: 'p2',
+          ordem: 2,
           entregaId: 'e2',
           endereco: 'Rua B',
           bairro: 'Meireles',
@@ -238,15 +347,15 @@ describe('RotaExecucaoService', () => {
     })
 
     entregaRepository.findByIds.mockResolvedValue([
-      { id: 'e1', motoboyId: 'm1', status: 'ENTREGUE' },
-      { id: 'e2', motoboyId: 'm1', status: 'ENTREGUE' },
+      { id: 'e1', motoboyId: 'm1' },
+      { id: 'e2', motoboyId: 'm1' },
     ])
 
     rotaExecucaoRepository.findByRotaId.mockImplementation(async () => [
       {
         paradaId: 'p1',
         status: statusByParada.p1,
-        dataHoraStatus: null,
+        dataHoraStatus: new Date(),
       },
       {
         paradaId: 'p2',

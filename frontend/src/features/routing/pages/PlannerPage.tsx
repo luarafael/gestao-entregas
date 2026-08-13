@@ -701,26 +701,6 @@ export function PlannerPage() {
       return
     }
 
-    if (
-      status === 'ENTREGUE' &&
-      savedRotaId &&
-      isAllStopsDelivered(nextStops)
-    ) {
-      try {
-        const reconciled =
-          await routingService.reconcileRouteConclusion(savedRotaId)
-        if (reconciled.rotaConcluida) {
-          clearActiveRoute()
-          invalidateDeliveryRelated(queryClient)
-          queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
-          toast('Rota concluída e enviada ao histórico', 'success')
-          return
-        }
-      } catch {
-        // Mantém a rota no planejador para nova tentativa.
-      }
-    }
-
     if (status === 'ENTREGUE' && autoRecalc) {
       await recalcRemainingRoute(nextStops)
     }
