@@ -515,6 +515,25 @@ export class RotaService {
     }))
   }
 
+  async getEventosConclusao(user: AuthenticatedUser, since: Date) {
+    if (!isAdminUser(user)) {
+      throw new ForbiddenError(
+        'Eventos de rota concluída são exclusivos para administradores',
+      )
+    }
+
+    const rotas = await rotaRepository.findConcludedSince(since)
+
+    return rotas.map((rota) => ({
+      id: rota.id,
+      motoboyId: rota.motoboyId,
+      motoboyNome: rota.motoboy?.nome ?? 'Motoboy',
+      totalParadas: rota._count.paradas,
+      enderecoInicial: rota.enderecoInicial,
+      concluidaEm: rota.concluidaEm?.toISOString() ?? new Date().toISOString(),
+    }))
+  }
+
   async findById(id: string) {
     const rota = await rotaRepository.findById(id)
     if (!rota) throw new NotFoundError('Rota planejada não encontrada')

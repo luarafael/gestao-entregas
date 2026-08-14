@@ -179,4 +179,18 @@ export const routingService = {
       }>
     }>(`/api/rotas/eventos?${params.toString()}`)
   },
+
+  getEventosConclusao(since: string) {
+    const params = new URLSearchParams({ since })
+    return apiFetch<{
+      eventos: Array<{
+        id: string
+        motoboyId: string | null
+        motoboyNome: string
+        totalParadas: number
+        enderecoInicial: string
+        concluidaEm: string
+      }>
+    }>(`/api/rotas/eventos-conclusao?${params.toString()}`)
+  },
 }

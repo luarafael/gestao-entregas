@@ -232,7 +232,26 @@ export class RotaExecucaoService {
       await rotaRepository.linkParadaEntrega(parada.id, entrega.id)
     }
 
-    await rotaRepository.markConcluded(rotaId, getRouteConcludedAt(execucoes))
+    const concluidaEm = getRouteConcludedAt(execucoes)
+    await rotaRepository.markConcluded(rotaId, concluidaEm)
+
+    let motoboyNome = 'Motoboy'
+    try {
+      if (motoboyId) {
+        const motoboy = await usuarioRepository.findById(motoboyId)
+        motoboyNome = motoboy?.nome?.trim() || 'Motoboy'
+      }
+    } catch (error) {
+      console.error('Falha ao buscar motoboy para notificação de rota', error)
+    }
+
+    pushNotificationService.notifyAdminsRouteCompleted({
+      rotaId,
+      motoboyNome,
+      totalParadas: rota.paradas.length,
+      concluidaEm,
+    })
+
     return true
   }
 }

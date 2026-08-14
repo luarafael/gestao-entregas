@@ -69,7 +69,7 @@ export function NotificationPermissionBanner() {
             Ativar notificações no celular
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Receba avisos de rotas, entregas concluídas, pendências e
+            Receba avisos de rotas, entregas, rota concluída, pendências e
             prestações mesmo com o app em segundo plano.
           </p>
         </div>

@@ -131,4 +131,36 @@ describe('PushNotificationService', () => {
       expect(webpush.sendNotification).toHaveBeenCalled()
     })
   })
+
+  it('envia push de rota concluida para admins', async () => {
+    usuarioRepository.findActiveAdminIds.mockResolvedValue(['admin-1'])
+    pushSubscriptionRepository.findByUserIds.mockResolvedValue([
+      {
+        id: 'sub-admin',
+        endpoint: 'https://push.example/admin',
+        p256dh: 'key',
+        auth: 'auth',
+      },
+    ])
+    webpush.sendNotification.mockResolvedValue(undefined)
+
+    const { pushNotificationService } = await import(
+      '../services/push-notification.service.js'
+    )
+
+    pushNotificationService.notifyAdminsRouteCompleted({
+      rotaId: 'rota-1',
+      motoboyNome: 'João',
+      totalParadas: 4,
+      concluidaEm: new Date('2026-08-14T15:00:00.000Z'),
+    })
+
+    await vi.waitFor(() => {
+      expect(webpush.sendNotification).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining('Rota concluída'),
+        expect.objectContaining({ urgency: 'high' }),
+      )
+    })
+  })
 })

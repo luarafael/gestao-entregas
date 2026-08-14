@@ -102,6 +102,7 @@ async function sendToAdmins(payload: PushNotificationPayload): Promise<void> {
 }
 
 export class PushNotificationService {
+  /** Toda notificação de usuário deve passar daqui para chegar na tela do celular. */
   notifyMotoboyNewRoute(
     motoboyId: string,
     data: { rotaId: string; totalParadas: number; enderecoInicial: string },
@@ -177,6 +178,20 @@ export class PushNotificationService {
       body: `${data.motoboyNome} concluiu entrega: ${data.cliente} · ${formatTimeBR(data.dataHoraStatus)}`,
       url: '/monitoramento',
       tag: `delivery-${data.execucaoId}`,
+    })
+  }
+
+  notifyAdminsRouteCompleted(data: {
+    rotaId: string
+    motoboyNome: string
+    totalParadas: number
+    concluidaEm: Date
+  }) {
+    void sendToAdmins({
+      title: 'Rota concluída',
+      body: `${data.motoboyNome} concluiu a rota: ${data.totalParadas} entrega(s) · ${formatTimeBR(data.concluidaEm)}`,
+      url: '/monitoramento',
+      tag: `route-completed-${data.rotaId}`,
     })
   }
 }

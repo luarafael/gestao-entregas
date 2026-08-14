@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom'
 import { aprovacoesService } from '@/features/aprovacoes/services/aprovacoes.service'
 import { monitoramentoService } from '@/features/monitoramento/services/monitoramento.service'
 import { pendingService } from '@/features/pending/services/pending.service'
+import { routingService } from '@/features/routing/services/routing.service'
 import { useNotificationStore } from '@/shared/stores/notification.store'
 import { formatPrestacaoMotoboyDate } from '@/features/motoboy/schemas/prestacaoMotoboy.schema'
 import { formatTimeBR } from '@/shared/utils/format'
@@ -17,11 +18,14 @@ export function useAdminNotifications(enabled: boolean) {
   const pendingReadyRef = useRef(false)
   const deliveryReadyRef = useRef(false)
   const pendenciaReadyRef = useRef(false)
+  const routeCompletedReadyRef = useRef(false)
   const knownPendingIdsRef = useRef<Set<string>>(new Set())
   const knownDeliveryIdsRef = useRef<Set<string>>(new Set())
   const knownPendenciaIdsRef = useRef<Set<string>>(new Set())
+  const knownRouteCompletedIdsRef = useRef<Set<string>>(new Set())
   const sinceRef = useRef(new Date().toISOString())
   const pendenciaSinceRef = useRef(new Date().toISOString())
+  const routeCompletedSinceRef = useRef(new Date().toISOString())
 
   const pendingQuery = useQuery({
     queryKey: ['admin-notifications', 'pending'],
@@ -44,6 +48,15 @@ export function useAdminNotifications(enabled: boolean) {
   const pendenciaEventosQuery = useQuery({
     queryKey: ['admin-notifications', 'pendencias'],
     queryFn: () => pendingService.getEventos(pendenciaSinceRef.current),
+    enabled,
+    refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  })
+
+  const rotaConcluidaQuery = useQuery({
+    queryKey: ['admin-notifications', 'rotas-concluidas'],
+    queryFn: () => routingService.getEventosConclusao(routeCompletedSinceRef.current),
     enabled,
     refetchInterval: POLL_INTERVAL,
     refetchIntervalInBackground: true,
@@ -153,4 +166,43 @@ export function useAdminNotifications(enabled: boolean) {
       })
     }
   }, [addNotification, enabled, location.pathname, pendenciaEventosQuery.data])
+
+  useEffect(() => {
+    if (!enabled || !rotaConcluidaQuery.data) {
+      return
+    }
+
+    if (!routeCompletedReadyRef.current) {
+      for (const evento of rotaConcluidaQuery.data.eventos) {
+        knownRouteCompletedIdsRef.current.add(evento.id)
+      }
+      routeCompletedReadyRef.current = true
+      return
+    }
+
+    for (const evento of rotaConcluidaQuery.data.eventos) {
+      if (knownRouteCompletedIdsRef.current.has(evento.id)) continue
+
+      knownRouteCompletedIdsRef.current.add(evento.id)
+      if (evento.concluidaEm > routeCompletedSinceRef.current) {
+        routeCompletedSinceRef.current = evento.concluidaEm
+      }
+
+      const message = `${evento.motoboyNome} concluiu a rota: ${evento.totalParadas} entrega(s) · ${formatTimeBR(evento.concluidaEm)}`
+      notifyUser(addNotification, {
+        type: 'route_completed',
+        title: 'Rota concluída',
+        message,
+        href: '/monitoramento',
+        tag: `route-completed-${evento.id}`,
+        showToast: location.pathname !== '/monitoramento',
+        toastVariant: 'success',
+      })
+    }
+  }, [
+    addNotification,
+    enabled,
+    location.pathname,
+    rotaConcluidaQuery.data,
+  ])
 }

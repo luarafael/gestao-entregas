@@ -41,6 +41,7 @@ export function notifyUser(
     href: input.href,
   })
 
+  // Toda notificação do sino também vai para a tela de notificações do celular.
   void showNativeNotification(input.title, {
     body: input.message,
     tag: input.tag ?? `${input.type}-${input.title}`,

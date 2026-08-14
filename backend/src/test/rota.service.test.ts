@@ -12,6 +12,7 @@ vi.mock('../repositories/rota.repository.js', () => ({
     getEnderecoPartidaPadrao: vi.fn(),
     findActiveToday: vi.fn(),
     findActiveForMotoboyToday: vi.fn(),
+    findConcludedSince: vi.fn(),
   },
 }))
 
@@ -249,5 +250,46 @@ describe('RotaService delete', () => {
       statusCode: 403,
     })
     expect(rotaRepository.delete).not.toHaveBeenCalled()
+  })
+})
+
+describe('RotaService eventos de conclusao', () => {
+  const service = new RotaService()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('lista rotas concluidas para o admin', async () => {
+    const since = new Date('2026-08-14T12:00:00.000Z')
+    rotaRepository.findConcludedSince.mockResolvedValue([
+      {
+        id: 'rota-1',
+        motoboyId: 'motoboy-1',
+        enderecoInicial: 'Rua A',
+        concluidaEm: new Date('2026-08-14T15:00:00.000Z'),
+        _count: { paradas: 3 },
+        motoboy: { id: 'motoboy-1', nome: 'João' },
+      },
+    ])
+
+    const eventos = await service.getEventosConclusao(adminUser, since)
+
+    expect(rotaRepository.findConcludedSince).toHaveBeenCalledWith(since)
+    expect(eventos).toEqual([
+      expect.objectContaining({
+        id: 'rota-1',
+        motoboyNome: 'João',
+        totalParadas: 3,
+        concluidaEm: '2026-08-14T15:00:00.000Z',
+      }),
+    ])
+  })
+
+  it('bloqueia motoboy de ver eventos de conclusao', async () => {
+    await expect(
+      service.getEventosConclusao(motoboyUser, new Date()),
+    ).rejects.toMatchObject({ statusCode: 403 })
+    expect(rotaRepository.findConcludedSince).not.toHaveBeenCalled()
   })
 })

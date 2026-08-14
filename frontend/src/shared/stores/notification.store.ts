@@ -5,6 +5,7 @@ export type NotificationType =
   | 'delivery'
   | 'pendencia'
   | 'route'
+  | 'route_completed'
   | 'prestacao'
 
 export interface AppNotification {

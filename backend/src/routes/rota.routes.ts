@@ -70,6 +70,20 @@ rotaRoutes.get(
 )
 
 rotaRoutes.get(
+  '/eventos-conclusao',
+  requireRole('ADMIN'),
+  validateQuery(rotaEventosQuerySchema),
+  asyncHandler(async (req, res) => {
+    const query = getValidatedQuery<RotaEventosQuery>(req)
+    const eventos = await rotaService.getEventosConclusao(
+      req.user!,
+      new Date(query.since),
+    )
+    res.json({ eventos })
+  }),
+)
+
+rotaRoutes.get(
   '/ativa-hoje',
   asyncHandler(async (req, res) => {
     const result = await rotaService.getActiveToday(req.user!)

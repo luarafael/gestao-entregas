@@ -144,6 +144,20 @@ export class RotaRepository {
     })
   }
 
+  async findConcludedSince(since: Date) {
+    return prisma.rotaPlanejada.findMany({
+      where: {
+        concluidaEm: { gt: since },
+      },
+      include: {
+        _count: { select: { paradas: true } },
+        motoboy: { select: motoboyRelationSelect },
+      },
+      orderBy: { concluidaEm: 'asc' },
+      take: 50,
+    })
+  }
+
   async delete(id: string) {
     return prisma.rotaPlanejada.delete({ where: { id } })
   }

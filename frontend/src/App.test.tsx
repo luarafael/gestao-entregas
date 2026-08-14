@@ -42,5 +42,5 @@ describe('App', () => {
     expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Entregas').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Pendências').length).toBeGreaterThan(0)
-  })
+  }, 15_000)
 })

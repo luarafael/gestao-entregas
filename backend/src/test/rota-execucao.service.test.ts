@@ -40,6 +40,7 @@ vi.mock('../repositories/usuario.repository.js', () => ({
 vi.mock('../services/push-notification.service.js', () => ({
   pushNotificationService: {
     notifyAdminsDeliveryCompleted: vi.fn(),
+    notifyAdminsRouteCompleted: vi.fn(),
   },
 }))
 
@@ -380,6 +381,12 @@ describe('RotaExecucaoService', () => {
     expect(statusByParada.p1).toBe('ENTREGUE')
     expect(statusByParada.p2).toBe('ENTREGUE')
     expect(rotaRepository.markConcluded).toHaveBeenCalled()
+    expect(pushNotificationService.notifyAdminsRouteCompleted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rotaId: 'rota-1',
+        totalParadas: 2,
+      }),
+    )
   })
 
   it('reconcilia rota legada já totalmente entregue', async () => {
