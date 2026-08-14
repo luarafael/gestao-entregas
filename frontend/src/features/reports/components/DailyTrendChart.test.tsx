@@ -11,7 +11,7 @@ describe('DailyTrendChart', () => {
   it('renderiza estado vazio de loading', () => {
     render(<DailyTrendChart isLoading />)
 
-    expect(screen.getByText('Prestações por dia')).toBeInTheDocument()
+    expect(screen.getByText('Entregas por dia')).toBeInTheDocument()
   })
 
   it('renderiza gráfico com dados', () => {

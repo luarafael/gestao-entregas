@@ -128,7 +128,7 @@ export function ReportSummaryCards({
       <StatCard
         title="Entregas no período"
         value={String(summary?.totalEntregas ?? 0)}
-        description={`${periodLabel} · prestações fechadas`}
+        description={`${periodLabel} · corridas dos motoboys`}
         icon={<IconPackage className="size-5" />}
         accent="primary"
         delay={0}
@@ -136,7 +136,7 @@ export function ReportSummaryCards({
       <StatCard
         title="Valor das entregas"
         value={formatCurrency(summary?.valorEntregas ?? 0)}
-        description={`${periodLabel} · nas prestações`}
+        description={`${periodLabel} · entregas concluídas`}
         icon={<IconWallet className="size-5" />}
         accent="success"
         delay={0.05}
@@ -144,13 +144,13 @@ export function ReportSummaryCards({
       <StatCard
         title="Média diária"
         value={String(summary?.mediaEntregasPorDia ?? 0)}
-        description="Média por dia com prestação fechada"
+        description="Média por dia com movimento"
         icon={<IconTrending className="size-5" />}
         accent="neutral"
         delay={0.1}
       />
       <StatCard
-        title="Prestações geradas"
+        title="Dias com movimento"
         value={String(summary?.totalPrestacoes ?? 0)}
         description={formatCurrency(summary?.valorFinalPrestacoes ?? 0)}
         icon={<IconReceipt className="size-5" />}
@@ -168,7 +168,7 @@ export function ReportSummaryCards({
       <StatCard
         title="Média de valor/dia"
         value={formatCurrency(summary?.mediaValorPorDia ?? 0)}
-        description="Valor das entregas por dia fechado"
+        description="Valor das entregas por dia com movimento"
         icon={<IconWallet className="size-5" />}
         accent="success"
         delay={0.25}

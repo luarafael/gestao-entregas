@@ -38,13 +38,13 @@ export function DailyBreakdownTable({
       ? 'Nenhum pedido no período'
       : scope === 'geral'
         ? 'Nenhum registro no período'
-        : 'Nenhuma prestação no período'
+        : 'Nenhuma entrega no período'
   const emptyDescription =
     scope === 'cliente'
       ? 'Os pedidos entregues aparecerão aqui conforme forem registrados.'
       : scope === 'geral'
         ? 'Entregas motoboy e pedidos de clientes aparecerão aqui.'
-        : 'Gere a prestação de contas para cada dia fechado.'
+        : 'As corridas entregues aparecerão aqui conforme forem registradas.'
 
   if (rows.length === 0) {
     return (

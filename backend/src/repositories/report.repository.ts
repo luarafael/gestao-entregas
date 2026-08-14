@@ -8,17 +8,14 @@ import {
 } from '../utils/date.utils.js'
 import { motoboyRelationSelect } from './motoboy-select.js'
 import {
+  accumulatePrestacaoDayTotals,
   calculatePeriodAverages,
+  countUniqueIsoDates,
   iterateUtcDays,
+  type PrestacaoDayTotals,
 } from '../utils/report.utils.js'
 
-type DayTotals = {
-  entregas: number
-  valor: number
-  valorEntregas: number
-  valorPendencias: number
-  temPrestacao: boolean
-}
+type DayTotals = PrestacaoDayTotals
 
 function toDayTotals(item: {
   totalEntregas: number
@@ -42,6 +39,17 @@ type EntregaReportFilters = {
 
 type DayDetailFilters = EntregaReportFilters & {
   includeRotas?: boolean
+}
+
+function prestacaoMotoboyWhere(
+  start: Date,
+  end: Date,
+  motoboyId?: string,
+) {
+  return {
+    data: { gte: start, lte: end },
+    ...(motoboyId ? { motoboyId } : {}),
+  }
 }
 
 function entregaDayValue(entrega: {
@@ -70,39 +78,26 @@ export class ReportRepository {
   ) {
     const { start, end } = getUtcDateOnlyRange(period, reference)
 
-    const prestacoes = motoboyId
-      ? await prisma.prestacaoMotoboy.findMany({
-          where: {
-            motoboyId,
-            data: { gte: start, lte: end },
-          },
-          orderBy: { data: 'asc' },
-          select: {
-            data: true,
-            totalEntregas: true,
-            valorTotal: true,
-            valorPendencias: true,
-            valorFinal: true,
-          },
-        })
-      : await prisma.prestacaoContas.findMany({
-          where: {
-            data: { gte: start, lte: end },
-          },
-          orderBy: { data: 'asc' },
-          select: {
-            data: true,
-            totalEntregas: true,
-            valorTotal: true,
-            valorPendencias: true,
-            valorFinal: true,
-          },
-        })
+    const prestacoes = await prisma.prestacaoMotoboy.findMany({
+      where: prestacaoMotoboyWhere(start, end, motoboyId),
+      orderBy: { data: 'asc' },
+      select: {
+        data: true,
+        totalEntregas: true,
+        valorTotal: true,
+        valorPendencias: true,
+        valorFinal: true,
+      },
+    })
 
     const totalsByDay = new Map<string, DayTotals>()
 
     for (const prestacao of prestacoes) {
-      totalsByDay.set(formatDateOnlyISO(prestacao.data), toDayTotals(prestacao))
+      const date = formatDateOnlyISO(prestacao.data)
+      totalsByDay.set(
+        date,
+        accumulatePrestacaoDayTotals(totalsByDay.get(date), toDayTotals(prestacao)),
+      )
     }
 
     return iterateUtcDays(start, end).map((date) => {
@@ -171,36 +166,35 @@ export class ReportRepository {
   ) {
     const { start, end } = getUtcDateOnlyRange(period, reference)
 
-    const prestacoes = motoboyId
-      ? await prisma.prestacaoMotoboy.findMany({
-          where: {
-            motoboyId,
-            data: { gte: start, lte: end },
-          },
-          orderBy: { data: 'asc' },
-          select: {
-            data: true,
-            valorFinal: true,
-            totalEntregas: true,
-          },
-        })
-      : await prisma.prestacaoContas.findMany({
-          where: {
-            data: { gte: start, lte: end },
-          },
-          orderBy: { data: 'asc' },
-          select: {
-            data: true,
-            valorFinal: true,
-            totalEntregas: true,
-          },
-        })
+    const prestacoes = await prisma.prestacaoMotoboy.findMany({
+      where: prestacaoMotoboyWhere(start, end, motoboyId),
+      orderBy: { data: 'asc' },
+      select: {
+        data: true,
+        valorFinal: true,
+        totalEntregas: true,
+      },
+    })
 
-    return prestacoes.map((prestacao) => ({
-      date: formatDateOnlyISO(prestacao.data),
-      valorFinal: Number(prestacao.valorFinal),
-      totalEntregas: prestacao.totalEntregas,
-    }))
+    const totalsByDay = new Map<
+      string,
+      { date: string; valorFinal: number; totalEntregas: number }
+    >()
+
+    for (const prestacao of prestacoes) {
+      const date = formatDateOnlyISO(prestacao.data)
+      const current = totalsByDay.get(date) ?? {
+        date,
+        valorFinal: 0,
+        totalEntregas: 0,
+      }
+
+      current.valorFinal += Number(prestacao.valorFinal)
+      current.totalEntregas += prestacao.totalEntregas
+      totalsByDay.set(date, current)
+    }
+
+    return [...totalsByDay.values()]
   }
 
   async getPeriodSummary(
@@ -211,28 +205,15 @@ export class ReportRepository {
     const { start, end } = getUtcDateOnlyRange(period, reference)
 
     const [prestacoes, pendenciaStats] = await Promise.all([
-      motoboyId
-        ? prisma.prestacaoMotoboy.findMany({
-            where: {
-              motoboyId,
-              data: { gte: start, lte: end },
-            },
-            select: {
-              totalEntregas: true,
-              valorTotal: true,
-              valorFinal: true,
-            },
-          })
-        : prisma.prestacaoContas.findMany({
-            where: {
-              data: { gte: start, lte: end },
-            },
-            select: {
-              totalEntregas: true,
-              valorTotal: true,
-              valorFinal: true,
-            },
-          }),
+      prisma.prestacaoMotoboy.findMany({
+        where: prestacaoMotoboyWhere(start, end, motoboyId),
+        select: {
+          data: true,
+          totalEntregas: true,
+          valorTotal: true,
+          valorFinal: true,
+        },
+      }),
       prisma.pendencia.aggregate({
         where: {
           status: 'PENDENTE',
@@ -257,7 +238,7 @@ export class ReportRepository {
     )
     const averages = calculatePeriodAverages(
       { totalEntregas, valorEntregas },
-      prestacoes.length,
+      countUniqueIsoDates(prestacoes.map((prestacao) => prestacao.data)),
     )
 
     return {
@@ -351,6 +332,18 @@ export class ReportRepository {
       daysWithData.length,
     )
 
+    const pendenciaStats =
+      filters.origemCadastro === 'CLIENTE'
+        ? { _count: { id: 0 }, _sum: { valor: 0 } }
+        : await prisma.pendencia.aggregate({
+            where: {
+              status: 'PENDENTE',
+              ...(filters.motoboyId ? { motoboyId: filters.motoboyId } : {}),
+            },
+            _count: { id: true },
+            _sum: { valor: true },
+          })
+
     return {
       period,
       totalEntregas,
@@ -359,8 +352,8 @@ export class ReportRepository {
       mediaValorPorDia: averages.mediaValorPorDia,
       totalPrestacoes: daysWithData.length,
       valorFinalPrestacoes: valorEntregas,
-      pendenciasAbertas: 0,
-      valorPendenciasAbertas: 0,
+      pendenciasAbertas: pendenciaStats._count.id,
+      valorPendenciasAbertas: Number(pendenciaStats._sum.valor ?? 0),
     }
   }
 

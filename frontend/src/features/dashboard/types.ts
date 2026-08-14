@@ -67,10 +67,10 @@ export function getReportScopeDescription(
   if (isAdmin) {
     return motoboySelected
       ? 'Indicadores e gráficos do motoboy selecionado.'
-      : 'Indicadores, gráficos e detalhamento das prestações fechadas no período.'
+      : 'Indicadores, gráficos e detalhamento das entregas dos motoboys no período.'
   }
 
-  return 'Seus indicadores, gráficos e detalhamento das prestações no período.'
+  return 'Seus indicadores, gráficos e detalhamento das entregas no período.'
 }
 
 export function getReportScopeLabel(

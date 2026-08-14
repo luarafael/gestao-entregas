@@ -21,7 +21,7 @@ function resolveEntregaReportFilter(origemCadastro?: 'MOTOBOY' | 'CLIENTE' | 'GE
 }
 
 function useEntregaReports(origemCadastro?: 'MOTOBOY' | 'CLIENTE' | 'GERAL') {
-  return origemCadastro === 'CLIENTE' || origemCadastro === 'GERAL'
+  return origemCadastro != null
 }
 
 export class ReportService {

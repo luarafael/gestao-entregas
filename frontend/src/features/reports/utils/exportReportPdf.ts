@@ -66,13 +66,13 @@ export function exportReportPdf(input: ReportPdfInput) {
     y = addKeyValueRow(
       doc,
       y,
-      'Prestações geradas',
+      'Dias com movimento',
       String(input.summary.totalPrestacoes),
     )
     y = addKeyValueRow(
       doc,
       y,
-      'Valor final (prestações)',
+      'Valor nos dias com movimento',
       formatCurrency(input.summary.valorFinalPrestacoes),
     )
     y = addKeyValueRow(

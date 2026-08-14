@@ -4,6 +4,8 @@ import { ReportService } from '../services/report.service.js'
 const reportRepository = vi.hoisted(() => ({
   getPeriodSummary: vi.fn(),
   getPeriodDailyBreakdown: vi.fn(),
+  getEntregasPeriodSummary: vi.fn(),
+  getEntregasDailyBreakdown: vi.fn(),
   getByNeighborhood: vi.fn(),
   getPrestacaoTrend: vi.fn(),
   getDayDetail: vi.fn(),
@@ -18,6 +20,36 @@ describe('ReportService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('usa entregas no resumo agregado do escopo motoboy', async () => {
+    reportRepository.getEntregasPeriodSummary.mockResolvedValue({
+      totalEntregas: 9,
+      mediaEntregasPorDia: 3,
+    })
+
+    await service.getSummary({ period: 'week', origemCadastro: 'MOTOBOY' })
+
+    expect(reportRepository.getEntregasPeriodSummary).toHaveBeenCalledWith(
+      'week',
+      expect.any(Date),
+      { origemCadastro: 'MOTOBOY', motoboyId: undefined },
+    )
+  })
+
+  it('usa entregas no detalhamento diário do escopo motoboy', async () => {
+    reportRepository.getEntregasDailyBreakdown.mockResolvedValue([])
+
+    await service.getPeriodDailyBreakdown({
+      period: 'week',
+      origemCadastro: 'MOTOBOY',
+    })
+
+    expect(reportRepository.getEntregasDailyBreakdown).toHaveBeenCalledWith(
+      'week',
+      expect.any(Date),
+      { origemCadastro: 'MOTOBOY', motoboyId: undefined },
+    )
   })
 
   it('delega resumo do período', async () => {

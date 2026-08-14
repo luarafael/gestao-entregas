@@ -35,11 +35,11 @@ export function DailyTrendChart({
   if (isLoading) {
     return (
       <ChartCard
-        title="Prestações por dia"
+        title="Entregas por dia"
         description={
           periodLabel
-            ? `Valores fechados em ${periodLabel.toLowerCase()}`
-            : 'Valores fechados por prestação'
+            ? `Movimento em ${periodLabel.toLowerCase()}`
+            : 'Entregas e valores por dia'
         }
       >
         <ChartSkeleton />
@@ -48,14 +48,14 @@ export function DailyTrendChart({
   }
 
   return (
-    <ChartCard
-      title="Prestações por dia"
-      description={
-        periodLabel
-          ? `Valores fechados em ${periodLabel.toLowerCase()}`
-          : 'Valores fechados por prestação'
-      }
-    >
+      <ChartCard
+        title="Entregas por dia"
+        description={
+          periodLabel
+            ? `Movimento em ${periodLabel.toLowerCase()}`
+            : 'Entregas e valores por dia'
+        }
+      >
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} barGap={4}>

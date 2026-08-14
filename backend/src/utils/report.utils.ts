@@ -43,3 +43,33 @@ export function calculatePeriodAverages(
     mediaValorPorDia: Number((totals.valorEntregas / divisor).toFixed(2)),
   }
 }
+
+export type PrestacaoDayTotals = {
+  entregas: number
+  valor: number
+  valorEntregas: number
+  valorPendencias: number
+  temPrestacao: boolean
+}
+
+/** Soma prestações do mesmo dia (ex.: Todos os motoboys). */
+export function accumulatePrestacaoDayTotals(
+  current: PrestacaoDayTotals | undefined,
+  incoming: PrestacaoDayTotals,
+): PrestacaoDayTotals {
+  if (!current) {
+    return { ...incoming }
+  }
+
+  return {
+    entregas: current.entregas + incoming.entregas,
+    valor: current.valor + incoming.valor,
+    valorEntregas: current.valorEntregas + incoming.valorEntregas,
+    valorPendencias: current.valorPendencias + incoming.valorPendencias,
+    temPrestacao: current.temPrestacao || incoming.temPrestacao,
+  }
+}
+
+export function countUniqueIsoDates(dates: Date[]): number {
+  return new Set(dates.map((date) => formatDateOnlyISO(date))).size
+}
