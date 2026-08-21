@@ -470,4 +470,76 @@ describe('RotaExecucaoService', () => {
       )
     })
   })
+
+  it('preserva horário das entregas já concluídas no bulkSync', async () => {
+    const originalAt = new Date('2026-08-05T15:10:00.000Z')
+
+    rotaRepository.findById.mockResolvedValue({
+      id: 'rota-1',
+      motoboyId: 'm1',
+      concluidaEm: null,
+      paradas: [
+        {
+          id: 'p1',
+          ordem: 1,
+          entregaId: 'e1',
+          endereco: 'Rua A',
+          bairro: 'Centro',
+          cliente: 'João',
+          observacao: null,
+          valorEntrega: 10,
+        },
+        {
+          id: 'p2',
+          ordem: 2,
+          entregaId: 'e2',
+          endereco: 'Rua B',
+          bairro: 'Meireles',
+          cliente: 'Maria',
+          observacao: null,
+          valorEntrega: 12,
+        },
+      ],
+    })
+    rotaExecucaoRepository.findByRotaId.mockResolvedValue([
+      {
+        paradaId: 'p1',
+        status: 'ENTREGUE',
+        dataHoraStatus: originalAt,
+        observacao: null,
+      },
+      {
+        paradaId: 'p2',
+        status: 'PENDENTE',
+        dataHoraStatus: null,
+        observacao: null,
+      },
+    ])
+    rotaExecucaoRepository.bulkSync.mockResolvedValue(2)
+
+    await rotaExecucaoService.bulkSync('rota-1', {
+      paradas: [
+        { paradaId: 'p1', status: 'ENTREGUE' },
+        { paradaId: 'p2', status: 'ENTREGUE' },
+      ],
+    })
+
+    expect(rotaExecucaoRepository.bulkSync).toHaveBeenCalledWith(
+      'rota-1',
+      [
+        expect.objectContaining({
+          paradaId: 'p1',
+          status: 'ENTREGUE',
+          dataHoraStatus: originalAt,
+        }),
+        expect.objectContaining({
+          paradaId: 'p2',
+          status: 'ENTREGUE',
+          dataHoraStatus: expect.any(Date),
+        }),
+      ],
+    )
+    expect(entregaRepository.markDelivered).toHaveBeenCalledWith('e1', originalAt)
+    expect(pushNotificationService.notifyAdminsDeliveryCompleted).not.toHaveBeenCalled()
+  })
 })

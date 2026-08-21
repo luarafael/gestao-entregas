@@ -57,6 +57,14 @@ export class PrestacaoRepository {
     return { data, total }
   }
 
+  async findCreatedSince(since: Date) {
+    return prisma.prestacaoContas.findMany({
+      where: { criadoEm: { gt: since } },
+      orderBy: { criadoEm: 'asc' },
+      take: 50,
+    })
+  }
+
   async update(id: string, data: UpdatePrestacaoData) {
     return prisma.prestacaoContas.update({ where: { id }, data })
   }

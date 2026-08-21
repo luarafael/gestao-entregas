@@ -310,7 +310,7 @@ export function PlannerPage() {
 
   const routePlanned = Boolean(result)
   const executionActive = hasExecutionUpdates
-  const canEditOrder = !executionActive
+  const canEditOrder = !routeCompleted
   const reorderEnabled = canEditOrder && (!routePlanned || !reorderLocked)
 
   const existingEntregaIds = useMemo(
@@ -532,17 +532,21 @@ export function PlannerPage() {
     setProgressUpdatedAt(new Date().toISOString())
 
     try {
-      const response = await routingService.bulkSyncExecucao(
-        savedRotaId,
-        displayStops
-          .filter((stop): stop is PlannerStop & { paradaId: string } =>
-            Boolean(stop.paradaId),
-          )
-          .map((stop) => ({
-            paradaId: stop.paradaId,
-            status: 'ENTREGUE',
-          })),
-      )
+    const response = await routingService.bulkSyncExecucao(
+      savedRotaId,
+      displayStops
+        .filter((stop): stop is PlannerStop & { paradaId: string } =>
+          Boolean(stop.paradaId),
+        )
+        .map((stop) => ({
+          paradaId: stop.paradaId,
+          status: 'ENTREGUE',
+          dataHoraStatus:
+            getStopStatus(stop) === 'ENTREGUE' && stop.statusAtualizadoEm
+              ? stop.statusAtualizadoEm
+              : undefined,
+        })),
+    )
 
       const summary = computeExecutionStats(nextStops)
       const metrics = sumStopRouteMetrics(nextStops)
@@ -567,6 +571,15 @@ export function PlannerPage() {
 
   const handleReorder = (fromIndex: number, toIndex: number) => {
     const source = result?.paradas ?? stops
+    const deliveredCount = source.filter(
+      (stop) => getStopStatus(stop) === 'ENTREGUE',
+    ).length
+
+    if (fromIndex < deliveredCount || toIndex < deliveredCount) {
+      toast('Entregas já concluídas ficam no início da rota', 'info')
+      return
+    }
+
     const next = [...source]
     const [moved] = next.splice(fromIndex, 1)
     if (!moved) return
@@ -604,7 +617,7 @@ export function PlannerPage() {
     )
     const ordered = [
       ...inactive,
-      ...sortStopsByUrgentPriority(getActiveStopsForRoute(currentStops)),
+      ...getActiveStopsForRoute(currentStops),
     ].map((stop, index) => ({ ...stop, ordem: index + 1 }))
 
     const planned = await planMutation.mutateAsync({
@@ -1042,7 +1055,7 @@ export function PlannerPage() {
                 <Button variant="import" onClick={() => setImportOpen(true)}>
                   Importar entregas
                 </Button>
-                {routePlanned && !executionActive ? (
+                {routePlanned && !routeCompleted ? (
                   <label className="flex items-center gap-2 rounded-xl border border-border/60 bg-surface/30 px-3 py-2 text-sm">
                     <input
                       type="checkbox"
@@ -1111,7 +1124,6 @@ export function PlannerPage() {
                 stops={enrichedStops}
                 optimized={routePlanned}
                 showStatusControls={routePlanned}
-                deliveryStarted={executionActive}
                 reorderEnabled={reorderEnabled}
                 orderDirty={orderDirty}
                 nextStopTempId={nextStop?.tempId}

@@ -1,5 +1,6 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { PrestacaoService } from '../services/prestacao.service.js'
+import { pushNotificationService } from '../services/push-notification.service.js'
 import { ConflictError, NotFoundError, ValidationError } from '../errors/app.error.js'
 
 const prestacaoRepository = vi.hoisted(() => ({
@@ -41,6 +42,12 @@ vi.mock('../repositories/entrega.repository.js', () => ({
 
 vi.mock('../repositories/pendencia.repository.js', () => ({
   pendenciaRepository,
+}))
+
+vi.mock('../services/push-notification.service.js', () => ({
+  pushNotificationService: {
+    notifyAdminsPrestacaoEnviada: vi.fn(),
+  },
 }))
 
 describe('PrestacaoService', () => {
@@ -92,6 +99,7 @@ describe('PrestacaoService', () => {
 
     expect(result.prestacao.valorFinal).toBe(35)
     expect(result.whatsappText).toContain('Prestação de Contas')
+    expect(pushNotificationService.notifyAdminsPrestacaoEnviada).toHaveBeenCalled()
   })
 
   it('impede gerar prestação com motoboys aguardando aprovação', async () => {

@@ -1,5 +1,6 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { PrestacaoMotoboyService } from '../services/prestacao-motoboy.service.js'
+import { pushNotificationService } from '../services/push-notification.service.js'
 import {
   ConflictError,
   ForbiddenError,
@@ -41,6 +42,7 @@ vi.mock('../repositories/usuario.repository.js', () => ({
 vi.mock('../services/push-notification.service.js', () => ({
   pushNotificationService: {
     notifyAdminsNewApproval: vi.fn(),
+    notifyMotoboyPrestacaoEnviada: vi.fn(),
     notifyMotoboyPrestacaoApproved: vi.fn(),
     notifyMotoboyPrestacaoRejected: vi.fn(),
   },
@@ -108,6 +110,11 @@ describe('PrestacaoMotoboyService', () => {
     expect(result.prestacao.status).toBe('ENVIADA')
     expect(result.whatsappText).toContain('João')
     expect(result.whatsappText).toContain('*PIX:* 11999998888')
+    expect(pushNotificationService.notifyAdminsNewApproval).toHaveBeenCalled()
+    expect(pushNotificationService.notifyMotoboyPrestacaoEnviada).toHaveBeenCalledWith(
+      'motoboy-1',
+      expect.any(Date),
+    )
   })
 
   it('exige motoboyId quando admin envia prestação', async () => {

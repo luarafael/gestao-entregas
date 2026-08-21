@@ -44,6 +44,18 @@ export const prestacaoService = {
     return apiFetch<{ text: string }>(`/api/prestacoes/${id}/whatsapp${params}`)
   },
 
+  getEventos(since: string) {
+    const params = new URLSearchParams({ since })
+    return apiFetch<{
+      eventos: Array<{
+        id: string
+        tipo: 'empresa'
+        data: string
+        criadoEm: string
+      }>
+    }>(`/api/prestacoes/eventos?${params.toString()}`)
+  },
+
   update(
     id: string,
     data: { observacoes?: string | null; recalcular?: boolean },

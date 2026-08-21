@@ -33,7 +33,12 @@ export const previewPrestacaoQuerySchema = z.object({
     .transform((value) => (value ? toUtcDateOnly(value) : undefined)),
 })
 
+export const prestacaoEventosQuerySchema = z.object({
+  since: z.string().datetime({ message: 'Data/hora inválida' }),
+})
+
 export type GeneratePrestacaoInput = z.infer<typeof generatePrestacaoSchema>
 export type UpdatePrestacaoInput = z.infer<typeof updatePrestacaoSchema>
 export type ListPrestacoesInput = z.infer<typeof listPrestacoesSchema>
 export type PreviewPrestacaoQuery = z.infer<typeof previewPrestacaoQuerySchema>
+export type PrestacaoEventosQuery = z.infer<typeof prestacaoEventosQuerySchema>

@@ -87,11 +87,10 @@ export class RotaExecucaoRepository {
       where: {
         status: 'ENTREGUE',
         dataHoraStatus: { gt: since },
-        ...(motoboyId
-          ? {
-              rota: { motoboyId },
-            }
-          : {}),
+        rota: {
+          concluidaEm: null,
+          ...(motoboyId ? { motoboyId } : {}),
+        },
       },
       orderBy: { dataHoraStatus: 'asc' },
       take: 50,

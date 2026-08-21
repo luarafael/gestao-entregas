@@ -55,6 +55,10 @@ export const prestacaoWhatsAppQuerySchema = z.object({
   motoboyId: z.string().trim().optional(),
 })
 
+export const prestacaoClienteEventosQuerySchema = z.object({
+  since: z.string().datetime({ message: 'Data/hora inválida' }),
+})
+
 export type SubmitPrestacaoClienteInput = z.infer<typeof submitPrestacaoClienteSchema>
 export type PreviewPrestacaoClienteQuery = z.infer<
   typeof previewPrestacaoClienteQuerySchema
@@ -63,4 +67,7 @@ export type ListPrestacoesClienteInput = z.infer<typeof listPrestacoesClienteSch
 export type ListClientesByDateQuery = z.infer<typeof listClientesByDateQuerySchema>
 export type ListHistoricoPrestacaoInput = z.infer<typeof listHistoricoPrestacaoSchema>
 export type PrestacaoWhatsAppQuery = z.infer<typeof prestacaoWhatsAppQuerySchema>
+export type PrestacaoClienteEventosQuery = z.infer<
+  typeof prestacaoClienteEventosQuerySchema
+>
 export type UpdatePrestacaoClienteInput = z.infer<typeof updatePrestacaoClienteSchema>

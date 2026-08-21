@@ -171,6 +171,10 @@ export class PrestacaoMotoboyService {
       motoboyNome,
       data: prestacao.data,
     })
+    pushNotificationService.notifyMotoboyPrestacaoEnviada(
+      motoboyId,
+      prestacao.data,
+    )
 
     return {
       prestacao,
@@ -377,13 +381,27 @@ export class PrestacaoMotoboyService {
     const eventos: Array<{
       id: string
       prestacaoId: string
-      status: 'APROVADA' | 'REJEITADA'
+      status: 'ENVIADA' | 'APROVADA' | 'REJEITADA'
       data: string
       dataHora: string
       motivoRejeicao: string | null
     }> = []
 
     for (const prestacao of prestacoes) {
+      if (
+        prestacao.status === 'ENVIADA' &&
+        prestacao.criadoEm > since
+      ) {
+        eventos.push({
+          id: `${prestacao.id}-enviada`,
+          prestacaoId: prestacao.id,
+          status: 'ENVIADA',
+          data: formatDateOnlyISO(prestacao.data),
+          dataHora: prestacao.criadoEm.toISOString(),
+          motivoRejeicao: null,
+        })
+      }
+
       if (prestacao.aprovadaEm && prestacao.aprovadaEm > since) {
         eventos.push({
           id: `${prestacao.id}-aprovada`,

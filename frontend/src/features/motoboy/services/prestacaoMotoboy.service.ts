@@ -79,7 +79,7 @@ export const prestacaoMotoboyService = {
       eventos: Array<{
         id: string
         prestacaoId: string
-        status: 'APROVADA' | 'REJEITADA'
+        status: 'ENVIADA' | 'APROVADA' | 'REJEITADA'
         data: string
         dataHora: string
         motivoRejeicao: string | null

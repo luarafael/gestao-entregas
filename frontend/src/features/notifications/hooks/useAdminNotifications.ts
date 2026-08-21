@@ -4,9 +4,12 @@ import { useLocation } from 'react-router-dom'
 import { aprovacoesService } from '@/features/aprovacoes/services/aprovacoes.service'
 import { monitoramentoService } from '@/features/monitoramento/services/monitoramento.service'
 import { pendingService } from '@/features/pending/services/pending.service'
+import { prestacaoService } from '@/features/accounting/services/prestacao.service'
+import { prestacaoClienteService } from '@/features/accounting/services/prestacaoCliente.service'
 import { routingService } from '@/features/routing/services/routing.service'
 import { useNotificationStore } from '@/shared/stores/notification.store'
 import { formatPrestacaoMotoboyDate } from '@/features/motoboy/schemas/prestacaoMotoboy.schema'
+import { formatPrestacaoDate } from '@/features/accounting/schemas/prestacao.schema'
 import { formatTimeBR } from '@/shared/utils/format'
 import { notifyUser } from '../utils/notifyUser'
 
@@ -19,13 +22,19 @@ export function useAdminNotifications(enabled: boolean) {
   const deliveryReadyRef = useRef(false)
   const pendenciaReadyRef = useRef(false)
   const routeCompletedReadyRef = useRef(false)
+  const prestacaoEmpresaReadyRef = useRef(false)
+  const prestacaoClienteReadyRef = useRef(false)
   const knownPendingIdsRef = useRef<Set<string>>(new Set())
   const knownDeliveryIdsRef = useRef<Set<string>>(new Set())
   const knownPendenciaIdsRef = useRef<Set<string>>(new Set())
   const knownRouteCompletedIdsRef = useRef<Set<string>>(new Set())
+  const knownPrestacaoEmpresaIdsRef = useRef<Set<string>>(new Set())
+  const knownPrestacaoClienteIdsRef = useRef<Set<string>>(new Set())
   const sinceRef = useRef(new Date().toISOString())
   const pendenciaSinceRef = useRef(new Date().toISOString())
   const routeCompletedSinceRef = useRef(new Date().toISOString())
+  const prestacaoEmpresaSinceRef = useRef(new Date().toISOString())
+  const prestacaoClienteSinceRef = useRef(new Date().toISOString())
 
   const pendingQuery = useQuery({
     queryKey: ['admin-notifications', 'pending'],
@@ -63,6 +72,25 @@ export function useAdminNotifications(enabled: boolean) {
     refetchOnWindowFocus: true,
   })
 
+  const prestacaoEmpresaQuery = useQuery({
+    queryKey: ['admin-notifications', 'prestacao-empresa'],
+    queryFn: () => prestacaoService.getEventos(prestacaoEmpresaSinceRef.current),
+    enabled,
+    refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  })
+
+  const prestacaoClienteQuery = useQuery({
+    queryKey: ['admin-notifications', 'prestacao-cliente'],
+    queryFn: () =>
+      prestacaoClienteService.getEventos(prestacaoClienteSinceRef.current),
+    enabled,
+    refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  })
+
   useEffect(() => {
     if (!enabled || !pendingQuery.data) {
       return
@@ -85,8 +113,8 @@ export function useAdminNotifications(enabled: boolean) {
 
       const message = `${item.motoboy?.nome ?? 'Motoboy'} enviou prestação de ${formatPrestacaoMotoboyDate(item.data)}`
       notifyUser(addNotification, {
-        type: 'approval',
-        title: 'Nova solicitação de aprovação',
+        type: 'prestacao',
+        title: 'Prestação enviada',
         message,
         href: '/aprovacoes',
         tag: `approval-${item.id}`,
@@ -204,5 +232,83 @@ export function useAdminNotifications(enabled: boolean) {
     enabled,
     location.pathname,
     rotaConcluidaQuery.data,
+  ])
+
+  useEffect(() => {
+    if (!enabled || !prestacaoEmpresaQuery.data) {
+      return
+    }
+
+    if (!prestacaoEmpresaReadyRef.current) {
+      for (const evento of prestacaoEmpresaQuery.data.eventos) {
+        knownPrestacaoEmpresaIdsRef.current.add(evento.id)
+      }
+      prestacaoEmpresaReadyRef.current = true
+      return
+    }
+
+    for (const evento of prestacaoEmpresaQuery.data.eventos) {
+      if (knownPrestacaoEmpresaIdsRef.current.has(evento.id)) continue
+
+      knownPrestacaoEmpresaIdsRef.current.add(evento.id)
+      if (evento.criadoEm > prestacaoEmpresaSinceRef.current) {
+        prestacaoEmpresaSinceRef.current = evento.criadoEm
+      }
+
+      const message = `Prestação da empresa de ${formatPrestacaoDate(evento.data)} foi gerada.`
+      notifyUser(addNotification, {
+        type: 'prestacao',
+        title: 'Prestação enviada',
+        message,
+        href: '/prestacao',
+        tag: `prestacao-empresa-${evento.id}`,
+        showToast: location.pathname !== '/prestacao',
+        toastVariant: 'success',
+      })
+    }
+  }, [
+    addNotification,
+    enabled,
+    location.pathname,
+    prestacaoEmpresaQuery.data,
+  ])
+
+  useEffect(() => {
+    if (!enabled || !prestacaoClienteQuery.data) {
+      return
+    }
+
+    if (!prestacaoClienteReadyRef.current) {
+      for (const evento of prestacaoClienteQuery.data.eventos) {
+        knownPrestacaoClienteIdsRef.current.add(evento.id)
+      }
+      prestacaoClienteReadyRef.current = true
+      return
+    }
+
+    for (const evento of prestacaoClienteQuery.data.eventos) {
+      if (knownPrestacaoClienteIdsRef.current.has(evento.id)) continue
+
+      knownPrestacaoClienteIdsRef.current.add(evento.id)
+      if (evento.criadoEm > prestacaoClienteSinceRef.current) {
+        prestacaoClienteSinceRef.current = evento.criadoEm
+      }
+
+      const message = `Prestação do cliente ${evento.nomeCliente} de ${formatPrestacaoDate(evento.data)} foi gerada.`
+      notifyUser(addNotification, {
+        type: 'prestacao',
+        title: 'Prestação enviada',
+        message,
+        href: '/prestacao',
+        tag: `prestacao-cliente-${evento.id}`,
+        showToast: location.pathname !== '/prestacao',
+        toastVariant: 'success',
+      })
+    }
+  }, [
+    addNotification,
+    enabled,
+    location.pathname,
+    prestacaoClienteQuery.data,
   ])
 }

@@ -11,11 +11,13 @@ import type {
 import type { PrestacaoWhatsAppQuery } from '../schemas/prestacao-cliente.schema.js'
 import {
   formatDateOnlyISO,
+  formatDateOnlyBR,
   toUtcDateOnly,
   toUtcDateOnlyFromBusinessTz,
 } from '../utils/date.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { generateEmpresaPrestacaoWhatsAppText } from './whatsapp.service.js'
+import { pushNotificationService } from './push-notification.service.js'
 
 export class PrestacaoService {
   private normalizeDate(input?: Date) {
@@ -130,6 +132,12 @@ export class PrestacaoService {
       totals.prestacoesMotoboy,
     )
 
+    pushNotificationService.notifyAdminsPrestacaoEnviada({
+      prestacaoId: prestacao.id,
+      body: `Prestação da empresa de ${formatDateOnlyBR(prestacao.data)} foi gerada.`,
+      url: '/prestacao',
+    })
+
     return {
       prestacao,
       entregas,
@@ -157,6 +165,16 @@ export class PrestacaoService {
       pendentesAprovacaoMotoboy: totals.pendentesAprovacao,
       prestacoesMotoboy: totals.prestacoesMotoboy,
     }
+  }
+
+  async getEventos(since: Date) {
+    const prestacoes = await prestacaoRepository.findCreatedSince(since)
+    return prestacoes.map((prestacao) => ({
+      id: prestacao.id,
+      tipo: 'empresa' as const,
+      data: formatDateOnlyISO(prestacao.data),
+      criadoEm: prestacao.criadoEm.toISOString(),
+    }))
   }
 
   async findById(id: string) {

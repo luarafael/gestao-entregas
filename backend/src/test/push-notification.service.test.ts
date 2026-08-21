@@ -163,4 +163,38 @@ describe('PushNotificationService', () => {
       )
     })
   })
+
+  it('envia push de prestação enviada para admins e motoboy', async () => {
+    usuarioRepository.findActiveAdminIds.mockResolvedValue(['admin-1'])
+    pushSubscriptionRepository.findByUserIds.mockResolvedValue([
+      {
+        id: 'sub-admin',
+        endpoint: 'https://push.example/admin',
+        p256dh: 'key',
+        auth: 'auth',
+      },
+    ])
+    webpush.sendNotification.mockResolvedValue(undefined)
+
+    const { pushNotificationService } = await import(
+      '../services/push-notification.service.js'
+    )
+
+    pushNotificationService.notifyAdminsPrestacaoEnviada({
+      prestacaoId: 'prest-emp-1',
+      body: 'Prestação da empresa de 21/08/2026 foi gerada.',
+    })
+    pushNotificationService.notifyMotoboyPrestacaoEnviada(
+      'motoboy-1',
+      '2026-08-21',
+    )
+
+    await vi.waitFor(() => {
+      expect(webpush.sendNotification).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining('Prestação enviada'),
+        expect.objectContaining({ urgency: 'high' }),
+      )
+    })
+  })
 })

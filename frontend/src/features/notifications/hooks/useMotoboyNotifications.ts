@@ -93,6 +93,19 @@ export function useMotoboyNotifications(enabled: boolean) {
       }
 
       const dataLabel = formatPrestacaoMotoboyDate(evento.data)
+      if (evento.status === 'ENVIADA') {
+        notifyUser(addNotification, {
+          type: 'prestacao',
+          title: 'Prestação enviada',
+          message: `Sua prestação de ${dataLabel} foi enviada para aprovação.`,
+          href: '/minha-prestacao',
+          tag: evento.id,
+          showToast: location.pathname !== '/minha-prestacao',
+          toastVariant: 'success',
+        })
+        continue
+      }
+
       if (evento.status === 'APROVADA') {
         notifyUser(addNotification, {
           type: 'prestacao',

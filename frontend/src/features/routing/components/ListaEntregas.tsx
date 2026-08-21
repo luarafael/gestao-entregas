@@ -46,7 +46,6 @@ interface ListaEntregasProps {
   paymentStatusUpdatingId?: string | null
   optimized?: boolean
   showStatusControls?: boolean
-  deliveryStarted?: boolean
   reorderEnabled?: boolean
   orderDirty?: boolean
   nextStopTempId?: string | null
@@ -62,7 +61,6 @@ export function ListaEntregas({
   paymentStatusUpdatingId = null,
   optimized = false,
   showStatusControls = false,
-  deliveryStarted = false,
   reorderEnabled = true,
   orderDirty = false,
   nextStopTempId,
@@ -147,6 +145,7 @@ export function ListaEntregas({
               const legMetrics = getStopLegMetrics(stop)
               const colors = STATUS_COLORS[status]
               const isNext = stop.tempId === nextStopTempId
+              const canDrag = reorderEnabled && status !== 'ENTREGUE'
               const enderecoLabel = [stop.endereco, stop.bairro]
                 .filter(Boolean)
                 .join(' — ')
@@ -154,9 +153,9 @@ export function ListaEntregas({
               return (
                 <div
                   key={stop.tempId}
-                  draggable={reorderEnabled}
+                  draggable={canDrag}
                   onDragStart={() => {
-                    if (!reorderEnabled) return
+                    if (!canDrag) return
                     setDragIndex(index)
                   }}
                   onDragOver={(event) => {
@@ -172,7 +171,7 @@ export function ListaEntregas({
                   className={cn(
                     'min-w-0 rounded-xl border bg-surface/30 p-3 sm:p-4',
                     colors.row,
-                    reorderEnabled ? 'cursor-grab active:cursor-grabbing' : '',
+                    canDrag ? 'cursor-grab active:cursor-grabbing' : '',
                     isNext ? 'ring-2 ring-blue-500/40' : '',
                   )}
                 >
@@ -398,7 +397,7 @@ export function ListaEntregas({
                 </div>
               )
             })}
-            {!reorderEnabled && optimized && !deliveryStarted ? (
+            {!reorderEnabled && optimized ? (
               <p className="pt-1 text-xs text-muted-foreground">
                 A ordem está protegida. Ative &quot;Permitir alterar ordem&quot; para
                 reorganizar as paradas.

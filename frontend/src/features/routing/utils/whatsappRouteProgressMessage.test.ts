@@ -3,6 +3,7 @@ import {
   formatRouteCompletedWhatsAppText,
   formatRouteProgressWhatsAppText,
 } from './whatsappRouteProgressMessage'
+import { formatTimeBR } from '@/shared/utils/format'
 import type { PlannerStop } from '../schemas/routing.schema'
 
 const baseStop = (overrides: Partial<PlannerStop>): PlannerStop => ({
@@ -88,6 +89,33 @@ describe('whatsappRouteProgressMessage', () => {
     expect(text).toContain('Trecho: 5.2 km')
     expect(text).toContain('Atualizado às')
     expect(text).toContain('Parada 01')
+  })
+
+  it('mantém o horário original de cada entrega na mensagem de rota concluída', () => {
+    const text = formatRouteCompletedWhatsAppText({
+      atualizadoEm: '2026-08-05T22:00:00.000Z',
+      stops: [
+        baseStop({
+          tempId: '1',
+          cliente: 'João',
+          statusAtualizadoEm: '2026-08-05T15:10:00.000Z',
+        }),
+        baseStop({
+          tempId: '2',
+          ordem: 2,
+          cliente: 'Maria',
+          statusAtualizadoEm: '2026-08-05T18:45:00.000Z',
+        }),
+      ],
+    })
+
+    expect(text).toContain('João')
+    expect(text).toContain('Maria')
+    expect(text).toContain(`Entregue às ${formatTimeBR('2026-08-05T15:10:00.000Z')}`)
+    expect(text).toContain(`Entregue às ${formatTimeBR('2026-08-05T18:45:00.000Z')}`)
+    expect(text).not.toContain(
+      `Entregue às ${formatTimeBR('2026-08-05T22:00:00.000Z')}`,
+    )
   })
 
   it('formata resumo final com totais somados das paradas', () => {

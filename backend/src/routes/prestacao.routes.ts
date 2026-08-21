@@ -10,9 +10,11 @@ import {
   generatePrestacaoSchema,
   listPrestacoesSchema,
   previewPrestacaoQuerySchema,
+  prestacaoEventosQuerySchema,
   updatePrestacaoSchema,
   type ListPrestacoesInput,
   type PreviewPrestacaoQuery,
+  type PrestacaoEventosQuery,
 } from '../schemas/prestacao.schema.js'
 import {
   listHistoricoPrestacaoSchema,
@@ -33,6 +35,16 @@ prestacaoRoutes.get(
       getValidatedQuery<ListHistoricoPrestacaoInput>(req),
     )
     res.json(result)
+  }),
+)
+
+prestacaoRoutes.get(
+  '/eventos',
+  validateQuery(prestacaoEventosQuerySchema),
+  asyncHandler(async (req, res) => {
+    const query = getValidatedQuery<PrestacaoEventosQuery>(req)
+    const eventos = await prestacaoService.getEventos(new Date(query.since))
+    res.json({ eventos })
   }),
 )
 

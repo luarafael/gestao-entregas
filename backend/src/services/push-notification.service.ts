@@ -121,10 +121,32 @@ export class PushNotificationService {
     data: Date | string
   }) {
     void sendToAdmins({
-      title: 'Nova solicitação de aprovação',
+      title: 'Prestação enviada',
       body: `${data.motoboyNome} enviou prestação de ${formatDateOnlyBR(data.data)}`,
       url: '/aprovacoes',
       tag: `approval-${data.prestacaoId}`,
+    })
+  }
+
+  notifyMotoboyPrestacaoEnviada(motoboyId: string, data: Date | string) {
+    void sendToUserIds([motoboyId], {
+      title: 'Prestação enviada',
+      body: `Sua prestação de ${formatDateOnlyBR(data)} foi enviada para aprovação.`,
+      url: '/minha-prestacao',
+      tag: `prestacao-enviada-${formatDateOnlyBR(data)}`,
+    })
+  }
+
+  notifyAdminsPrestacaoEnviada(data: {
+    prestacaoId: string
+    body: string
+    url?: string
+  }) {
+    void sendToAdmins({
+      title: 'Prestação enviada',
+      body: data.body,
+      url: data.url ?? '/prestacao',
+      tag: `prestacao-${data.prestacaoId}`,
     })
   }
 

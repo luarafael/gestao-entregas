@@ -173,6 +173,7 @@ export const routingService = {
       paradaId: string
       status: string
       observacao?: string | null
+      dataHoraStatus?: string | null
     }>,
   ) {
     return apiFetch<{

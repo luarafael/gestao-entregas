@@ -9,11 +9,13 @@ import type {
 } from '../schemas/prestacao-cliente.schema.js'
 import {
   formatDateOnlyISO,
+  formatDateOnlyBR,
   toUtcDateOnly,
   toUtcDateOnlyFromBusinessTz,
 } from '../utils/date.utils.js'
 import { buildPaginatedResult } from '../utils/pagination.utils.js'
 import { generateClientePrestacaoWhatsAppText } from './whatsapp.service.js'
+import { pushNotificationService } from './push-notification.service.js'
 
 function mapEntregasForWhatsApp(
   entregas: Awaited<ReturnType<typeof entregaRepository.findByDate>>,
@@ -130,6 +132,12 @@ export class PrestacaoClienteService {
       prestacao.observacoes,
     )
 
+    pushNotificationService.notifyAdminsPrestacaoEnviada({
+      prestacaoId: prestacao.id,
+      body: `Prestação do cliente ${nomeCliente} de ${formatDateOnlyBR(prestacao.data)} foi gerada.`,
+      url: '/prestacao',
+    })
+
     return {
       prestacao,
       entregas,
@@ -158,6 +166,17 @@ export class PrestacaoClienteService {
       mapEntregasForWhatsApp(entregas),
       prestacao.observacoes,
     )
+  }
+
+  async getEventos(since: Date) {
+    const prestacoes = await prestacaoClienteRepository.findCreatedSince(since)
+    return prestacoes.map((prestacao) => ({
+      id: prestacao.id,
+      tipo: 'cliente' as const,
+      nomeCliente: prestacao.nomeCliente,
+      data: formatDateOnlyISO(prestacao.data),
+      criadoEm: prestacao.criadoEm.toISOString(),
+    }))
   }
 
   async list(filters: ListPrestacoesClienteInput) {

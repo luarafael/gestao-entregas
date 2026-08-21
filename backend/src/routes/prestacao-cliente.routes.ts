@@ -10,15 +10,29 @@ import {
   listClientesByDateQuerySchema,
   listPrestacoesClienteSchema,
   previewPrestacaoClienteQuerySchema,
+  prestacaoClienteEventosQuerySchema,
   submitPrestacaoClienteSchema,
   updatePrestacaoClienteSchema,
   type ListClientesByDateQuery,
   type ListPrestacoesClienteInput,
   type PreviewPrestacaoClienteQuery,
+  type PrestacaoClienteEventosQuery,
 } from '../schemas/prestacao-cliente.schema.js'
 import { prestacaoClienteService } from '../services/prestacao-cliente.service.js'
 
 export const prestacaoClienteRoutes = Router()
+
+prestacaoClienteRoutes.get(
+  '/eventos',
+  validateQuery(prestacaoClienteEventosQuerySchema),
+  asyncHandler(async (req, res) => {
+    const query = getValidatedQuery<PrestacaoClienteEventosQuery>(req)
+    const eventos = await prestacaoClienteService.getEventos(
+      new Date(query.since),
+    )
+    res.json({ eventos })
+  }),
+)
 
 prestacaoClienteRoutes.get(
   '/clientes',

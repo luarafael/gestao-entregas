@@ -61,6 +61,14 @@ export class PrestacaoClienteRepository {
     })
   }
 
+  async findCreatedSince(since: Date) {
+    return prisma.prestacaoCliente.findMany({
+      where: { criadoEm: { gt: since } },
+      orderBy: { criadoEm: 'asc' },
+      take: 50,
+    })
+  }
+
   async delete(id: string) {
     return prisma.prestacaoCliente.delete({ where: { id } })
   }

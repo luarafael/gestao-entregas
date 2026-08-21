@@ -42,4 +42,14 @@ describe('prestacaoService', () => {
 
     expect(apiFetch).toHaveBeenCalledWith('/api/prestacoes/1/whatsapp')
   })
+
+  it('busca eventos de prestação enviada', async () => {
+    vi.mocked(apiFetch).mockResolvedValue({ eventos: [] })
+
+    await prestacaoService.getEventos('2026-08-21T12:00:00.000Z')
+
+    expect(apiFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/prestacoes/eventos?since='),
+    )
+  })
 })

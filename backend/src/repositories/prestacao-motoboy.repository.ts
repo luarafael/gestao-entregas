@@ -144,7 +144,11 @@ export class PrestacaoMotoboyRepository {
     return prisma.prestacaoMotoboy.findMany({
       where: {
         motoboyId,
-        OR: [{ aprovadaEm: { gt: since } }, { rejeitadaEm: { gt: since } }],
+        OR: [
+          { aprovadaEm: { gt: since } },
+          { rejeitadaEm: { gt: since } },
+          { criadoEm: { gt: since }, status: 'ENVIADA' },
+        ],
       },
       orderBy: [{ aprovadaEm: 'asc' }, { rejeitadaEm: 'asc' }],
       include: {

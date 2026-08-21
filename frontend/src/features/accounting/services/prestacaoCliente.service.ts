@@ -39,6 +39,19 @@ export const prestacaoClienteService = {
     return apiFetch<{ text: string }>(`/api/prestacoes-cliente/${id}/whatsapp`)
   },
 
+  getEventos(since: string) {
+    const params = new URLSearchParams({ since })
+    return apiFetch<{
+      eventos: Array<{
+        id: string
+        tipo: 'cliente'
+        nomeCliente: string
+        data: string
+        criadoEm: string
+      }>
+    }>(`/api/prestacoes-cliente/eventos?${params.toString()}`)
+  },
+
   getById(id: string) {
     return apiFetch<PrestacaoCliente>(`/api/prestacoes-cliente/${id}`)
   },

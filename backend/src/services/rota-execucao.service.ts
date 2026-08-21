@@ -123,9 +123,32 @@ export class RotaExecucaoService {
 
     await rotaExecucaoRepository.initForRota(rotaId)
 
-    const count = await rotaExecucaoRepository.bulkSync(rotaId, input.paradas)
+    const current = await rotaExecucaoRepository.findByRotaId(rotaId)
+    const currentByParadaId = new Map(
+      current.map((execucao) => [execucao.paradaId, execucao]),
+    )
 
-    for (const item of input.paradas) {
+    const paradas = input.paradas.map((item) => {
+      const previous = currentByParadaId.get(item.paradaId)
+      const alreadyDelivered =
+        previous?.status === 'ENTREGUE' && item.status === 'ENTREGUE'
+
+      return {
+        ...item,
+        observacao:
+          item.observacao !== undefined
+            ? item.observacao
+            : (previous?.observacao ?? null),
+        dataHoraStatus: alreadyDelivered
+          ? (item.dataHoraStatus ?? previous?.dataHoraStatus ?? null)
+          : (item.dataHoraStatus ??
+            (item.status === 'ENTREGUE' ? new Date() : null)),
+      }
+    })
+
+    const count = await rotaExecucaoRepository.bulkSync(rotaId, paradas)
+
+    for (const item of paradas) {
       if (item.status !== 'ENTREGUE') continue
 
       const parada = rota.paradas.find((entry) => entry.id === item.paradaId)

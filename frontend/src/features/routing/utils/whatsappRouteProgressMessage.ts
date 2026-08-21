@@ -372,7 +372,8 @@ export function buildRouteProgressMessageFromRota(
       statusExecucao: (execucao?.status ??
         (isConcluida ? 'ENTREGUE' : 'PENDENTE')) as StatusExecucao,
       statusObservacao: execucao?.observacao ?? null,
-      statusAtualizadoEm: execucao?.dataHoraStatus ?? rota.concluidaEm ?? null,
+      statusAtualizadoEm:
+        execucao?.dataHoraStatus ?? (execucao ? null : rota.concluidaEm) ?? null,
     }
   })
 
