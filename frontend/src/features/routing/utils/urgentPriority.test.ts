@@ -3,6 +3,7 @@ import {
   formatUrgentLabel,
   normalizePlannerStopForm,
   resolveNextOrdemUrgencia,
+  sortStopsByUrgentPriority,
 } from './urgentPriority'
 import type { PlannerStop } from '../schemas/routing.schema'
 
@@ -54,5 +55,16 @@ describe('urgentPriority', () => {
   it('formata rótulo de urgência', () => {
     expect(formatUrgentLabel(1)).toBe('Urgente 1ª')
     expect(formatUrgentLabel()).toBe('Urgente')
+  })
+
+  it('coloca urgentes 1 e 2 no início da lista', () => {
+    const ordered = sortStopsByUrgentPriority([
+      { tempId: 'n1', endereco: 'Rua N', prioridade: 'NORMAL' as const },
+      { tempId: 'u2', endereco: 'Rua U2', prioridade: 'URGENTE' as const, ordemUrgencia: 2 },
+      { tempId: 'u1', endereco: 'Rua U1', prioridade: 'URGENTE' as const, ordemUrgencia: 1 },
+    ])
+
+    expect(ordered.map((stop) => stop.tempId)).toEqual(['u1', 'u2', 'n1'])
+    expect(ordered.map((stop) => stop.ordem)).toEqual([1, 2, 3])
   })
 })

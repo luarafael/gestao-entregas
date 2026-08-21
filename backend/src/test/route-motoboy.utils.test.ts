@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   areAllParadasDelivered,
+  findMatchingPreviousExecucaoIndex,
   findNextParadaIdForEmRota,
   isRouteActiveFromExecucoes,
   isRouteExecucaoConcluida,
@@ -142,5 +143,38 @@ describe('route-motoboy utils', () => {
         entregaMotoboyById,
       ),
     ).toBe('m1')
+  })
+
+  it('casa execucao anterior pela entrega ou pelo endereco', () => {
+    const previous = [
+      {
+        entregaId: 'e2',
+        status: 'PENDENTE',
+        parada: { endereco: 'Rua B', cliente: 'Ana' },
+      },
+      {
+        entregaId: 'e1',
+        status: 'EM_ROTA',
+        parada: { endereco: 'Rua A', cliente: 'Joao' },
+      },
+    ]
+    const used = new Set<number>()
+
+    expect(
+      findMatchingPreviousExecucaoIndex(
+        { entregaId: 'e1', endereco: 'Rua A', cliente: 'Joao' },
+        previous,
+        used,
+      ),
+    ).toBe(1)
+
+    used.add(1)
+    expect(
+      findMatchingPreviousExecucaoIndex(
+        { entregaId: null, endereco: 'Rua B', cliente: 'Ana' },
+        previous,
+        used,
+      ),
+    ).toBe(0)
   })
 })

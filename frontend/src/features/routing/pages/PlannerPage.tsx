@@ -50,7 +50,7 @@ import { usePlannerStore } from '../stores/planner.store'
 import { usePlannerEntregas, useUpdateEntregaPaymentStatus } from '../hooks/usePlannerEntregas'
 import { routingService } from '../services/routing.service'
 import { createPlannerStop } from '../utils/parseAddresses'
-import { normalizePlannerStopForm } from '../utils/urgentPriority'
+import { normalizePlannerStopForm, sortStopsByUrgentPriority } from '../utils/urgentPriority'
 import {
   buildGoogleMapsNavigationUrls,
   formatDistance,
@@ -75,6 +75,7 @@ import {
 import {
   applyDeliveryStatusUpdates,
   mergeExecucoesIntoStops,
+  applyStatusUpdate,
   buildHistoricoEntry,
   computeExecutionStats,
   getActiveStopsForRoute,
@@ -124,7 +125,6 @@ export function PlannerPage() {
     historicoExecucao,
     setHistoricoExecucao,
     syncStops,
-    resetRoutePlanning,
     clearActiveRoute,
     hydrateFromRota,
   } = usePlannerStore()
@@ -361,16 +361,31 @@ export function PlannerPage() {
     return saved
   }
 
+  const appendImportedStops = (imported: PlannerStop[]) => {
+    const source = result?.paradas ?? stops
+    const next = [
+      ...source.filter((stop) => !isActiveRouteStop(getStopStatus(stop))),
+      ...sortStopsByUrgentPriority([
+        ...getActiveStopsForRoute(source),
+        ...imported,
+      ]),
+    ].map((stop, index) => ({ ...stop, ordem: index + 1 }))
+
+    syncStops(next)
+    setOrderDirty(true)
+    setReorderLocked(false)
+  }
+
   const handleAddOrUpdate = (data: PlannerStopFormData) => {
+    const source = result?.paradas ?? stops
     const normalized = normalizePlannerStopForm(
       data,
-      stops,
+      source,
       editing?.tempId,
     )
 
-    if (editing) {
-      setStops((current) =>
-        current.map((stop) =>
+    const next = editing
+      ? source.map((stop) =>
           stop.tempId === editing.tempId
             ? {
                 ...stop,
@@ -382,24 +397,32 @@ export function PlannerPage() {
                 ordemUrgencia: normalized.ordemUrgencia ?? null,
               }
             : stop,
-        ),
-      )
-      setEditing(null)
-    } else {
-      setStops((current) => [
-        ...current,
-        createPlannerStop({
-          cliente: normalized.cliente,
-          endereco: normalized.endereco,
-          bairro: normalized.bairro,
-          telefone: normalized.telefone,
-          observacao: normalized.observacao,
-          prioridade: normalized.prioridade,
-          ordemUrgencia: normalized.ordemUrgencia ?? null,
-        }),
-      ])
-    }
-    resetRoutePlanning()
+        )
+      : [
+          ...source,
+          createPlannerStop({
+            cliente: normalized.cliente,
+            endereco: normalized.endereco,
+            bairro: normalized.bairro,
+            telefone: normalized.telefone,
+            observacao: normalized.observacao,
+            prioridade: normalized.prioridade,
+            ordemUrgencia: normalized.ordemUrgencia ?? null,
+          }),
+        ]
+
+    const inactive = next.filter(
+      (stop) => !isActiveRouteStop(getStopStatus(stop)),
+    )
+    const sorted = [
+      ...inactive,
+      ...sortStopsByUrgentPriority(getActiveStopsForRoute(next)),
+    ].map((stop, index) => ({ ...stop, ordem: index + 1 }))
+
+    syncStops(sorted)
+    setOrderDirty(true)
+    setReorderLocked(false)
+    setEditing(null)
   }
 
   const handleRemoveStop = async (tempId: string) => {
@@ -463,6 +486,85 @@ export function PlannerPage() {
     }
   }
 
+  const handleDeleteCurrentRoute = async () => {
+    const rotaId = savedRotaId
+    if (!rotaId) {
+      clearActiveRoute()
+      toast('Rota removida do planejador', 'success')
+      return
+    }
+
+    try {
+      await routingService.delete(rotaId)
+    } catch (error) {
+      toast(
+        error instanceof ApiError
+          ? error.message
+          : 'Erro ao excluir a rota',
+        'error',
+      )
+      return
+    }
+
+    clearActiveRoute()
+    queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
+    toast('Rota excluída', 'success')
+  }
+
+  const handleConcludeRoute = async () => {
+    if (!savedRotaId) {
+      toast('Calcule e registre a rota antes de concluir', 'error')
+      return
+    }
+
+    const missingParadaId = displayStops.some((stop) => !stop.paradaId)
+    if (missingParadaId || orderDirty) {
+      toast('Recalcule a rota antes de concluir todas as entregas', 'info')
+      return
+    }
+
+    const nextStops = displayStops.map((stop) =>
+      getStopStatus(stop) === 'ENTREGUE'
+        ? stop
+        : applyStatusUpdate(stop, 'ENTREGUE'),
+    )
+    syncStops(nextStops)
+    setProgressUpdatedAt(new Date().toISOString())
+
+    try {
+      const response = await routingService.bulkSyncExecucao(
+        savedRotaId,
+        displayStops
+          .filter((stop): stop is PlannerStop & { paradaId: string } =>
+            Boolean(stop.paradaId),
+          )
+          .map((stop) => ({
+            paradaId: stop.paradaId,
+            status: 'ENTREGUE',
+          })),
+      )
+
+      const summary = computeExecutionStats(nextStops)
+      const metrics = sumStopRouteMetrics(nextStops)
+      clearActiveRoute()
+      invalidateDeliveryRelated(queryClient)
+      queryClient.invalidateQueries({ queryKey: [ROTAS_QUERY_KEY] })
+      toast(
+        response.rotaConcluida
+          ? `Rota concluída: ${summary.entregues} entrega(s) · ${formatDistance(metrics.distancia || result?.distanciaTotal || 0)} · ${formatDuration(metrics.tempo || result?.tempoTotal || 0)}. Movida para o histórico.`
+          : 'Entregas marcadas como concluídas',
+        'success',
+      )
+    } catch (error) {
+      toast(
+        error instanceof ApiError
+          ? error.message
+          : 'Erro ao concluir a rota',
+        'error',
+      )
+    }
+  }
+
   const handleReorder = (fromIndex: number, toIndex: number) => {
     const source = result?.paradas ?? stops
     const next = [...source]
@@ -497,17 +599,25 @@ export function PlannerPage() {
       return
     }
 
+    const inactive = currentStops.filter(
+      (stop) => !isActiveRouteStop(getStopStatus(stop)),
+    )
+    const ordered = [
+      ...inactive,
+      ...sortStopsByUrgentPriority(getActiveStopsForRoute(currentStops)),
+    ].map((stop, index) => ({ ...stop, ordem: index + 1 }))
+
     const planned = await planMutation.mutateAsync({
       enderecoInicial: resolveEmbarqueEndereco(
-        currentStops,
+        ordered,
         result?.enderecoInicial ?? enderecoPartidaPadrao,
       ),
-      paradas: currentStops,
+      paradas: ordered,
       preservarOrdem: true,
       substituirRotaId: routeCompleted ? null : savedRotaId,
       motoboyId: resolvePlannerMotoboyId(),
     })
-    applyOptimizedResult(currentStops, {
+    applyOptimizedResult(ordered, {
       ...planned,
       enderecoInicial: result?.enderecoInicial ?? enderecoPartidaPadrao,
     })
@@ -519,18 +629,24 @@ export function PlannerPage() {
   }
 
   const handleOptimize = async () => {
-    if (stops.length === 0) {
+    const currentStops = result?.paradas ?? stops
+    if (currentStops.length === 0) {
       toast('Adicione ao menos uma entrega', 'error')
       return
     }
 
+    const ordered = [
+      ...currentStops.filter((stop) => !isActiveRouteStop(getStopStatus(stop))),
+      ...sortStopsByUrgentPriority(getActiveStopsForRoute(currentStops)),
+    ].map((stop, index) => ({ ...stop, ordem: index + 1 }))
+
     const planned = await planMutation.mutateAsync({
       enderecoInicial: enderecoPartidaPadrao,
-      paradas: stops,
+      paradas: ordered,
       substituirRotaId: routeCompleted ? null : savedRotaId,
       motoboyId: resolvePlannerMotoboyId(),
     })
-    applyOptimizedResult(stops, planned)
+    applyOptimizedResult(ordered, planned)
     setSavedRotaId(planned.rotaId ?? null)
     setReorderLocked(true)
     setOrderDirty(false)
@@ -639,6 +755,28 @@ export function PlannerPage() {
       origem: optimized.origem ?? result?.origem ?? null,
     })
     setProgressUpdatedAt(new Date().toISOString())
+
+    if (savedRotaId) {
+      try {
+        await persistCalculatedRoute(
+          {
+            ...optimized,
+            enderecoInicial: result?.enderecoInicial ?? enderecoPartidaPadrao,
+            paradas: finalStops,
+            totalEntregas: finalStops.length,
+            distanciaTotal:
+              finalMetrics.distancia ||
+              inactiveMetrics.distancia + optimized.distanciaTotal,
+            tempoTotal:
+              finalMetrics.tempo || inactiveMetrics.tempo + optimized.tempoTotal,
+            origem: optimized.origem ?? result?.origem ?? null,
+          },
+          { silent: true },
+        )
+      } catch {
+        // toast já veio da mutation
+      }
+    }
   }
 
   const handleStatusChange = async (
@@ -924,7 +1062,7 @@ export function PlannerPage() {
                     Recalcular automaticamente
                   </label>
                 ) : null}
-                {orderDirty ? (
+                {routePlanned && !routeCompleted ? (
                   <Button
                     variant="secondary"
                     isLoading={
@@ -933,6 +1071,22 @@ export function PlannerPage() {
                     onClick={handleRecalculateManualOrder}
                   >
                     Recalcular rota
+                  </Button>
+                ) : null}
+                {savedRotaId && !routeCompleted ? (
+                  <Button
+                    variant="danger"
+                    onClick={handleDeleteCurrentRoute}
+                  >
+                    Excluir rota
+                  </Button>
+                ) : null}
+                {routePlanned && savedRotaId && !routeCompleted ? (
+                  <Button
+                    variant="secondary"
+                    onClick={handleConcludeRoute}
+                  >
+                    Concluir rota
                   </Button>
                 ) : null}
                 <Button
@@ -978,8 +1132,7 @@ export function PlannerPage() {
 
               <ImportadorEnderecos
                 onImport={(imported) => {
-                  setStops((current) => [...current, ...imported])
-                  resetRoutePlanning()
+                  appendImportedStops(imported)
                 }}
               />
             </div>
@@ -1086,7 +1239,7 @@ export function PlannerPage() {
       <FormularioEntrega
         open={formOpen}
         editing={editing}
-        stops={stops}
+        stops={displayStops}
         onClose={() => {
           setFormOpen(false)
           setEditing(null)
@@ -1098,8 +1251,7 @@ export function PlannerPage() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         onImport={(imported) => {
-          setStops((current) => [...current, ...imported])
-          resetRoutePlanning()
+          appendImportedStops(imported)
           toast(`${imported.length} entrega(s) adicionada(s)`, 'success')
         }}
         existingEntregaIds={existingEntregaIds}

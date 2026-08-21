@@ -26,6 +26,7 @@ import { googleRoutesService } from './googleRoutes.service.js'
 import { osrmService } from './osrm.service.js'
 import { assertOwnsResource, isAdminUser } from '../utils/auth-scope.utils.js'
 import {
+  findMatchingPreviousExecucaoIndex,
   isRouteActiveFromExecucoes,
   resolveMotoboyIdFromRota as resolveMotoboyIdFromRotaUtil,
   routeBelongsToMotoboy,
@@ -98,7 +99,7 @@ async function prepareMotoboyRouteSlot(
   motoboyId: string,
   day: Date,
   substituirRotaId?: string | null,
-) {
+): Promise<{ replacedRotaId: string | null }> {
   const rotas = await rotaRepository.findByDateWithExecucoes(day)
   const entregaMotoboyById = await buildEntregaMotoboyMap(rotas)
 
@@ -108,11 +109,8 @@ async function prepareMotoboyRouteSlot(
     const toReplace = rotas.find((rota) => rota.id === rotaSubstituidaId)
     if (
       toReplace &&
-      routeBelongsToMotoboy(toReplace, motoboyId, entregaMotoboyById) &&
-      isRouteActiveFromExecucoes(
-        toReplace.execucoes,
-        toReplace.paradas.length,
-      )
+      !toReplace.concluidaEm &&
+      routeBelongsToMotoboy(toReplace, motoboyId, entregaMotoboyById)
     ) {
       await rotaRepository.delete(rotaSubstituidaId)
     } else {
@@ -146,6 +144,55 @@ async function prepareMotoboyRouteSlot(
     }
 
     await rotaRepository.delete(rota.id)
+  }
+
+  return { replacedRotaId: rotaSubstituidaId }
+}
+
+async function restoreExecucoesOnNewRota(
+  rota: {
+    id: string
+    paradas: Array<{
+      id: string
+      entregaId: string | null
+      endereco: string
+      cliente: string | null
+    }>
+  },
+  previous: Awaited<ReturnType<typeof rotaExecucaoRepository.findByRotaId>>,
+) {
+  if (previous.length === 0) {
+    return
+  }
+
+  const used = new Set<number>()
+  const updates: Array<{
+    paradaId: string
+    status: (typeof previous)[number]['status']
+    observacao: string | null
+    dataHoraStatus: Date | null
+  }> = []
+
+  for (const parada of rota.paradas) {
+    const index = findMatchingPreviousExecucaoIndex(parada, previous, used)
+    if (index < 0) continue
+
+    used.add(index)
+    const execucao = previous[index]!
+    if (execucao.status === 'PENDENTE' && !execucao.observacao) {
+      continue
+    }
+
+    updates.push({
+      paradaId: parada.id,
+      status: execucao.status,
+      observacao: execucao.observacao,
+      dataHoraStatus: execucao.dataHoraStatus,
+    })
+  }
+
+  if (updates.length > 0) {
+    await rotaExecucaoRepository.bulkSync(rota.id, updates)
   }
 }
 
@@ -467,16 +514,25 @@ export class RotaService {
     )
     const day = input.data ?? toUtcDateOnlyFromBusinessTz()
 
-    if (motoboyId) {
-      await prepareMotoboyRouteSlot(
-        motoboyId,
-        day,
-        input.substituirRotaId,
-      )
-    }
+    const previousExecucoes = input.substituirRotaId
+      ? ((await rotaExecucaoRepository.findByRotaId(input.substituirRotaId)) ??
+        [])
+      : []
+
+    const slot = motoboyId
+      ? await prepareMotoboyRouteSlot(
+          motoboyId,
+          day,
+          input.substituirRotaId,
+        )
+      : { replacedRotaId: null }
 
     const rota = await rotaRepository.create({ ...input, data: day, motoboyId })
     await rotaExecucaoRepository.initForRota(rota.id)
+
+    if (slot.replacedRotaId) {
+      await restoreExecucoesOnNewRota(rota, previousExecucoes)
+    }
 
     if (motoboyId) {
       pushNotificationService.notifyMotoboyNewRoute(motoboyId, {

@@ -167,6 +167,33 @@ export const routingService = {
     })
   },
 
+  bulkSyncExecucao(
+    rotaId: string,
+    paradas: Array<{
+      paradaId: string
+      status: string
+      observacao?: string | null
+    }>,
+  ) {
+    return apiFetch<{
+      count: number
+      execucoes: Array<{
+        id: string
+        rotaId: string
+        paradaId: string | null
+        entregaId: string | null
+        ordem: number
+        status: string
+        dataHoraStatus: string | null
+        observacao: string | null
+      }>
+      rotaConcluida: boolean
+    }>(`/api/rotas/${rotaId}/execucao/sync`, {
+      method: 'PUT',
+      body: JSON.stringify({ paradas }),
+    })
+  },
+
   getEventos(since: string) {
     const params = new URLSearchParams({ since })
     return apiFetch<{

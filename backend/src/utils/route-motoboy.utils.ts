@@ -121,3 +121,39 @@ export function resolveMotoboyIdFromRota(
 
   return null
 }
+
+export type PreviousExecucaoMatch = {
+  entregaId?: string | null
+  status: string
+  observacao?: string | null
+  dataHoraStatus?: Date | null
+  parada?: { endereco?: string | null; cliente?: string | null } | null
+}
+
+export function findMatchingPreviousExecucaoIndex(
+  parada: {
+    entregaId?: string | null
+    endereco: string
+    cliente?: string | null
+  },
+  previous: PreviousExecucaoMatch[],
+  used: Set<number>,
+) {
+  const byEntrega = previous.findIndex(
+    (execucao, index) =>
+      !used.has(index) &&
+      Boolean(parada.entregaId) &&
+      execucao.entregaId === parada.entregaId,
+  )
+  if (byEntrega >= 0) {
+    return byEntrega
+  }
+
+  return previous.findIndex((execucao, index) => {
+    if (used.has(index)) return false
+    return (
+      (execucao.parada?.endereco ?? '') === parada.endereco &&
+      (execucao.parada?.cliente ?? '') === (parada.cliente ?? '')
+    )
+  })
+}

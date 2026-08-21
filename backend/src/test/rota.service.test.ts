@@ -19,6 +19,8 @@ vi.mock('../repositories/rota.repository.js', () => ({
 vi.mock('../repositories/rota-execucao.repository.js', () => ({
   rotaExecucaoRepository: {
     initForRota: vi.fn(),
+    findByRotaId: vi.fn(),
+    bulkSync: vi.fn(),
   },
 }))
 
@@ -96,6 +98,8 @@ describe('RotaService motoboy slot', () => {
       paradas: [{ id: 'parada-1', ordem: 1, endereco: 'Rua B, 2', cliente: null }],
     })
     rotaExecucaoRepository.initForRota.mockResolvedValue([])
+    rotaExecucaoRepository.findByRotaId.mockResolvedValue([])
+    rotaExecucaoRepository.bulkSync.mockResolvedValue(0)
     rotaRepository.findByDateWithExecucoes.mockResolvedValue([])
   })
 
@@ -139,6 +143,7 @@ describe('RotaService motoboy slot', () => {
       {
         id: 'rota-concluida',
         motoboyId: 'motoboy-1',
+        concluidaEm: new Date('2026-08-14T12:00:00.000Z'),
         paradas: [{ entregaId: 'e1' }],
         execucoes: [{ status: 'ENTREGUE' }],
       },
@@ -151,6 +156,74 @@ describe('RotaService motoboy slot', () => {
 
     expect(rotaRepository.delete).not.toHaveBeenCalledWith('rota-concluida')
     expect(rotaRepository.create).toHaveBeenCalled()
+  })
+
+  it('substitui a rota atual mesmo com paradas em andamento ou entregues', async () => {
+    rotaRepository.findByDateWithExecucoes.mockResolvedValue([
+      {
+        id: 'rota-atual',
+        motoboyId: 'motoboy-1',
+        concluidaEm: null,
+        paradas: [{ entregaId: 'e1' }],
+        execucoes: [{ status: 'ENTREGUE' }, { status: 'EM_ROTA' }],
+      },
+    ])
+
+    await service.save(motoboyUser, {
+      ...savePayload,
+      substituirRotaId: 'rota-atual',
+    })
+
+    expect(rotaRepository.delete).toHaveBeenCalledWith('rota-atual')
+    expect(rotaRepository.create).toHaveBeenCalled()
+  })
+
+  it('restaura status das paradas ao substituir a rota atual', async () => {
+    rotaRepository.findByDateWithExecucoes.mockResolvedValue([
+      {
+        id: 'rota-atual',
+        motoboyId: 'motoboy-1',
+        concluidaEm: null,
+        paradas: [{ entregaId: 'e1' }],
+        execucoes: [{ status: 'EM_ROTA' }],
+      },
+    ])
+    rotaExecucaoRepository.findByRotaId.mockResolvedValue([
+      {
+        entregaId: 'e1',
+        status: 'EM_ROTA',
+        observacao: null,
+        dataHoraStatus: new Date('2026-08-14T12:00:00.000Z'),
+        parada: { endereco: 'Rua B, 2', cliente: null },
+      },
+    ])
+    rotaRepository.create.mockResolvedValue({
+      id: 'rota-nova',
+      paradas: [
+        {
+          id: 'parada-nova',
+          ordem: 1,
+          endereco: 'Rua B, 2',
+          cliente: null,
+          entregaId: 'e1',
+        },
+      ],
+    })
+
+    await service.save(motoboyUser, {
+      ...savePayload,
+      substituirRotaId: 'rota-atual',
+    })
+
+    expect(rotaExecucaoRepository.bulkSync).toHaveBeenCalledWith(
+      'rota-nova',
+      [
+        expect.objectContaining({
+          paradaId: 'parada-nova',
+          status: 'EM_ROTA',
+        }),
+      ],
+    )
   })
 
   it('rejeita rota admin com entregas de motoboys diferentes', async () => {

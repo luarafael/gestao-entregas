@@ -166,12 +166,10 @@ export const usePlannerStore = create<PlannerState>()(
       },
 
       resetRoutePlanning: () => {
-        set({
-          result: null,
-          orderDirty: false,
+        set((state) => ({
+          orderDirty: state.stops.length > 0,
           reorderLocked: false,
-          savedRotaId: null,
-        })
+        }))
       },
 
       clearActiveRoute: () => {
@@ -194,8 +192,8 @@ export const usePlannerStore = create<PlannerState>()(
           const preserveLocalEdits = options?.preserveLocalEdits === true
           const keepLocalSequence =
             preserveLocalEdits &&
-            !state.reorderLocked &&
-            state.stops.length > 0
+            state.stops.length > 0 &&
+            (!state.reorderLocked || state.orderDirty)
 
           const loaded = keepLocalSequence
             ? mergeExecucoesIntoStops(state.stops, execucoes).map(

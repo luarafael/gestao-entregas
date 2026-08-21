@@ -329,7 +329,17 @@ export class EntregaRepository {
   }
 
   async delete(id: string) {
-    return prisma.entrega.delete({ where: { id } })
+    return prisma.$transaction(async (tx) => {
+      await tx.rotaParada.updateMany({
+        where: { entregaId: id },
+        data: { entregaId: null },
+      })
+      await tx.rotaExecucao.updateMany({
+        where: { entregaId: id },
+        data: { entregaId: null },
+      })
+      return tx.entrega.delete({ where: { id } })
+    })
   }
 
   async findDistinctClientesByDate(date: Date) {
