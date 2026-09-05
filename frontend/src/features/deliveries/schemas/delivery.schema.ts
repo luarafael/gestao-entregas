@@ -27,6 +27,8 @@ export const STATUS_PAGAMENTO_OPTIONS: {
 
 export const deliveryMotoboyFormSchema = z
   .object({
+    formaPagamento: z.enum(['DINHEIRO', 'PIX', 'CARTAO']).nullable().optional(),
+    statusPagamentoCliente: z.enum(['PAGO', 'NAO_PAGO']).optional(),
     nomeCliente: z.string().trim().optional(),
     telefoneCliente: z.string().trim().optional(),
     endereco: z.string().trim().min(1, 'Endereço é obrigatório'),

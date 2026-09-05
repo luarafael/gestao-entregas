@@ -43,7 +43,7 @@ const entregaBaseSchema = z.object({
   bairro: z.string().trim().min(1, 'Bairro é obrigatório'),
   cidade: z.string().trim().optional(),
   valorProduto: z.coerce.number().min(0, 'Valor do produto inválido').optional(),
-  formaPagamento: formaPagamentoSchema.optional(),
+  formaPagamento: formaPagamentoSchema.nullable().optional(),
   statusPagamentoCliente: statusPagamentoClienteSchema.optional(),
   valorEntrega: z.coerce.number().positive('Valor da taxa de entrega deve ser maior que zero'),
   valorPagoCliente: z.coerce.number().positive('Valor pago pelo cliente deve ser maior que zero').optional(),

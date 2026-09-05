@@ -571,6 +571,7 @@ export function PlannerPage() {
   }
 
   const handleReorder = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return
     const source = result?.paradas ?? stops
     const deliveredCount = source.filter(
       (stop) => getStopStatus(stop) === 'ENTREGUE',
@@ -593,7 +594,7 @@ export function PlannerPage() {
       current ? { ...current, paradas: reordered } : current,
     )
     setOrderDirty(true)
-    toast('Ordem alterada. Recalcule a rota para atualizar distâncias.', 'info')
+    if (result) toast('Ordem alterada. Recalcule a rota para atualizar distâncias.', 'info')
   }
 
   const applyOptimizedResult = (

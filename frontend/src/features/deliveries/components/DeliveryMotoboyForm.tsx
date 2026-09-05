@@ -12,10 +12,13 @@ import {
   Textarea,
 } from '@/shared/components/ui'
 import { MotoboySelect } from '@/shared/components/MotoboySelect'
+import { ClientePicker } from '@/features/clients/components/ClientePicker'
 import { useIsAdmin } from '@/features/auth/hooks/useIsAdmin'
 import { formatCurrency } from '@/shared/utils/cn'
 import {
   deliveryMotoboyFormSchema,
+  FORMA_PAGAMENTO_OPTIONS,
+  STATUS_PAGAMENTO_OPTIONS,
   type DeliveryMotoboyFormData,
 } from '../schemas/delivery.schema'
 import type { Entrega } from '@/shared/types/api.types'
@@ -33,6 +36,8 @@ interface DeliveryMotoboyFormProps {
 }
 
 const defaultValues: DeliveryMotoboyFormData = {
+  formaPagamento: null,
+  statusPagamentoCliente: 'NAO_PAGO',
   nomeCliente: '',
   telefoneCliente: '',
   endereco: '',
@@ -77,6 +82,9 @@ export function DeliveryMotoboyForm({
   useEffect(() => {
     if (editingDelivery) {
       reset({
+        formaPagamento: editingDelivery.formaPagamento ?? null,
+        statusPagamentoCliente:
+          editingDelivery.statusPagamentoCliente ?? 'NAO_PAGO',
         nomeCliente: editingDelivery.nomeCliente ?? '',
         telefoneCliente: editingDelivery.telefoneCliente ?? '',
         endereco: editingDelivery.endereco,
@@ -149,6 +157,31 @@ export function DeliveryMotoboyForm({
         </CardHeader>
         <CardContent>
           <form onSubmit={handleFormSubmit} className="space-y-3">
+            {!editingDelivery && (
+              <ClientePicker
+                onSelect={(cliente) => {
+                  setValue('nomeCliente', cliente.nome, {
+                    shouldValidate: true,
+                  })
+                  setValue('telefoneCliente', cliente.telefone, {
+                    shouldValidate: true,
+                  })
+                  setValue('endereco', cliente.endereco, {
+                    shouldValidate: true,
+                  })
+                  setValue('bairro', cliente.bairro, { shouldValidate: true })
+                  setValue('cidade', cliente.cidade, { shouldValidate: true })
+                  setValue('observacao', cliente.observacao, {
+                    shouldValidate: true,
+                  })
+                  setValue('valorEntrega', cliente.valorEntregaMotoboy ?? 0, {
+                    shouldValidate: true,
+                  })
+                  setValue('pagoPeloCliente', false)
+                  setValue('valorPagoCliente', undefined)
+                }}
+              />
+            )}
             {isAdmin ? (
               <Controller
                 name="motoboyId"
@@ -174,7 +207,12 @@ export function DeliveryMotoboyForm({
               {...register('nomeCliente')}
             />
 
-            {!editingDelivery && <p className="text-xs text-muted-foreground">Ao informar o nome, o destinatário será cadastrado automaticamente em Clientes ao salvar a entrega.</p>}
+            {!editingDelivery && (
+              <p className="text-xs text-muted-foreground">
+                Ao informar o nome, o destinatário será cadastrado
+                automaticamente em Clientes ao salvar a entrega.
+              </p>
+            )}
             <Input
               label="Telefone do cliente (opcional)"
               type="tel"
@@ -214,6 +252,39 @@ export function DeliveryMotoboyForm({
               {...register('valorEntrega', { valueAsNumber: true })}
             />
 
+            <label className="block space-y-1.5 text-sm">
+              Forma de pagamento
+              <select
+                className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3"
+                {...register('formaPagamento', {
+                  setValueAs: (value) => value || null,
+                })}
+              >
+                <option value="">Não informado</option>
+                {FORMA_PAGAMENTO_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-1.5 text-sm">
+              Status do pagamento
+              <select
+                className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3"
+                {...register('statusPagamentoCliente')}
+              >
+                {STATUS_PAGAMENTO_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Informações desta entrega, exibidas também ao importá-la no
+              planejador.
+            </p>
             <Textarea
               label="Observações (opcional)"
               placeholder="Informações adicionais..."
@@ -248,10 +319,12 @@ export function DeliveryMotoboyForm({
                 <div className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
                   <div className="flex flex-wrap gap-2">
                     <MetaChip tone="money" className="tabular-nums">
-                      Pago: {formatCurrency(getValorPagoPeloCliente(previewEntrega))}
+                      Pago:{' '}
+                      {formatCurrency(getValorPagoPeloCliente(previewEntrega))}
                     </MetaChip>
                     <MetaChip tone="motoboyFee" className="tabular-nums">
-                      Recebível: {formatCurrency(getValorRecebivelEntrega(previewEntrega))}
+                      Recebível:{' '}
+                      {formatCurrency(getValorRecebivelEntrega(previewEntrega))}
                     </MetaChip>
                     {telefoneCliente?.trim() ? (
                       <MetaChip tone="phone">{telefoneCliente.trim()}</MetaChip>
@@ -272,15 +345,23 @@ export function DeliveryMotoboyForm({
               ) : null}
 
               {errors.telefoneCliente?.message ? (
-                <p className="text-sm text-red-500">{errors.telefoneCliente.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.telefoneCliente.message}
+                </p>
               ) : null}
               {errors.valorPagoCliente?.message ? (
-                <p className="text-sm text-red-500">{errors.valorPagoCliente.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.valorPagoCliente.message}
+                </p>
               ) : null}
             </div>
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <Button type="submit" isLoading={isSubmitting} className="flex-1 sm:flex-none">
+              <Button
+                type="submit"
+                isLoading={isSubmitting}
+                className="flex-1 sm:flex-none"
+              >
                 {editingDelivery ? 'Atualizar Entrega' : 'Salvar Entrega'}
               </Button>
               {editingDelivery ? (

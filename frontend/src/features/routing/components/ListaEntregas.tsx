@@ -126,9 +126,9 @@ export function ListaEntregas({
         </div>
       </CardHeader>
       <CardContent className="min-w-0">
-        {orderDirty ? (
+        {optimized && orderDirty ? (
           <p className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-            Ordem alterada. Recalcule a rota para atualizar distâncias e tempos.
+            As entregas ou a sequência da rota mudaram. Recalcule para atualizar distâncias e tempos.
           </p>
         ) : null}
         {filtered.length === 0 ? (

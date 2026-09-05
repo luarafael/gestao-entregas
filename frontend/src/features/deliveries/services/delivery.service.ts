@@ -44,7 +44,9 @@ function toMotoboyApiPayload(data: DeliveryMotoboyFormData) {
 
   return {
     nomeCliente: data.nomeCliente,
-    telefoneCliente: pagoPeloCliente ? data.telefoneCliente : undefined,
+    telefoneCliente: data.telefoneCliente,
+    formaPagamento: data.formaPagamento,
+    statusPagamentoCliente: data.statusPagamentoCliente,
     endereco: data.endereco,
     bairro: data.bairro,
     cidade: data.cidade,
