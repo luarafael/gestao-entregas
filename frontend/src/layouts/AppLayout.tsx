@@ -6,6 +6,7 @@ import { Navbar } from './components/Navbar'
 import { AppNotificationsListener } from '@/features/notifications/components/AppNotificationsListener'
 
 const pageTitles: Record<string, { title: string; subtitle?: string }> = {
+  '/clientes': { title: 'Clientes', subtitle: 'Cadastro compartilhado de destinatários' },
   '/': {
     title: 'Dashboard',
     subtitle: 'Visão geral do dia',

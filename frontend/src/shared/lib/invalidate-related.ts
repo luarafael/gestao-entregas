@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 
 export function invalidateDeliveryRelated(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: ['clientes'] })
   queryClient.invalidateQueries({ queryKey: ['deliveries'] })
   queryClient.invalidateQueries({ queryKey: ['planner-entregas'] })
   queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })

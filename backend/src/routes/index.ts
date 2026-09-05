@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { clienteRoutes } from './cliente.routes.js'
 import { authRoutes } from './auth.routes.js'
 import { entregaRoutes } from './entrega.routes.js'
 import { pendenciaRoutes } from './pendencia.routes.js'
@@ -16,6 +17,7 @@ export const apiRoutes = Router()
 apiRoutes.use('/auth', authRoutes)
 
 apiRoutes.use(requireAuth)
+apiRoutes.use('/clientes', clienteRoutes)
 
 apiRoutes.use('/usuarios', usuarioRoutes)
 apiRoutes.use('/pendencias', pendenciaRoutes)

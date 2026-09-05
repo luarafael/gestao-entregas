@@ -34,6 +34,7 @@ const navItems: Array<{
   { to: '/motoboys', label: 'Motoboys', icon: IconUsers, roles: ['ADMIN'] },
   { to: '/administradores', label: 'Administradores', icon: IconUser, roles: ['ADMIN'] },
   { to: '/entregas', label: 'Entregas', icon: IconPackage, roles: ['ADMIN', 'MOTOBOY'] },
+  { to: '/clientes', label: 'Clientes', icon: IconUsers, roles: ['ADMIN', 'MOTOBOY'] },
   { to: '/pendencias', label: 'Pendências', icon: IconClock, roles: ['ADMIN', 'MOTOBOY'] },
   { to: '/aprovacoes', label: 'Aprovações', icon: IconReceipt, roles: ['ADMIN'] },
   { to: '/monitoramento', label: 'Monitoramento', icon: IconEye, roles: ['ADMIN'] },

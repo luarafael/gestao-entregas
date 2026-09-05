@@ -269,6 +269,26 @@ model PushSubscription {
   @@map("push_subscriptions")
 }
 
+model Cliente {
+  id           String   @id @default(cuid())
+  nome         String
+  telefone     String
+  endereco     String
+  bairro       String
+  cidade       String
+  observacao   String
+  valorProduto Decimal? @map("valor_produto") @db.Decimal(10, 2)
+  formaPagamento FormaPagamentoEntrega? @map("forma_pagamento")
+  statusPagamento StatusPagamentoCliente? @map("status_pagamento")
+  valorEntregaMotoboy Decimal? @map("valor_entrega_motoboy") @db.Decimal(10, 2)
+  valorEntrega Decimal? @map("valor_entrega") @db.Decimal(10, 2)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@index([nome])
+  @@map("clientes")
+}
+
 model ConfiguracaoPlanejador {
   id                    String   @id @default("default")
   enderecoPartidaPadrao String

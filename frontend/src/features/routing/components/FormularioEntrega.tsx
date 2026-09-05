@@ -1,12 +1,8 @@
 import { useEffect } from 'react'
+import { ClientePicker } from '@/features/clients/components/ClientePicker'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  Button,
-  Input,
-  Modal,
-  Textarea,
-} from '@/shared/components/ui'
+import { Button, Input, Modal, Textarea } from '@/shared/components/ui'
 import {
   plannerStopSchema,
   type PlannerStop,
@@ -48,6 +44,7 @@ export function FormularioEntrega({
       bairro: '',
       telefone: '',
       observacao: '',
+      valorEntrega: null,
       prioridade: 'NORMAL',
       ordemUrgencia: undefined,
     },
@@ -65,10 +62,11 @@ export function FormularioEntrega({
       bairro: editing?.bairro ?? '',
       telefone: editing?.telefone ?? '',
       observacao: editing?.observacao ?? '',
+      valorEntrega: editing?.valorEntrega ?? null,
       prioridade: initialPrioridade,
       ordemUrgencia:
         initialPrioridade === 'URGENTE'
-          ? editing?.ordemUrgencia ?? suggestedOrdem
+          ? (editing?.ordemUrgencia ?? suggestedOrdem)
           : undefined,
     })
   }, [editing, open, reset, suggestedOrdem])
@@ -99,6 +97,23 @@ export function FormularioEntrega({
             onClose()
           })}
         >
+          {!editing && (
+            <ClientePicker
+              enabled={open}
+              onSelect={(cliente) => {
+                setValue('cliente', cliente.nome, { shouldValidate: true })
+                setValue(
+                  'endereco',
+                  [cliente.endereco, cliente.cidade].filter(Boolean).join(', '),
+                  { shouldValidate: true },
+                )
+                setValue('bairro', cliente.bairro)
+                setValue('telefone', cliente.telefone)
+                setValue('observacao', cliente.observacao)
+                setValue('valorEntrega', cliente.valorEntregaMotoboy ?? null, { shouldValidate: true })
+              }}
+            />
+          )}
           <Input
             label="Cliente"
             placeholder="Opcional"
@@ -123,6 +138,13 @@ export function FormularioEntrega({
             error={errors.telefone?.message}
             {...register('telefone')}
           />
+          <Input
+            label="Valor entrega motoboy"
+            type="number" step="0.01" min="0.01"
+            placeholder="Valor para a prestação"
+            error={errors.valorEntrega?.message}
+            {...register('valorEntrega', { setValueAs: (value) => value === '' ? null : Number(value) })}
+          />
           <Textarea
             label="Observação"
             placeholder="Opcional"
@@ -130,7 +152,9 @@ export function FormularioEntrega({
             {...register('observacao')}
           />
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-muted-foreground">Prioridade</span>
+            <span className="font-medium text-muted-foreground">
+              Prioridade
+            </span>
             <select
               className="h-10 w-full rounded-xl border border-border/70 bg-surface/50 px-3 text-sm"
               {...register('prioridade')}

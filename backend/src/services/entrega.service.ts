@@ -26,7 +26,6 @@ function normalizeMotoboyEntregaData<
     return {
       ...input,
       valorPagoCliente: null,
-      telefoneCliente: null,
     }
   }
 

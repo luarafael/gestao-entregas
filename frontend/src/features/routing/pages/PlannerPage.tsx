@@ -406,6 +406,7 @@ export function PlannerPage() {
             bairro: normalized.bairro,
             telefone: normalized.telefone,
             observacao: normalized.observacao,
+            valorEntrega: normalized.valorEntrega,
             prioridade: normalized.prioridade,
             ordemUrgencia: normalized.ordemUrgencia ?? null,
           }),

@@ -1,5 +1,6 @@
 import type { Prisma, StatusEntrega } from '../../generated/prisma/client.js'
 import { prisma } from '../lib/prisma.js'
+import { cadastrarDestinatarioDaEntrega } from './cliente-entrega.js'
 import { motoboyRelationSelect } from './motoboy-select.js'
 import type { DateFilter } from '../utils/date.utils.js'
 import { getUtcDateOnlyRange, toUtcDateOnly, toUtcDateOnlyFromBusinessTz, formatDateOnlyISO } from '../utils/date.utils.js'
@@ -38,7 +39,8 @@ export class EntregaRepository {
   ) {
     const now = new Date()
 
-    return prisma.entrega.create({
+    return prisma.$transaction(async (tx) => {
+      const entrega = await tx.entrega.create({
       data: {
         ...data,
         motoboyId,
@@ -48,7 +50,10 @@ export class EntregaRepository {
       include: {
         motoboy: { select: motoboyRelationSelect },
       },
-    })
+      })
+      await cadastrarDestinatarioDaEntrega(tx, data)
+      return entrega
+    }, { timeout: 15000 })
   }
 
   async findById(id: string) {
@@ -225,7 +230,8 @@ export class EntregaRepository {
   }) {
     const now = new Date()
 
-    return prisma.entrega.create({
+    return prisma.$transaction(async (tx) => {
+      const entrega = await tx.entrega.create({
       data: {
         nomeCliente: data.nomeCliente,
         telefoneCliente: data.telefoneCliente,
@@ -242,7 +248,10 @@ export class EntregaRepository {
         data: toUtcDateOnlyFromBusinessTz(now),
         horario: now,
       },
-    })
+      })
+      await cadastrarDestinatarioDaEntrega(tx, data)
+      return entrega
+    }, { timeout: 15000 })
   }
 
   async updateCliente(

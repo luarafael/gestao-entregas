@@ -9,6 +9,7 @@ export const plannerStopSchema = z
     bairro: z.string().trim().optional(),
     telefone: z.string().trim().optional(),
     observacao: z.string().trim().optional(),
+    valorEntrega: z.number().positive('Informe um valor maior que zero').max(99999999.99).nullable().optional(),
     prioridade: prioridadeParadaSchema,
     ordemUrgencia: z.number().int().positive().optional(),
   })

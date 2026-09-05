@@ -92,6 +92,8 @@ const PlannerPage = lazy(() =>
   })),
 )
 
+const ClientesPage = lazy(() => import('@/features/clients/pages/ClientesPage').then((module) => ({ default: module.ClientesPage })))
+
 const routes = [
   {
     element: (
@@ -119,6 +121,7 @@ const routes = [
               { path: 'motoboys', element: <MotoboysPage /> },
               { path: 'administradores', element: <AdminsPage /> },
               { path: 'entregas', element: <DeliveriesPage /> },
+              { path: 'clientes', element: <ClientesPage /> },
               { path: 'pendencias', element: <PendingPage /> },
               { path: 'prestacao', element: <PrestacaoPage /> },
               { path: 'relatorios', element: <ReportsPage /> },

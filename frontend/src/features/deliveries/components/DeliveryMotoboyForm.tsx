@@ -118,7 +118,6 @@ export function DeliveryMotoboyForm({
     if (pagoPeloCliente) {
       setValue('pagoPeloCliente', false)
       setValue('valorPagoCliente', undefined)
-      setValue('telefoneCliente', '')
       return
     }
 
@@ -173,6 +172,14 @@ export function DeliveryMotoboyForm({
               placeholder="Ex: João Silva"
               error={errors.nomeCliente?.message}
               {...register('nomeCliente')}
+            />
+
+            {!editingDelivery && <p className="text-xs text-muted-foreground">Ao informar o nome, o destinatário será cadastrado automaticamente em Clientes ao salvar a entrega.</p>}
+            <Input
+              label="Telefone do cliente (opcional)"
+              type="tel"
+              error={errors.telefoneCliente?.message}
+              {...register('telefoneCliente')}
             />
 
             <Input
